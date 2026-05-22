@@ -16,6 +16,7 @@ const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
   const imageUrl = resolveMediaUrl(vehicle.imageUrl);
 
   return (
+    <>
     <button
       type="button"
       onClick={() => onClick?.(vehicle)}
