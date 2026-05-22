@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   X,
   Car,
@@ -71,6 +72,8 @@ const VehicleManagementPanel = ({
   const [uploading, setUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [localError, setLocalError] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
 
   const isCreate = mode === 'create';
   const vehicleId = vehicle?.id;
@@ -198,7 +201,17 @@ const VehicleManagementPanel = ({
       <div className="border-b border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-hairline-violet bg-on-dark-faint">
+            <div
+              onClick={() => {
+                if (displayImage) {
+                  setModalImageSrc(displayImage);
+                  setShowImageModal(true);
+                }
+              }}
+              className={`relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-hairline-violet bg-on-dark-faint ${
+                displayImage ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+              }`}
+            >
               {displayImage ? (
                 <img src={displayImage} alt="" className="h-full w-full object-cover" />
               ) : (
@@ -508,7 +521,11 @@ const VehicleManagementPanel = ({
                   <img
                     src={displayImage}
                     alt="Xe"
-                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-cover"
+                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => {
+                      setModalImageSrc(displayImage);
+                      setShowImageModal(true);
+                    }}
                   />
                 )}
 
@@ -535,6 +552,12 @@ const VehicleManagementPanel = ({
           </>
         )}
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={modalImageSrc}
+        alt="Vehicle Photo"
+      />
     </aside>
   );
 };

@@ -17,6 +17,7 @@ import {
   Eye,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
+import ImageModal from '../../../components/common/ImageModal';
 import { formatCurrency, getRoomDisplayName, resolveMediaUrl } from '../utils/roomHelpers';
 import {
   openOrDownloadContractFile,
@@ -819,7 +820,8 @@ const RoomManagementPanel = ({
                     <img
                       src={roomImagePreview}
                       alt="Xem trước"
-                      className="mx-auto max-h-32 rounded-lg border border-hairline-cloud object-contain"
+                      className="mx-auto max-h-32 rounded-lg border border-hairline-cloud object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setPreviewImage(roomImagePreview)}
                     />
                   )}
                   <button
@@ -841,7 +843,8 @@ const RoomManagementPanel = ({
                       <img
                         src={resolveMediaUrl(img.url)}
                         alt=""
-                        className="h-28 w-full object-cover"
+                        className="h-28 w-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => setPreviewImage(resolveMediaUrl(img.url))}
                       />
                       <button
                         type="button"
@@ -1120,29 +1123,11 @@ const RoomManagementPanel = ({
         </div>
       )}
 
-      {previewImage && (
-        <div
-          className="absolute inset-0 z-30 flex items-center justify-center bg-ink-deep/80 p-4"
-          role="dialog"
-          aria-modal="true"
-          onClick={() => setPreviewImage(null)}
-        >
-          <button
-            type="button"
-            className="absolute right-3 top-3 rounded-full bg-on-dark-faint p-2 text-on-primary"
-            onClick={() => setPreviewImage(null)}
-            aria-label="Đóng"
-          >
-            <X size={20} />
-          </button>
-          <img
-            src={previewImage}
-            alt="Xem ảnh"
-            className="max-h-full max-w-full rounded-lg object-contain shadow-lg"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-      )}
+      <ImageModal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        src={previewImage}
+      />
     </aside>
   );
 };

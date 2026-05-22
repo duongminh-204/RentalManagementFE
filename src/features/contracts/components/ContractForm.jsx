@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { X, Upload, AlertCircle, FileText } from 'lucide-react';
+import ImageModal from '../../../components/common/ImageModal';
 import DateInput from '../../../components/common/DateInput';
 import { toApiDate } from '../../../utils/dateHelpers';
 import { resolveMediaUrl } from '../../tenants/utils/tenantHelpers';
@@ -42,6 +43,7 @@ const ContractForm = ({
   const [filePreview, setFilePreview] = useState(null);
   const [uploadedFileName, setUploadedFileName] = useState('');
   const [validationErrors, setValidationErrors] = useState({});
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (fixedRoomId != null && fixedRoomId !== '') {
@@ -204,6 +206,7 @@ const ContractForm = ({
   };
 
   const formShell = (
+    <>
       <div
         className={`flex h-full w-full flex-col overflow-hidden bg-surface-light ${
           embedded ? '' : 'max-h-[90vh] rounded-lg shadow-lg'
@@ -446,7 +449,8 @@ const ContractForm = ({
                     <img
                       src={filePreview}
                       alt="Xem trước hợp đồng"
-                      className="h-32 w-full rounded-lg border border-gray-300 object-cover"
+                      className="h-32 w-full rounded-lg border border-gray-300 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                      onClick={() => setShowImageModal(true)}
                     />
                   ) : (
                     <div className="flex h-32 w-full flex-col items-center justify-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-2">
@@ -484,6 +488,13 @@ const ContractForm = ({
           </div>
         </form>
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={filePreview}
+        alt="Contract Preview"
+      />
+    </>
   );
 
   if (embedded) {

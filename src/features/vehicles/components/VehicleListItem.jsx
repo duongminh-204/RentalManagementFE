@@ -1,4 +1,6 @@
+import React, { useState } from 'react';
 import { Car, Home, User, Banknote, AlertTriangle } from 'lucide-react';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   formatCurrency,
   formatLicensePlate,
@@ -9,6 +11,7 @@ import {
 import { resolveMediaUrl } from '../../rooms/utils/roomHelpers';
 
 const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
+  const [showImageModal, setShowImageModal] = useState(false);
   const isUnknown = vehicle.status === 'unknown' || !vehicle.tenantId;
   const imageUrl = resolveMediaUrl(vehicle.imageUrl);
 
@@ -26,7 +29,15 @@ const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
     >
       <div className="flex items-start gap-3">
         <div
+          onClick={(e) => {
+            if (imageUrl) {
+              e.stopPropagation();
+              setShowImageModal(true);
+            }
+          }}
           className={`relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl border ${
+            imageUrl ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+          } ${
             selected ? 'border-hairline-violet bg-on-dark-faint' : 'border-hairline-cloud bg-surface-press'
           }`}
         >
@@ -93,6 +104,13 @@ const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
         </div>
       </div>
     </button>
+    <ImageModal
+      isOpen={showImageModal}
+      onClose={() => setShowImageModal(false)}
+      src={imageUrl}
+      alt={vehicle.licensePlate}
+    />
+    </>
   );
 };
 

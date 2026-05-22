@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import ImageModal from '../../../components/common/ImageModal';
 import { Edit2, Trash2, AlertCircle } from 'lucide-react';
 import {
   getVehicleTypeLabel,
@@ -11,6 +12,7 @@ import {
 } from '../utils/vehicleHelpers';
 
 const VehicleCard = ({ vehicle, tenant, room, onEdit, onDelete }) => {
+  const [showImageModal, setShowImageModal] = useState(false);
   const parkingDays = calculateParkingDays(vehicle.registrationDate);
   const isUnknown = vehicle.status === 'unknown' || !vehicle.tenantId;
 
@@ -50,7 +52,8 @@ const VehicleCard = ({ vehicle, tenant, room, onEdit, onDelete }) => {
             <img
               src={vehicle.imageUrl}
               alt={vehicle.licensePlate}
-              className="w-full h-32 object-cover rounded-lg border border-gray-300"
+              className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-95 transition-opacity"
+              onClick={() => setShowImageModal(true)}
             />
           </div>
         )}
@@ -123,6 +126,12 @@ const VehicleCard = ({ vehicle, tenant, room, onEdit, onDelete }) => {
           </button>
         </div>
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={vehicle.imageUrl}
+        alt={vehicle.licensePlate}
+      />
     </div>
   );
 };

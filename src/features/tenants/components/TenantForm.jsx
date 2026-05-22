@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
+import ImageModal from '../../../components/common/ImageModal';
 import { validatePhoneNumber, validateCCCD, formatCCCD } from '../utils/tenantHelpers';
 
 const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error = null }) => {
@@ -18,6 +19,7 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
   const [idCardImage, setIdCardImage] = useState(null);
   const [idCardPreview, setIdCardPreview] = useState(tenant?.idCardImage || null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (tenant) {
@@ -343,7 +345,8 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
                   <img
                     src={idCardPreview}
                     alt="CCCD Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setShowImageModal(true)}
                   />
                 </div>
               )}
@@ -385,6 +388,12 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
           </div>
         </form>
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={idCardPreview}
+        alt="CCCD Preview"
+      />
     </div>
   );
 };

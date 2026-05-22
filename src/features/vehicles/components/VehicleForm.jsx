@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   validateLicensePlate,
   VEHICLE_TYPES,
@@ -34,6 +35,7 @@ const VehicleForm = ({
   const [vehicleImage, setVehicleImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(vehicle?.imageUrl || null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (vehicle) {
@@ -435,7 +437,8 @@ const VehicleForm = ({
                   <img
                     src={imagePreview}
                     alt="Vehicle Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => setShowImageModal(true)}
                   />
                 </div>
               )}
@@ -462,6 +465,12 @@ const VehicleForm = ({
           </div>
         </form>
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={imagePreview}
+        alt="Vehicle Preview"
+      />
     </div>
   );
 };
