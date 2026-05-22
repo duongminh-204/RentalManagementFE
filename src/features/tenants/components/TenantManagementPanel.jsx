@@ -33,6 +33,8 @@ import DateInput from '../../../components/common/DateInput';
 import { getAllRooms } from '../../rooms/api/roomsApi';
 import { normalizeRoomsList } from '../../rooms/utils/roomHelpers';
 import { getTenantHistory } from '../api/tenantsApi';
+import ImageModal from '../../../components/common/ImageModal';
+
 
 const TABS = [
   { id: 'info', label: 'Thông tin', icon: User },
@@ -46,6 +48,10 @@ const emptyForm = () => ({
   email: '',
   cccd: '',
   address: '',
+  dateOfBirth: '',
+  gender: '',
+  workplace: '',
+  occupation: '',
   roomId: '',
   moveInDate: '',
   moveOutDate: '',
@@ -81,6 +87,9 @@ const TenantManagementPanel = ({
   const [validationErrors, setValidationErrors] = useState({});
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
+  const [previewAlt, setPreviewAlt] = useState('');
+
 
   const isCreate = mode === 'create';
   const tenantId = tenant?.id;
@@ -99,6 +108,10 @@ const TenantManagementPanel = ({
         email: tenant.email || '',
         cccd: tenant.cccd || '',
         address: tenant.address || '',
+        dateOfBirth: toInputDate(tenant.dateOfBirth),
+        gender: tenant.gender || '',
+        workplace: tenant.workplace || '',
+        occupation: tenant.occupation || '',
         roomId: tenant.roomId ? String(tenant.roomId) : '',
         moveInDate: toInputDate(tenant.moveInDate),
         moveOutDate: toInputDate(tenant.moveOutDate),
@@ -273,7 +286,13 @@ const TenantManagementPanel = ({
               <img
                 src={avatarDisplay}
                 alt={tenant?.fullName || 'Avatar'}
-                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-cover shadow-md"
+                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-cover shadow-md cursor-pointer transition hover:opacity-90"
+                onClick={() => {
+                  if (avatarDisplay) {
+                    setPreviewImage(avatarDisplay);
+                    setPreviewAlt(`Ảnh đại diện của ${tenant?.fullName || 'khách thuê'}`);
+                  }
+                }}
                 onError={(e) => {
                   e.target.src = getDefaultAvatar(tenant?.fullName || 'U');
                 }}
@@ -441,6 +460,63 @@ const TenantManagementPanel = ({
                   <input name="address" value={form.address} onChange={handleChange} className="text-input" />
                 </div>
 
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
+                      <Calendar size={12} /> Ngày sinh
+                    </label>
+                    <DateInput
+                      name="dateOfBirth"
+                      value={form.dateOfBirth}
+                      onChange={handleChange}
+                      className="text-input"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
+                      <User size={12} /> Giới tính
+                    </label>
+                    <select
+                      name="gender"
+                      value={form.gender}
+                      onChange={handleChange}
+                      className="text-input"
+                    >
+                      <option value="">— Chọn giới tính —</option>
+                      <option value="Nam">Nam</option>
+                      <option value="Nữ">Nữ</option>
+                      <option value="Khác">Khác</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
+                      <FileText size={12} /> Nghề nghiệp
+                    </label>
+                    <input
+                      name="occupation"
+                      value={form.occupation}
+                      onChange={handleChange}
+                      className="text-input"
+                      placeholder="Ví dụ: Sinh viên, Kỹ sư..."
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
+                      <MapPin size={12} /> Nơi làm việc
+                    </label>
+                    <input
+                      name="workplace"
+                      value={form.workplace}
+                      onChange={handleChange}
+                      className="text-input"
+                      placeholder="Trường học hoặc Công ty..."
+                    />
+                  </div>
+                </div>
+
                 <div className="rounded-xl border border-hairline-violet/30 bg-ink-deep/5 p-4">
                   <p className="eyebrow mb-3 text-accent-violet-mid">Liên kết phòng</p>
                   <div className="grid grid-cols-2 gap-3">
@@ -533,7 +609,15 @@ const TenantManagementPanel = ({
               <div className="space-y-4">
                 {cccdDisplay ? (
                   <div className="relative overflow-hidden rounded-xl border border-hairline-cloud">
-                    <img src={cccdDisplay} alt="CCCD" className="max-h-64 w-full object-contain bg-surface-press" />
+                    <img
+                      src={cccdDisplay}
+                      alt="CCCD"
+                      className="max-h-64 w-full object-contain bg-surface-press cursor-pointer transition hover:opacity-95"
+                      onClick={() => {
+                        setPreviewImage(cccdDisplay);
+                        setPreviewAlt(`Ảnh CCCD của ${tenant?.fullName || 'khách thuê'}`);
+                      }}
+                    />
                     {cccdDisplay && tenant?.idCardImage && !idCardFile && onDeleteIdCard && (
                       <button
                         type="button"
@@ -615,6 +699,12 @@ const TenantManagementPanel = ({
           </>
         )}
       </div>
+      <ImageModal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        src={previewImage}
+        alt={previewAlt}
+      />
     </aside>
   );
 };

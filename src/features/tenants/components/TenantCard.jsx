@@ -1,8 +1,11 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Edit2, Trash2, Phone, Mail, MapPin, Calendar, User } from 'lucide-react';
 import { getTenantStatusLabel, getTenantStatusColor, formatDate, formatCurrency, calculateStayDuration } from '../utils/tenantHelpers';
+import ImageModal from '../../../components/common/ImageModal';
 
 const TenantCard = ({ tenant, onEdit, onDelete, onViewDetails }) => {
+  const [showImageModal, setShowImageModal] = useState(false);
+
   return (
     <div className="group bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 overflow-hidden">
       <div className="p-6">
@@ -25,14 +28,23 @@ const TenantCard = ({ tenant, onEdit, onDelete, onViewDetails }) => {
 
         {/* ID Card Image */}
         {tenant.idCardImage && (
-          <div className="mb-5 rounded-xl overflow-hidden border border-gray-100 shadow-sm">
+          <div className="mb-5 rounded-xl overflow-hidden border border-gray-100 shadow-sm cursor-pointer transition hover:opacity-90">
             <img
               src={tenant.idCardImage}
               alt="CCCD"
               className="w-full h-36 object-cover"
+              onClick={() => setShowImageModal(true)}
             />
           </div>
         )}
+
+        {/* Modal Preview */}
+        <ImageModal
+          isOpen={showImageModal}
+          onClose={() => setShowImageModal(false)}
+          src={tenant.idCardImage}
+          alt={`Ảnh CCCD của ${tenant.fullName}`}
+        />
 
         {/* Info */}
         <div className="space-y-3 mb-6 text-sm">
