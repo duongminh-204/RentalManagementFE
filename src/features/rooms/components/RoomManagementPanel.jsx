@@ -92,7 +92,8 @@ const RoomManagementPanel = ({
 }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [info, setInfo] = useState(emptyInfo());
-  const [imageUrl, setImageUrl] = useState('');
+  const [roomImageFile, setRoomImageFile] = useState(null);
+  const [roomImagePreview, setRoomImagePreview] = useState(null);
   const [serviceCatalog, setServiceCatalog] = useState([]);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [serviceQty, setServiceQty] = useState(1);
@@ -351,11 +352,35 @@ const RoomManagementPanel = ({
     }
   };
 
-  const handleAddImage = () =>
+  const handleRoomImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const okType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
+    const okExt = /\.(png|jpe?g)$/i.test(file.name);
+    if (!okType && !okExt) {
+      setLocalError('Chỉ chấp nhận ảnh PNG hoặc JPG');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLocalError('Ảnh tối đa 5MB');
+      return;
+    }
+    setRoomImageFile(file);
+    setRoomImagePreview(URL.createObjectURL(file));
+    setLocalError(null);
+  };
+
+  const handleAddImage = () => {
+    if (!roomImageFile) {
+      setLocalError('Vui lòng chọn ảnh PNG hoặc JPG');
+      return;
+    }
     runAction(async () => {
-      await roomMgmtApi.addRoomImage(roomId, imageUrl.trim());
-      setImageUrl('');
+      await roomMgmtApi.uploadRoomImage(roomId, roomImageFile);
+      setRoomImageFile(null);
+      setRoomImagePreview(null);
     });
+  };
 
   const handleAddDevice = () =>
     runAction(async () => {
@@ -778,31 +803,43 @@ const RoomManagementPanel = ({
 
             {activeTab === 'images' && canManageExtras && (
               <div className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Dán URL ảnh phòng…"
-                    className="text-input flex-1"
-                  />
+                <div className="space-y-3 rounded-xl border border-hairline-cloud bg-surface-press/40 p-3">
+                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-hairline-cloud p-6 transition hover:border-accent-violet">
+                    <ImageIcon className="text-accent-violet-mid" size={28} />
+                    <span className="text-sm font-medium text-ink-deep">Chọn ảnh phòng</span>
+                    <span className="text-xs text-muted">PNG, JPG — tối đa 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                      onChange={handleRoomImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                  {roomImagePreview && (
+                    <img
+                      src={roomImagePreview}
+                      alt="Xem trước"
+                      className="mx-auto max-h-32 rounded-lg border border-hairline-cloud object-contain"
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={handleAddImage}
-                    disabled={busy || !imageUrl.trim()}
-                    className="btn-primary shrink-0"
+                    disabled={busy || !roomImageFile}
+                    className="btn-primary w-full"
                   >
                     <Plus size={18} />
+                    {busy ? 'Đang tải lên…' : 'Tải ảnh lên'}
                   </button>
                 </div>
-             <div className="stagger-layout grid grid-cols-2 gap-3">
+                <div className="stagger-layout grid grid-cols-2 gap-3">
                   {(room.roomImages || []).map((img) => (
                     <div
                       key={img.id ?? img.url}
                       className="group relative overflow-hidden rounded-xl border border-hairline-cloud"
                     >
                       <img
-                        src={img.url}
+                        src={resolveMediaUrl(img.url)}
                         alt=""
                         className="h-28 w-full object-cover"
                       />

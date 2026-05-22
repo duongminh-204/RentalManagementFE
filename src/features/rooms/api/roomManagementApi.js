@@ -15,6 +15,16 @@ export const addRoomImage = async (roomId, imageUrl) => {
   return data;
 };
 
+/** Upload ảnh phòng (PNG/JPG) */
+export const uploadRoomImage = async (roomId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post(`/room-management/rooms/${roomId}/images/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return data;
+};
+
 export const deleteRoomImage = async (roomId, imageId) => {
   await api.delete(`/room-management/rooms/${roomId}/images/${imageId}`);
 };
