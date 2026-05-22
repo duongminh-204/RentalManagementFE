@@ -130,19 +130,33 @@ const VehicleManagementPanel = ({
       if (!form.roomId) errors.roomId = 'Chọn phòng';
     }
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      const infoErrors = ['licensePlate', 'brand', 'color', 'registrationDate', 'parkingFee'];
+      const linkErrors = ['tenantId', 'roomId'];
+      
+      const hasInfoError = infoErrors.some(field => errors[field]);
+      const hasLinkError = linkErrors.some(field => errors[field]);
+
+      if (hasInfoError && activeTab !== 'info') {
+        setActiveTab('info');
+      } else if (!hasInfoError && hasLinkError && activeTab !== 'link') {
+        setActiveTab('link');
+      }
+      return;
+    }
     onSave?.(
       {
         ...form,
         licensePlate: form.licensePlate.trim().toUpperCase(),
         parkingFee: Number(form.parkingFee),
-        tenantId: form.tenantId || null,
-        roomId: form.roomId || null,
+        tenantId: form.tenantId ? parseInt(form.tenantId, 10) : null,
+        roomId: form.roomId ? parseInt(form.roomId, 10) : null,
       },
       imageFile
     );

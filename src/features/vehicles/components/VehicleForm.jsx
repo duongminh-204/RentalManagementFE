@@ -147,6 +147,8 @@ const VehicleForm = ({
     if (validateForm()) {
       onSubmit({
         ...formData,
+        tenantId: formData.tenantId ? parseInt(formData.tenantId, 10) : null,
+        roomId: formData.roomId ? parseInt(formData.roomId, 10) : null,
         vehicleImage,
       });
     }
