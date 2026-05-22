@@ -449,7 +449,7 @@ const ContractForm = ({
                     <img
                       src={filePreview}
                       alt="Xem trước hợp đồng"
-                      className="h-32 w-full rounded-lg border border-gray-300 object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                      className="h-32 w-full rounded-lg border border-gray-300 object-contain cursor-pointer hover:opacity-95 transition-opacity"
                       onClick={() => setShowImageModal(true)}
                     />
                   ) : (

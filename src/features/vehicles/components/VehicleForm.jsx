@@ -437,7 +437,7 @@ const VehicleForm = ({
                   <img
                     src={imagePreview}
                     alt="Vehicle Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-95 transition-opacity"
+                    className="w-full h-32 object-contain rounded-lg border border-gray-300 cursor-pointer hover:opacity-95 transition-opacity"
                     onClick={() => setShowImageModal(true)}
                   />
                 </div>

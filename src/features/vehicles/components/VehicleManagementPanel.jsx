@@ -213,7 +213,7 @@ const VehicleManagementPanel = ({
               }`}
             >
               {displayImage ? (
-                <img src={displayImage} alt="" className="h-full w-full object-cover" />
+                <img src={displayImage} alt="" className="h-full w-full object-contain" />
               ) : (
                 <Car size={28} className="text-accent-lime" />
               )}
@@ -521,7 +521,7 @@ const VehicleManagementPanel = ({
                   <img
                     src={displayImage}
                     alt="Xe"
-                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-cover cursor-pointer hover:opacity-95 transition-opacity"
+                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-contain cursor-pointer hover:opacity-95 transition-opacity"
                     onClick={() => {
                       setModalImageSrc(displayImage);
                       setShowImageModal(true);

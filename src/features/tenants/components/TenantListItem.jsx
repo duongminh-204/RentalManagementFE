@@ -36,7 +36,7 @@ const TenantListItem = ({ tenant, selected, onClick }) => {
             }`}
           >
             {tenant.avatar ? (
-              <img src={tenant.avatar} alt="" className="h-full w-full object-cover" />
+              <img src={tenant.avatar} alt="" className="h-full w-full object-contain" />
             ) : (
               tenant.fullName?.[0]?.toUpperCase() || <User size={20} />
             )}

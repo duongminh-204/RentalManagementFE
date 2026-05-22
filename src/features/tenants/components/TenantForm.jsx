@@ -345,7 +345,7 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
                   <img
                     src={idCardPreview}
                     alt="CCCD Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
+                    className="w-full h-32 object-contain rounded-lg border border-gray-300 cursor-pointer hover:opacity-90 transition-opacity"
                     onClick={() => setShowImageModal(true)}
                   />
                 </div>

@@ -843,7 +843,7 @@ const RoomManagementPanel = ({
                       <img
                         src={resolveMediaUrl(img.url)}
                         alt=""
-                        className="h-28 w-full object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                        className="h-28 w-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
                         onClick={() => setPreviewImage(resolveMediaUrl(img.url))}
                       />
                       <button
@@ -940,7 +940,7 @@ const RoomManagementPanel = ({
                           <img
                             src={u.fileUrl}
                             alt="Hợp đồng"
-                            className="max-h-36 w-full object-cover object-top"
+                            className="max-h-36 w-full object-contain object-top"
                           />
                         </button>
                       )}

@@ -32,7 +32,7 @@ const TenantCard = ({ tenant, onEdit, onDelete, onViewDetails }) => {
             <img
               src={tenant.idCardImage}
               alt="CCCD"
-              className="w-full h-36 object-cover"
+              className="w-full h-36 object-contain"
               onClick={() => setShowImageModal(true)}
             />
           </div>

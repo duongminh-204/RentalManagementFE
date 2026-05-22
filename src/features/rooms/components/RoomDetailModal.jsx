@@ -61,7 +61,7 @@ const ImageGallery = ({ images }) => {
       <img
         src={current.url}
         alt={current.caption || `Ảnh phòng ${index + 1}`}
-        className="h-52 w-full object-cover cursor-pointer transition hover:opacity-90"
+        className="h-52 w-full object-contain cursor-pointer transition hover:opacity-90"
         onClick={() => setShowImageModal(true)}
       />
       <ImageModal

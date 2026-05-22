@@ -286,7 +286,7 @@ const TenantManagementPanel = ({
               <img
                 src={avatarDisplay}
                 alt={tenant?.fullName || 'Avatar'}
-                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-cover shadow-md cursor-pointer transition hover:opacity-90"
+                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-contain shadow-md cursor-pointer transition hover:opacity-90"
                 onClick={() => {
                   if (avatarDisplay) {
                     setPreviewImage(avatarDisplay);

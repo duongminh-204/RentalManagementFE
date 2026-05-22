@@ -43,7 +43,7 @@ const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
           }`}
         >
           {imageUrl ? (
-            <img src={imageUrl} alt="" className="h-full w-full object-cover" />
+            <img src={imageUrl} alt="" className="h-full w-full object-contain" />
           ) : (
             <Car size={22} className={selected ? 'text-accent-lime' : 'text-accent-violet'} />
           )}
