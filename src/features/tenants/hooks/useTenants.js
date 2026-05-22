@@ -73,6 +73,13 @@ export const useTenants = () => {
     return data;
   }, []);
 
+  const removeIdCardImage = useCallback(async (tenantId) => {
+    await tenantsApi.deleteIdCardImage(tenantId);
+    setTenants((prev) =>
+      prev.map((t) => (String(t.id) === String(tenantId) ? { ...t, idCardImage: null } : t))
+    );
+  }, []);
+
   const fetchTenantHistory = useCallback(async (tenantId) => {
     const data = await tenantsApi.getTenantHistory(tenantId);
     const list = Array.isArray(data) ? data : data?.data ?? [];
@@ -93,7 +100,8 @@ export const useTenants = () => {
     editTenant,
     removeTenant,
     uploadIDCard,
-    uploadAvatar,         
+    uploadAvatar,
+    removeIdCardImage,
     fetchTenantHistory,
   };
 };

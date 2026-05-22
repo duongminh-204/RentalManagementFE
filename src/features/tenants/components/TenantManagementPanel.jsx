@@ -22,6 +22,7 @@ import {
   formatDate,
   getTenantStatusBadgeClass,
   getTenantStatusLabel,
+  getDefaultAvatar,
   normalizeHistoryFromApi,
   resolveMediaUrl,
   toInputDate,
@@ -62,6 +63,8 @@ const TenantManagementPanel = ({
   onSave,
   onDelete,
   onUploadIdCard,
+  onUploadAvatar,
+  onDeleteIdCard,
   onRefresh,
   saveLoading = false,
   saveError = null,
@@ -105,14 +108,17 @@ const TenantManagementPanel = ({
         isActive: tenant.isActive !== false,
       });
       setIdCardPreview(tenant.idCardImage || null);
+      setAvatarPreview(resolveMediaUrl(tenant.avatar) || null);
       setHistory(tenant.history || []);
     } else if (isCreate) {
       setForm(emptyForm());
       setIdCardPreview(null);
+      setAvatarPreview(null);
       setHistory([]);
       setActiveTab('info');
     }
     setIdCardFile(null);
+    setAvatarFile(null);
     setValidationErrors({});
   }, [tenant, isCreate]);
 
@@ -154,12 +160,22 @@ const TenantManagementPanel = ({
   const handleSave = (e) => {
     e.preventDefault();
     if (!validate()) return;
-    onSave?.(denormalizeTenantForApi(form), idCardFile);
+    onSave?.(denormalizeTenantForApi(form), idCardFile, avatarFile);
+  };
+
+  const isAllowedImage = (file) => {
+    const okType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
+    const okExt = /\.(png|jpe?g)$/i.test(file.name);
+    return okType || okExt;
   };
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!isAllowedImage(file)) {
+      setLocalError('Chỉ chấp nhận ảnh PNG hoặc JPG');
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
       setLocalError('Ảnh tối đa 5MB');
       return;
@@ -183,9 +199,13 @@ const TenantManagementPanel = ({
       setUploading(false);
     }
   };
-  const handleAvatarChange = (e) => {
+  const handleAvatarChange = async (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    if (!isAllowedImage(file)) {
+      setLocalError('Avatar chỉ chấp nhận PNG hoặc JPG');
+      return;
+    }
     if (file.size > 5 * 1024 * 1024) {
       setLocalError('Ảnh avatar tối đa 5MB');
       return;
@@ -194,6 +214,35 @@ const TenantManagementPanel = ({
     setAvatarFile(file);
     setAvatarPreview(URL.createObjectURL(file));
     setLocalError(null);
+
+    if (!isCreate && tenantId && onUploadAvatar) {
+      setUploading(true);
+      try {
+        await onUploadAvatar(tenantId, file);
+        setAvatarFile(null);
+        await onRefresh?.();
+      } catch (err) {
+        setLocalError(err.response?.data?.message || 'Lỗi upload ảnh đại diện');
+      } finally {
+        setUploading(false);
+      }
+    }
+  };
+
+  const handleDeleteIdCardImage = async () => {
+    if (!tenantId || !onDeleteIdCard) return;
+    setUploading(true);
+    setLocalError(null);
+    try {
+      await onDeleteIdCard(tenantId);
+      setIdCardFile(null);
+      setIdCardPreview(null);
+      await onRefresh?.();
+    } catch (err) {
+      setLocalError(err.response?.data?.message || 'Lỗi khi xóa ảnh CCCD');
+    } finally {
+      setUploading(false);
+    }
   };
 
   if (!tenant && !isCreate) {
@@ -209,6 +258,10 @@ const TenantManagementPanel = ({
   }
 
   const cccdDisplay = idCardPreview || resolveMediaUrl(tenant?.idCardImage);
+  const avatarDisplay =
+    avatarPreview ||
+    resolveMediaUrl(tenant?.avatar) ||
+    (tenant?.fullName ? getDefaultAvatar(tenant.fullName) : null);
 
   return (
     <aside className="flex h-full max-h-[calc(100vh-10rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] lg:min-h-[600px]">
@@ -216,28 +269,28 @@ const TenantManagementPanel = ({
       <div className="border-b border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-4">
-            <div className="relative flex-shrink-0">
+            <div className="relative shrink-0">
               <img
-                src={
-                  avatarPreview ||
-                  tenant?.avatar ||
-                  (tenant?.fullName ? `https://ui-avatars.com/api/?name=${encodeURIComponent(tenant.fullName)}&background=6B46C1&color=fff&size=128` : null)
-                }
+                src={avatarDisplay}
                 alt={tenant?.fullName || 'Avatar'}
-                className="h-16 w-16 rounded-2xl object-cover border border-hairline-cloud shadow-md"
+                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-cover shadow-md"
                 onError={(e) => {
-                  e.target.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(tenant?.fullName || 'U')}&background=6B46C1&color=fff`;
+                  e.target.src = getDefaultAvatar(tenant?.fullName || 'U');
                 }}
               />
 
               {!isCreate && tenantId && (
-                <label className="absolute -bottom-1 -right-1 cursor-pointer rounded-full bg-surface-press p-1.5 shadow-lg hover:bg-accent-violet transition">
-                  <Upload size={16} />   {/* Đổi từ Camera sang Upload cho nhất quán */}
+                <label
+                  className={`absolute -bottom-1 -right-1 cursor-pointer rounded-full bg-accent-lime p-2 text-ink-deep shadow-lg transition hover:opacity-90 ${uploading ? 'pointer-events-none opacity-60' : ''}`}
+                  title="Tải ảnh đại diện (PNG/JPG)"
+                >
+                  <Upload size={18} />
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/png,image/jpeg,.png,.jpg,.jpeg"
                     onChange={handleAvatarChange}
                     className="hidden"
+                    disabled={uploading}
                   />
                 </label>
               )}
@@ -257,14 +310,13 @@ const TenantManagementPanel = ({
             </div>
           </div>
 
-          {/* Nút xóa và đóng giữ nguyên */}
           <div className="flex gap-1">
-            {!isCreate && tenantId && (
+            {!isCreate && tenantId && activeTab !== 'cccd' && (
               <button
                 type="button"
                 onClick={() => onDelete?.(tenantId)}
                 className="rounded-md p-2 text-accent-pink hover:bg-on-dark-faint"
-                title="Xóa khách"
+                title="Xóa khách thuê"
               >
                 <Trash2 size={18} />
               </button>
@@ -480,8 +532,20 @@ const TenantManagementPanel = ({
             {activeTab === 'cccd' && !isCreate && (
               <div className="space-y-4">
                 {cccdDisplay ? (
-                  <div className="overflow-hidden rounded-xl border border-hairline-cloud">
+                  <div className="relative overflow-hidden rounded-xl border border-hairline-cloud">
                     <img src={cccdDisplay} alt="CCCD" className="max-h-64 w-full object-contain bg-surface-press" />
+                    {cccdDisplay && tenant?.idCardImage && !idCardFile && onDeleteIdCard && (
+                      <button
+                        type="button"
+                        onClick={handleDeleteIdCardImage}
+                        disabled={uploading}
+                        className="absolute right-2 top-2 flex items-center gap-1 rounded-lg bg-accent-pink/90 px-2.5 py-1.5 text-xs font-semibold text-on-primary shadow hover:opacity-90"
+                        title="Chỉ xóa ảnh CCCD"
+                      >
+                        <Trash2 size={14} />
+                        Xóa ảnh
+                      </button>
+                    )}
                   </div>
                 ) : (
                   <p className="text-center text-sm text-muted">Chưa có ảnh CCCD</p>
@@ -490,7 +554,12 @@ const TenantManagementPanel = ({
                   <Upload className="text-accent-violet-mid" size={28} />
                   <span className="text-sm font-medium text-ink-deep">Chọn ảnh CCCD</span>
                   <span className="text-xs text-muted">PNG, JPG — tối đa 5MB</span>
-                  <input type="file" accept="image/*" onChange={handleImageChange} className="hidden" />
+                  <input
+                    type="file"
+                    accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                    onChange={handleImageChange}
+                    className="hidden"
+                  />
                 </label>
                 {idCardFile && (
                   <button
