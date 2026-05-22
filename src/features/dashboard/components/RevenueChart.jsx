@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { BanknoteArrowUp } from 'lucide-react';
-import { formatCompactCurrency, formatCurrency } from '../utils/dashboardFormat';
+import { formatCurrency } from '../utils/dashboardFormat';
 
 const itemVariants = {
   hidden: { opacity: 0, y: 18 },
@@ -23,7 +23,7 @@ const RevenueChart = ({ monthlyRevenue, totalDebt }) => {
     },
     {
       key: 'debt',
-      label: 'Công nợ còn lại',
+      label: 'Cần thu tháng này',
       amount: debtAmount,
       color: 'linear-gradient(90deg, #ff9abb 0%, #d94d7e 100%)',
       toneClass: 'text-accent-pink',
@@ -38,16 +38,15 @@ const RevenueChart = ({ monthlyRevenue, totalDebt }) => {
         </div>
         <div>
           <h3 className="text-xl font-bold text-ink-deep">Tiền tháng này</h3>
-          <p className="text-sm text-muted">Chỉ hiển thị số tiền đã lên hóa đơn và phần công nợ còn lại để dễ nhìn nhanh.</p>
         </div>
       </div>
 
       <div className="space-y-4">
         {rows.map((row) => (
           <div key={row.key} className="dashboard-money-row">
-            <div className="flex items-center justify-between gap-4">
+            <div className="dashboard-money-row__header">
               <p className="text-base font-semibold text-ink-deep">{row.label}</p>
-              <p className={`text-lg font-bold ${row.toneClass}`}>{formatCompactCurrency(row.amount)}</p>
+              <p className={`dashboard-money-row__value ${row.toneClass}`}>{formatCurrency(row.amount)}</p>
             </div>
             <div className="dashboard-money-row__bar">
               <motion.div
@@ -58,29 +57,16 @@ const RevenueChart = ({ monthlyRevenue, totalDebt }) => {
                 style={{ background: row.color }}
               />
             </div>
-            <p className="text-sm text-muted">{formatCurrency(row.amount)}</p>
           </div>
         ))}
       </div>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-2">
+      <div className="mt-6">
         <div className="dashboard-legend-card">
           <div>
-            <p className="text-sm font-semibold text-muted">Ước tính đã thu</p>
-            <p className="mt-2 text-xl font-bold text-[#2f7f32]">{formatCompactCurrency(estimatedCollected)}</p>
+            <p className="text-sm font-semibold text-muted">Đã thu tháng này</p>
+            <p className="mt-2 text-xl font-bold text-[#2f7f32]">{formatCurrency(estimatedCollected)}</p>
           </div>
-          <p className="text-sm text-muted">{formatCurrency(estimatedCollected)}</p>
-        </div>
-        <div className="dashboard-legend-card">
-          <div>
-            <p className="text-sm font-semibold text-muted">Tình trạng hiện tại</p>
-            <p className="mt-2 text-xl font-bold text-ink-deep">
-              {debtAmount > 0 ? 'Còn khách chưa trả đủ' : 'Đã thu ổn'}
-            </p>
-          </div>
-          <p className="text-sm text-muted">
-            {debtAmount > 0 ? `Còn ${formatCurrency(debtAmount)} cần theo dõi` : 'Chưa có khoản nợ nổi bật'}
-          </p>
         </div>
       </div>
     </motion.section>

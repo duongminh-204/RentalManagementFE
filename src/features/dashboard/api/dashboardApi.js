@@ -61,6 +61,22 @@ export const downloadDashboardImportTemplate = async () => {
   };
 };
 
+export const exportDashboardExcel = async (month, year) => {
+  const response = await api.get('/dashboard/export-excel', {
+    params: { month, year },
+    responseType: 'blob',
+  });
+
+  const contentDisposition = response.headers['content-disposition'] || '';
+  const matchedFileName = contentDisposition.match(/filename="?([^"]+)"?/i);
+  const fileName = matchedFileName?.[1] || `dashboard-${year}-${month}.xlsx`;
+
+  return {
+    blob: response.data,
+    fileName,
+  };
+};
+
 export const getAllDashboardData = async (month, year) => {
   const [stats, roomStats, debtInfo, revenue] = await Promise.all([
     getDashboardStats(),

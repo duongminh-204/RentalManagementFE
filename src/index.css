@@ -799,9 +799,24 @@
     background: #f9f9fc;
   }
 
+  .dashboard-money-row__header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+  }
+
+  .dashboard-money-row__value {
+    flex-shrink: 0;
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: right;
+  }
+
   .dashboard-money-row__bar {
     height: 14px;
-    margin-top: 12px;
     overflow: hidden;
     border-radius: 999px;
     background: #eceaf3;

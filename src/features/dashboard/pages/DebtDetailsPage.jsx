@@ -22,12 +22,12 @@ const DebtDetailsPage = () => {
         >
           <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <span className="dashboard-hero-badge">Chi tiết công nợ</span>
+              <span className="dashboard-hero-badge">Chi tiết cần thu</span>
               <h1 className="mt-4 text-3xl font-bold leading-tight text-ink-deep sm:text-4xl">
                 Danh sách cần nhắc thu tiền
               </h1>
               <p className="mt-4 max-w-3xl text-lg leading-8 text-muted">
-                Trang này gom các khoản công nợ còn lại để chủ trọ biết nên ưu tiên nhắc ai trước.
+                Trang này gom các khoản còn phải thu để chủ trọ biết nên ưu tiên nhắc ai trước.
               </p>
             </div>
             <Link to="/dashboard" className="dashboard-action-button">
@@ -37,7 +37,7 @@ const DebtDetailsPage = () => {
 
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             <div className="dashboard-hero-metric">
-              <p className="text-sm font-semibold text-muted">Tổng công nợ</p>
+              <p className="text-sm font-semibold text-muted">Tổng cần thu</p>
               <p className="mt-2 text-2xl font-bold text-accent-pink">{formatCompactCurrency(totalDebt)}</p>
               <p className="mt-1 text-sm text-muted">{formatCurrency(totalDebt)}</p>
             </div>
@@ -49,10 +49,10 @@ const DebtDetailsPage = () => {
             <div className="dashboard-hero-metric">
               <p className="text-sm font-semibold text-muted">Gợi ý xử lý</p>
               <p className="mt-2 text-2xl font-bold text-ink-deep">
-                {hasDebt ? 'Nhắc theo thứ tự nợ cao' : 'Chưa có nợ'}
+                {hasDebt ? 'Nhắc theo thứ tự số tiền cao' : 'Chưa có khoản cần nhắc'}
               </p>
               <p className="mt-1 text-sm text-muted">
-                {hasDebt ? 'Ưu tiên các phòng đang nợ nhiều hơn trước.' : 'Hiện chưa có khoản cần nhắc.'}
+                {hasDebt ? 'Ưu tiên các phòng đang còn phải thu nhiều hơn trước.' : 'Hiện chưa có khoản nào cần xử lý.'}
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ const DebtDetailsPage = () => {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="h-12 w-12 animate-spin rounded-full border-2 border-hairline-cloud border-t-primary" />
-            <p className="mt-4 text-base font-semibold text-muted">Đang tải chi tiết công nợ...</p>
+            <p className="mt-4 text-base font-semibold text-muted">Đang tải chi tiết cần thu...</p>
           </div>
         ) : (
           <section className="mt-8 grid gap-5 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.3fr)]">
@@ -78,7 +78,7 @@ const DebtDetailsPage = () => {
 
               {error ? (
                 <div className="rounded-2xl border border-[#f3c3d3] bg-[#fff6f9] px-4 py-4 text-sm text-muted">
-                  Không tải được dữ liệu công nợ. Chi tiết lỗi: {error}
+                  Không tải được dữ liệu cần thu. Chi tiết lỗi: {error}
                 </div>
               ) : hasDebt ? (
                 <div className="space-y-4">
@@ -88,7 +88,7 @@ const DebtDetailsPage = () => {
                     <p className="mt-1 text-sm text-muted">{formatCurrency(totalDebt)}</p>
                   </div>
                   <div className="dashboard-callout">
-                    <p className="text-sm font-semibold text-muted">Số khách / phòng còn nợ</p>
+                    <p className="text-sm font-semibold text-muted">Số khách / phòng chưa thanh toán đủ</p>
                     <p className="mt-2 text-3xl font-bold text-ink-deep">{formatCount(unpaidTenantsCount)}</p>
                     <p className="mt-1 text-sm text-muted">Nên đối chiếu trước khi đến hạn thu tiếp theo.</p>
                   </div>
@@ -98,7 +98,7 @@ const DebtDetailsPage = () => {
                   <div className="flex items-start gap-3">
                     <CircleCheckBig className="mt-0.5 h-5 w-5 shrink-0 text-[#4d7a14]" />
                     <div>
-                      <p className="text-base font-bold text-ink-deep">Hiện chưa có công nợ cần xử lý.</p>
+                      <p className="text-base font-bold text-ink-deep">Hiện chưa có khoản cần xử lý.</p>
                       <p className="mt-1 text-sm leading-6 text-muted">
                         Khi có khách chưa thanh toán, danh sách cần nhắc sẽ xuất hiện ở đây.
                       </p>
@@ -115,7 +115,7 @@ const DebtDetailsPage = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-ink-deep">Danh sách cần nhắc trước</h2>
-                  <p className="text-sm text-muted">Các phòng đang nợ nhiều sẽ được xếp lên đầu để dễ theo dõi.</p>
+                  <p className="text-sm text-muted">Các phòng còn phải thu nhiều sẽ được xếp lên đầu để dễ theo dõi.</p>
                 </div>
               </div>
 
@@ -141,9 +141,7 @@ const DebtDetailsPage = () => {
                 </div>
               ) : (
                 <div className="rounded-2xl border border-dashed border-[#f3c3d3] bg-[#fff8fb] px-4 py-5">
-                  <p className="text-sm leading-6 text-muted">
-                    Chưa có danh sách người nợ nổi bật để hiển thị.
-                  </p>
+                  <p className="text-sm leading-6 text-muted">Chưa có danh sách người cần nhắc nổi bật để hiển thị.</p>
                 </div>
               )}
             </article>

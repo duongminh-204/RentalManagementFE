@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
 import { DoorOpen, Home, Wrench } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { formatCount } from '../utils/dashboardFormat';
 
 const itemVariants = {
@@ -11,28 +12,31 @@ const RoomStatusChart = ({ totalRooms, occupiedRooms, emptyRooms }) => {
   const maintenanceRooms = Math.max(totalRooms - occupiedRooms - emptyRooms, 0);
   const segments = [
     {
-      label: 'Dang cho thue',
+      label: 'dang-cho-thue',
       displayLabel: 'Đang cho thuê',
       value: occupiedRooms,
       color: '#6fa12a',
       softColor: '#e7f6d5',
       icon: Home,
+      to: '/rooms?view=table&status=occupied',
     },
     {
-      label: 'Phong trong',
+      label: 'phong-trong',
       displayLabel: 'Phòng trống',
       value: emptyRooms,
       color: '#d89b36',
       softColor: '#ffefcf',
       icon: DoorOpen,
+      to: '/rooms?view=table&status=vacant',
     },
     {
-      label: 'Bao tri',
+      label: 'bao-tri',
       displayLabel: 'Bảo trì',
       value: maintenanceRooms,
       color: '#7b6cf5',
       softColor: '#eef1ff',
       icon: Wrench,
+      to: '/rooms?view=table&status=maintenance',
     },
   ].map((segment) => ({
     ...segment,
@@ -65,14 +69,18 @@ const RoomStatusChart = ({ totalRooms, occupiedRooms, emptyRooms }) => {
 
   return (
     <motion.section variants={itemVariants} className="dashboard-section-card">
-      <div className="mb-6 flex items-center gap-3">
-        <div className="rounded-2xl bg-[#eef1ff] p-3 text-accent-violet">
-          <Home className="h-6 w-6" />
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-[#eef1ff] p-3 text-accent-violet">
+            <Home className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-ink-deep">Biểu đồ lấp đầy phòng</h3>
+          </div>
         </div>
-        <div>
-          <h3 className="text-xl font-bold text-ink-deep">Biểu đồ lấp đầy phòng</h3>
-          <p className="text-sm text-muted">Xem nhanh khu trọ đang cho thuê, còn trống hay đang bảo trì.</p>
-        </div>
+        <Link to="/rooms?view=table&status=all" className="text-sm font-bold text-accent-violet-deep">
+          Tất cả phòng
+        </Link>
       </div>
 
       <div className="dashboard-ring-layout">
@@ -100,7 +108,7 @@ const RoomStatusChart = ({ totalRooms, occupiedRooms, emptyRooms }) => {
             const Icon = segment.icon;
 
             return (
-              <div key={segment.label} className="dashboard-legend-card">
+              <Link key={segment.label} to={segment.to} className="dashboard-legend-card dashboard-stat-card--link">
                 <div className="flex items-center gap-3">
                   <span
                     className="dashboard-progress-icon"
@@ -116,7 +124,7 @@ const RoomStatusChart = ({ totalRooms, occupiedRooms, emptyRooms }) => {
                 <p className="text-lg font-bold" style={{ color: segment.color }}>
                   {segment.percentage}%
                 </p>
-              </div>
+              </Link>
             );
           })}
         </div>

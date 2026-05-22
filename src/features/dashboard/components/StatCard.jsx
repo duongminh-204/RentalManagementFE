@@ -30,7 +30,7 @@ const tones = {
   },
 };
 
-const StatCard = ({ title, value, subtitle, icon: Icon, tone = 'neutral', badge, to }) => {
+const StatCard = ({ title, value, icon: Icon, tone = 'neutral', badge, to }) => {
   const palette = tones[tone] || tones.neutral;
   const isDark = tone === 'dark';
   const cardClassName = `dashboard-stat-card ${palette.card}${to ? ' dashboard-stat-card--link' : ''}`;
@@ -51,9 +51,6 @@ const StatCard = ({ title, value, subtitle, icon: Icon, tone = 'neutral', badge,
           <Icon className="h-6 w-6" />
         </div>
       </div>
-
-      <p className={`text-sm leading-6 ${isDark ? 'text-on-dark-muted' : 'text-muted'}`}>{subtitle}</p>
-
       <div className="mt-4 flex items-center justify-between gap-3">
         {badge ? (
           <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${palette.badge}`}>{badge}</span>
