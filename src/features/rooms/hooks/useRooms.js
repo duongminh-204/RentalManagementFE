@@ -19,7 +19,10 @@ export const useRooms = () => {
     setLoading(true);
     setError(null);
 
-    console.log(" Gọi API: http://localhost:5193/api/room");
+    const apiBaseUrl =
+      import.meta.env.VITE_API_BASE_URL ||
+      `${import.meta.env.VITE_API_ORIGIN || 'http://localhost:8090'}/api`;
+    console.log(` Gọi API: ${apiBaseUrl.replace(/\/+$/, '')}/room`);
 
     const payload = await roomsApi.getAllRooms();
     

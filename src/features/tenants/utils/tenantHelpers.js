@@ -1,4 +1,7 @@
-const API_ORIGIN = 'http://localhost:5193';
+const API_ORIGIN =
+  import.meta.env.VITE_API_ORIGIN ||
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api').replace(/\/api\/?$/, '') ||
+  'http://localhost:8090';
 
 export const resolveMediaUrl = (url) => {
   if (!url) return null;
