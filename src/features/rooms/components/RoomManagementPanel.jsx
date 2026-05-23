@@ -25,6 +25,8 @@ import {
   isPdfUrl,
 } from '../../contracts/utils/contractFileHelpers';
 import * as roomMgmtApi from '../api/roomManagementApi';
+import * as buildingApi from '../../buildings/api/buildingsApi';
+import BuildingManager from '../../buildings/components/BuildingManager';
 import {
   getContracts,
   getContractsByRoomId,
@@ -104,6 +106,10 @@ const RoomManagementPanel = ({
     status: 'Working',
     note: '',
   });
+  const [buildings, setBuildings] = useState([]);
+  const [buildingsLoading, setBuildingsLoading] = useState(false);
+  const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
+  const [buildingError, setBuildingError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [roomContracts, setRoomContracts] = useState([]);
@@ -138,6 +144,15 @@ const RoomManagementPanel = ({
     }
   }, [room, isCreate]);
 
+  useEffect(() => {
+    if (isCreate && buildings.length > 0 && !buildings.some((b) => b.buildingId === info.buildingId)) {
+      setInfo((prev) => ({
+        ...prev,
+        buildingId: buildings[0].buildingId,
+      }));
+    }
+  }, [buildings, isCreate, info.buildingId]);
+
   const loadCatalogs = useCallback(async () => {
     try {
       const services = await roomMgmtApi.getServiceCatalog();
@@ -147,9 +162,27 @@ const RoomManagementPanel = ({
     }
   }, []);
 
+  const loadBuildings = useCallback(async () => {
+    setBuildingsLoading(true);
+    setBuildingError(null);
+    try {
+      const data = await buildingApi.getAllBuildings();
+      setBuildings(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setBuildingError(e.response?.data?.message || 'Không thể tải danh sách tòa nhà');
+    } finally {
+      setBuildingsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (canManageExtras) loadCatalogs();
   }, [canManageExtras, loadCatalogs]);
+
+  useEffect(() => {
+    loadBuildings();
+  }, [loadBuildings]);
 
   const loadRoomContracts = useCallback(async () => {
     if (!roomId) {
@@ -328,7 +361,7 @@ const RoomManagementPanel = ({
     e.preventDefault();
     onSaveRoom?.({
       roomNumber: info.roomNumber,
-      buildingId: Number(info.buildingId),
+      buildingId: info.buildingId ? Number(info.buildingId) : null,
       rentalPrice: Number(info.rentalPrice),
       electricityPrice: Number(info.electricPrice),
       electricPrice: Number(info.electricPrice),
@@ -494,32 +527,62 @@ const RoomManagementPanel = ({
             )}
 
             {activeTab === 'info' && (
-              <form onSubmit={handleSaveInfo} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
-                    Tên / số phòng *
-                  </label>
-                  <input
-                    name="roomNumber"
-                    value={info.roomNumber}
-                    onChange={handleInfoChange}
-                    className="text-input"
-                    required
-                  />
-                </div>
+              <>
+                <form onSubmit={handleSaveInfo} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
+                      Tên / số phòng *
+                    </label>
+                    <input
+                      name="roomNumber"
+                      value={info.roomNumber}
+                      onChange={handleInfoChange}
+                      className="text-input"
+                      required
+                    />
+                  </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
                       Tòa nhà
                     </label>
-                    <input
-                      type="number"
-                      name="buildingId"
-                      value={info.buildingId}
-                      onChange={handleInfoChange}
-                      className="text-input"
-                      min={1}
-                    />
+                    <div className="flex gap-2">
+                      {buildings.length > 0 ? (
+                        <select
+                          name="buildingId"
+                          value={info.buildingId ?? ''}
+                          onChange={handleInfoChange}
+                          className="text-input flex-1"
+                        >
+                          <option value="">Chọn tòa nhà</option>
+                          {buildings.map((building) => (
+                            <option key={building.buildingId} value={building.buildingId}>
+                              {building.buildingName}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          name="buildingId"
+                          value={info.buildingId}
+                          onChange={handleInfoChange}
+                          className="text-input flex-1"
+                          min={1}
+                          placeholder="ID tòa nhà"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setBuildingManagerOpen((prev) => !prev)}
+                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
+                      >
+                        {buildingManagerOpen ? 'Ẩn' : 'Quản lý'}
+                      </button>
+                    </div>
+                    {buildingError && (
+                      <p className="mt-1 text-xs text-accent-pink">{buildingError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
@@ -800,7 +863,22 @@ const RoomManagementPanel = ({
                   {saveLoading ? 'Đang lưu…' : isCreate ? 'Tạo phòng' : 'Lưu thông tin'}
                 </button>
               </form>
-            )}
+
+              {buildingManagerOpen && (
+                <div className="mt-6">
+                  <BuildingManager
+                    buildings={buildings}
+                    loading={buildingsLoading}
+                    selectedBuildingId={info.buildingId}
+                    onSelectBuilding={(buildingId) =>
+                      setInfo((prev) => ({ ...prev, buildingId }))
+                    }
+                    onBuildingsUpdated={loadBuildings}
+                  />
+                </div>
+              )}
+            </>
+          )}
 
             {activeTab === 'images' && canManageExtras && (
               <div className="space-y-4">
