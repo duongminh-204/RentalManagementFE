@@ -1,56 +1,56 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
+import { getRoleHomePath } from '../../../hooks/useAuth';
 
-const roleHomePaths = {
-  Admin: '/admin/excel-template',
-  Owner: '/dashboard',
+const normalizeLoginResponse = (res) => {
+  const result = res?.data?.data || res?.data || res;
+  return {
+    token: result?.token || result?.accessToken || result?.access_token || result?.authToken,
+    user: result?.user || result?.data || result,
+  };
 };
 
 export const useLogin = () => {
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const navigate = useNavigate();
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-  const login = async (phoneOrEmail, password) => {
-    setLoading(true);
-    setError('');
+    const login = async (phoneOrEmail, password) => {
+        setLoading(true);
+        setError('');
 
-    try {
-      if (!phoneOrEmail || !password) {
-        throw new Error('Vui lòng nhập email hoặc số điện thoại và mật khẩu.');
-      }
+        try {
+            if (!phoneOrEmail || !password) {
+                throw new Error('Vui lòng nhập email/số điện thoại và mật khẩu');
+            }
 
-      const res = await authApi.login({ email: phoneOrEmail, password });
+            const res = await authApi.login({ email: phoneOrEmail, password });
+            const { token, user } = normalizeLoginResponse(res);
 
-      if (!res?.token) {
-        throw new Error('Server không trả về token. Vui lòng thử lại.');
-      }
+            if (!token) {
+                throw new Error('Server không trả về token. Vui lòng thử lại.');
+            }
 
-      const user = res.user || {};
-      const destination = roleHomePaths[user.role];
+            localStorage.setItem('token', token);
+            localStorage.setItem('user', JSON.stringify(user || {}));
 
-      if (!destination) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        throw new Error('Tài khoản này chưa được cấp quyền vào khu vực quản lý.');
-      }
+            const redirectPath = getRoleHomePath(user?.role || '');
+            navigate(redirectPath, { replace: true });
 
-      localStorage.setItem('token', res.token);
-      localStorage.setItem('user', JSON.stringify(user));
+        } catch (err) {
+            console.error('Login error details:', err);
 
-      navigate(destination, { replace: true });
-    } catch (err) {
-      const errorMessage =
-        err.response?.data?.message ||
-        err.message ||
-        'Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.';
+            const errorMessage = 
+                err.response?.data?.message || 
+                err.message || 
+                'Đăng nhập thất bại! Vui lòng kiểm tra lại thông tin.';
 
-      setError(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
+            setError(errorMessage);
+        } finally {
+            setLoading(false);   
+        }
+    };
 
-  return { login, loading, error };
+    return { login, loading, error };
 };

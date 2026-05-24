@@ -1,3 +1,5 @@
+const normalizeRole = (role) => String(role || '').trim().toLowerCase();
+
 export const getStoredUser = () => {
   try {
     const rawUser = localStorage.getItem('user');
@@ -9,8 +11,15 @@ export const getStoredUser = () => {
 
 export const getStoredRole = () => getStoredUser()?.role || '';
 
-export const isAdminRole = (role) => role === 'Admin';
-export const isOwnerRole = (role) => role === 'Owner';
+export const isAdminRole = (role) => normalizeRole(role) === 'admin';
+export const isOwnerRole = (role) => normalizeRole(role) === 'owner';
+
+export const getRoleHomePath = (role) => {
+  const normalizedRole = normalizeRole(role);
+  if (normalizedRole === 'admin') return '/admin/excel-template';
+  if (normalizedRole === 'owner') return '/dashboard';
+  return '/dashboard';
+};
 
 export const useAuth = () => {
   const token = localStorage.getItem('token');
