@@ -1,46 +1,96 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { ArrowRight } from 'lucide-react';
 
-const variants = {
-  violet: 'border-hairline-violet/30 bg-surface-press',
-  night: 'border-hairline-cloud bg-ink-deep text-on-primary',
-  lime: 'border-accent-lime/40 bg-accent-lime/10',
-  pink: 'border-accent-pink/30 bg-accent-pink/10',
+const tones = {
+  neutral: {
+    card: 'border-hairline-cloud bg-surface-light',
+    icon: 'bg-surface-press text-accent-violet',
+    badge: 'bg-surface-press text-ink-deep',
+  },
+  success: {
+    card: 'border-[#cfe7be] bg-[#f8fff0]',
+    icon: 'bg-[#e7f6d5] text-[#4d7a14]',
+    badge: 'bg-[#e7f6d5] text-[#4d7a14]',
+  },
+  warning: {
+    card: 'border-[#f0d6a8] bg-[#fff9ee]',
+    icon: 'bg-[#ffefcf] text-[#9a5a00]',
+    badge: 'bg-[#ffefcf] text-[#9a5a00]',
+  },
+  danger: {
+    card: 'border-[#f3c3d3] bg-[#fff5f8]',
+    icon: 'bg-[#ffe0ea] text-[#b33f69]',
+    badge: 'bg-[#ffe0ea] text-[#b33f69]',
+  },
+  dark: {
+    card: 'border-hairline-violet bg-ink-deep text-on-primary',
+    icon: 'bg-on-dark-faint text-accent-lime',
+    badge: 'bg-on-dark-faint text-on-primary',
+  },
 };
 
-const StatCard = ({ title, value, icon: Icon, trend, unit, variant = 'violet' }) => {
-  const isDark = variant === 'night';
-  const trendUp = trend >= 0;
-
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4 }}
-      className={`card-compact border transition-shadow hover:shadow-[var(--shadow-card)] ${variants[variant] || variants.violet}`}
-    >
-      <div className="flex items-start justify-between">
-        <div className="flex-1">
-          <p className={`text-sm font-medium ${isDark ? 'text-on-dark-muted' : 'text-muted'}`}>{title}</p>
-          <div className="mt-1 flex items-baseline gap-2">
-            <h3 className={`font-display text-2xl font-semibold sm:text-3xl ${isDark ? 'text-on-primary' : 'text-ink-deep'}`}>
-              {typeof value === 'number' ? value.toLocaleString('vi-VN') : value}
-            </h3>
-            <span className={`text-sm font-medium ${isDark ? 'text-on-dark-muted' : 'text-muted'}`}>{unit}</span>
-          </div>
-          {trend !== undefined && (
-            <div className={`mt-3 flex items-center gap-1 text-xs font-semibold ${trendUp ? 'text-accent-lime' : 'text-accent-pink'}`}>
-              {trendUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
-              {trend > 0 ? '+' : ''}{trend}%
-            </div>
-          )}
+const StatCard = ({ title, value, icon: Icon, tone = 'neutral', badge, to }) => {
+  const palette = tones[tone] || tones.neutral;
+  const isDark = tone === 'dark';
+  const cardClassName = `dashboard-stat-card ${palette.card}${to ? ' dashboard-stat-card--link' : ''}`;
+  const content = (
+    <>
+      <div className="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <p className={`text-sm font-semibold ${isDark ? 'text-on-dark-muted' : 'text-muted'}`}>
+            {title}
+          </p>
+          <p
+            className={`mt-3 text-3xl font-bold leading-none sm:text-4xl ${isDark ? 'text-on-primary' : 'text-ink-deep'}`}
+          >
+            {value}
+          </p>
         </div>
-        <div className={`rounded-lg p-3 ${isDark ? 'bg-surface-night' : 'bg-surface-light'}`}>
-          <Icon className={`h-6 w-6 ${isDark ? 'text-accent-lime' : 'text-accent-violet'}`} />
+        <div className={`rounded-2xl p-3 ${palette.icon}`}>
+          <Icon className="h-6 w-6" />
         </div>
       </div>
-    </motion.div>
+      <div className="mt-4 flex items-center justify-between gap-3">
+        {badge ? (
+          <span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${palette.badge}`}>{badge}</span>
+        ) : (
+          <span />
+        )}
+
+        {to ? (
+          <span className={`inline-flex items-center gap-1 text-xs font-bold ${isDark ? 'text-on-primary' : 'text-accent-violet-deep'}`}>
+            Xem chi tiết
+            <ArrowRight className="h-4 w-4" />
+          </span>
+        ) : null}
+      </div>
+    </>
+  );
+
+  if (to) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 18 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.35 }}
+      >
+        <Link to={to} className={cardClassName}>
+          {content}
+        </Link>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.article
+      initial={{ opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className={cardClassName}
+    >
+      {content}
+    </motion.article>
   );
 };
 

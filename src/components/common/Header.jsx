@@ -1,7 +1,19 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, LogOut, User, Home, Building2, Car, Users } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Building2,
+  Car,
+  FileSpreadsheet,
+  HandCoins,
+  Home,
+  LogOut,
+  Menu,
+  User,
+  Users,
+  X,
+} from 'lucide-react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { getStoredRole, getStoredUser, isAdminRole } from '../../hooks/useAuth';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -9,25 +21,38 @@ const Header = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const menuItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: Home },
-    { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
-    { label: 'Khách thuê', path: '/tenants', icon: Users },
-    { label: 'Phương tiện', path: '/vehicles', icon: Car },
-  ];
+  const role = getStoredRole();
+  const user = getStoredUser();
+  const isAdmin = isAdminRole(role);
+  const displayName = user?.fullName || user?.FullName || 'Tài khoản';
+
+  const menuItems = isAdmin
+    ? [
+        { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
+        { label: 'Dashboard', path: '/dashboard', icon: Home },
+      ]
+    : [
+        { label: 'Tổng quan', path: '/dashboard', icon: Home },
+        { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+        { label: 'Công nợ', path: '/debts', icon: HandCoins },
+        { label: 'Khách thuê', path: '/tenants', icon: Users },
+        { label: 'Phương tiện', path: '/vehicles', icon: Car },
+      ];
 
   const handleLogout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('user');
     navigate('/login');
   };
 
   const isActive = (path) => location.pathname === path;
+  const homePath = isAdmin ? '/admin/excel-template' : '/dashboard';
 
   return (
     <header className="sticky top-0 z-50 border-b border-hairline-cloud bg-surface-light">
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
-          <Link to="/dashboard" className="group flex items-center gap-3">
+          <Link to={homePath} className="group flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-105">
               <Building2 className="text-on-primary" size={22} />
             </div>
@@ -36,7 +61,7 @@ const Header = () => {
                 RentalManagement
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
-                Quản lý phòng trọ
+                {isAdmin ? 'Quản trị hệ thống' : 'Quản lý phòng trọ'}
               </p>
             </div>
           </Link>
@@ -67,7 +92,7 @@ const Header = () => {
                 <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-press text-ink-deep">
                   <User size={18} />
                 </div>
-                <span className="text-sm font-medium">Tài khoản</span>
+                <span className="text-sm font-medium">{displayName}</span>
               </button>
 
               <AnimatePresence>
@@ -76,8 +101,14 @@ const Header = () => {
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -8 }}
-                    className="absolute right-0 mt-2 w-48 overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)]"
+                    className="absolute right-0 mt-2 w-56 overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)]"
                   >
+                    <div className="border-b border-hairline-cloud px-4 py-3">
+                      <p className="text-sm font-semibold text-ink-deep">{displayName}</p>
+                      <p className="text-xs font-medium uppercase tracking-wide text-accent-violet-mid">
+                        {role || 'Chưa có quyền'}
+                      </p>
+                    </div>
                     <button
                       type="button"
                       onClick={handleLogout}

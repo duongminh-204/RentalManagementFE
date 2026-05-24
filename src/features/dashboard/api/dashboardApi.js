@@ -1,62 +1,94 @@
 import api from '../../../utils/api';
-// Lấy dữ liệu dashboard
+
 export const getDashboardStats = async () => {
-  try {
-    const response = await api.get('/dashboard/stats');
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get('/dashboard/stats');
+  return response.data;
 };
 
-// Lấy thống kê phòng
 export const getRoomStats = async () => {
-  try {
-    const response = await api.get('/dashboard/rooms/stats');
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get('/dashboard/rooms/stats');
+  return response.data;
 };
 
-// Lấy thông tin công nợ
 export const getDebtInfo = async () => {
-  try {
-    const response = await api.get('/dashboard/debt/info');
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get('/dashboard/debt/info');
+  return response.data;
 };
 
-// Lấy doanh thu tháng
 export const getMonthlyRevenue = async (month, year) => {
-  try {
-    const response = await api.get(`/dashboard/revenue/${month}/${year}`);
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
+  const response = await api.get(`/dashboard/revenue/${month}/${year}`);
+  return response.data;
 };
 
-// Lấy tất cả dữ liệu dashboard (gọi tất cả API cùng lúc)
+export const importDashboardExcel = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/dashboard/import-excel', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};
+
+export const uploadDashboardTemplateFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await api.post('/dashboard/import/template-file', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+
+  return response.data;
+};
+
+export const downloadDashboardImportTemplate = async () => {
+  const response = await api.get('/dashboard/import/template', {
+    responseType: 'blob',
+  });
+
+  const contentDisposition = response.headers['content-disposition'] || '';
+  const matchedFileName = contentDisposition.match(/filename="?([^"]+)"?/i);
+  const fileName = matchedFileName?.[1] || 'dashboard-import-template.xlsx';
+
+  return {
+    blob: response.data,
+    fileName,
+  };
+};
+
+export const exportDashboardExcel = async (month, year) => {
+  const response = await api.get('/dashboard/export-excel', {
+    params: { month, year },
+    responseType: 'blob',
+  });
+
+  const contentDisposition = response.headers['content-disposition'] || '';
+  const matchedFileName = contentDisposition.match(/filename="?([^"]+)"?/i);
+  const fileName = matchedFileName?.[1] || `dashboard-${year}-${month}.xlsx`;
+
+  return {
+    blob: response.data,
+    fileName,
+  };
+};
+
 export const getAllDashboardData = async (month, year) => {
-  try {
-    const [stats, roomStats, debtInfo, revenue] = await Promise.all([
-      getDashboardStats(),
-      getRoomStats(),
-      getDebtInfo(),
-      getMonthlyRevenue(month, year)
-    ]);
+  const [stats, roomStats, debtInfo, revenue] = await Promise.all([
+    getDashboardStats(),
+    getRoomStats(),
+    getDebtInfo(),
+    getMonthlyRevenue(month, year),
+  ]);
 
-    return {
-      stats,
-      roomStats,
-      debtInfo,
-      revenue
-    };
-  } catch (error) {
-    throw error;
-  }
+  return {
+    stats,
+    roomStats,
+    debtInfo,
+    revenue,
+  };
 };
- 

@@ -1,67 +1,135 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { PieChart } from 'lucide-react';
+import { DoorOpen, Home, Wrench } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { formatCount } from '../utils/dashboardFormat';
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0 },
 };
 
 const RoomStatusChart = ({ totalRooms, occupiedRooms, emptyRooms }) => {
-  const occupiedPercentage = totalRooms > 0 ? (occupiedRooms / totalRooms) * 100 : 0;
-  const emptyPercentage = totalRooms > 0 ? (emptyRooms / totalRooms) * 100 : 0;
+  const maintenanceRooms = Math.max(totalRooms - occupiedRooms - emptyRooms, 0);
+  const segments = [
+    {
+      label: 'dang-cho-thue',
+      displayLabel: 'Đang cho thuê',
+      value: occupiedRooms,
+      color: '#6fa12a',
+      softColor: '#e7f6d5',
+      icon: Home,
+      to: '/rooms?view=table&status=occupied',
+    },
+    {
+      label: 'phong-trong',
+      displayLabel: 'Phòng trống',
+      value: emptyRooms,
+      color: '#d89b36',
+      softColor: '#ffefcf',
+      icon: DoorOpen,
+      to: '/rooms?view=table&status=vacant',
+    },
+    {
+      label: 'bao-tri',
+      displayLabel: 'Bảo trì',
+      value: maintenanceRooms,
+      color: '#7b6cf5',
+      softColor: '#eef1ff',
+      icon: Wrench,
+      to: '/rooms?view=table&status=maintenance',
+    },
+  ].map((segment) => ({
+    ...segment,
+    percentage: totalRooms > 0 ? Math.round((segment.value / totalRooms) * 100) : 0,
+  }));
+
+  const occupancyRate = totalRooms > 0 ? Math.round((occupiedRooms / totalRooms) * 100) : 0;
+  const ringBackground = (() => {
+    if (totalRooms <= 0) {
+      return 'conic-gradient(#eceaf3 0deg 360deg)';
+    }
+
+    let currentDegree = 0;
+    const parts = segments
+      .filter((segment) => segment.value > 0)
+      .map((segment) => {
+        const segmentDegree = (segment.value / totalRooms) * 360;
+        const start = currentDegree;
+        const end = currentDegree + segmentDegree;
+        currentDegree = end;
+        return `${segment.color} ${start}deg ${end}deg`;
+      });
+
+    if (currentDegree < 360) {
+      parts.push(`#eceaf3 ${currentDegree}deg 360deg`);
+    }
+
+    return `conic-gradient(${parts.join(', ')})`;
+  })();
 
   return (
-    <motion.div variants={itemVariants} className="card-compact">
-      <div className="mb-6 flex items-center gap-2">
-        <div className="rounded-lg bg-surface-press p-2">
-          <PieChart className="h-5 w-5 text-accent-violet" />
+    <motion.section variants={itemVariants} className="dashboard-section-card">
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <div className="rounded-2xl bg-[#eef1ff] p-3 text-accent-violet">
+            <Home className="h-6 w-6" />
+          </div>
+          <div>
+            <h3 className="text-xl font-bold text-ink-deep">Biểu đồ lấp đầy phòng</h3>
+          </div>
         </div>
-        <h3 className="font-display text-lg font-semibold text-ink-deep">Tỷ lệ lấp đầy</h3>
+        <Link to="/rooms?view=table&status=all" className="text-sm font-bold text-accent-violet-deep">
+          Tất cả phòng
+        </Link>
       </div>
 
-      <div className="space-y-6">
-        <div>
-          <div className="mb-2 flex items-end justify-between">
-            <div>
-              <span className="text-sm font-semibold text-ink-deep">Phòng đang thuê</span>
-              <span className="ml-2 text-xs font-medium text-muted">({occupiedRooms}/{totalRooms})</span>
+      <div className="dashboard-ring-layout">
+        <div className="dashboard-ring-panel">
+          <div
+            className="dashboard-donut-chart"
+            style={{ background: ringBackground }}
+            role="img"
+            aria-label={`Tỷ lệ lấp đầy ${occupancyRate} phần trăm`}
+          >
+            <div className="dashboard-donut-chart__center">
+              <span className="dashboard-donut-chart__value">{occupancyRate}%</span>
+              <span className="dashboard-donut-chart__label">đang thuê</span>
             </div>
-            <span className="text-sm font-bold text-accent-lime">{occupiedPercentage.toFixed(1)}%</span>
           </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-press">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${occupiedPercentage}%` }}
-              transition={{ duration: 1, delay: 0.2 }}
-              className="h-full rounded-full bg-accent-lime"
-            />
-          </div>
+          <p className="dashboard-ring-caption">
+            {totalRooms > 0
+              ? `${formatCount(occupiedRooms)}/${formatCount(totalRooms)} phòng đang tạo doanh thu`
+              : 'Chưa có dữ liệu phòng để hiển thị biểu đồ'}
+          </p>
         </div>
 
-        <div>
-          <div className="mb-2 flex items-end justify-between">
-            <div>
-              <span className="text-sm font-semibold text-ink-deep">Phòng trống</span>
-              <span className="ml-2 text-xs font-medium text-muted">({emptyRooms}/{totalRooms})</span>
-            </div>
-            <span className="text-sm font-bold text-accent-violet-mid">{emptyPercentage.toFixed(1)}%</span>
-          </div>
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-surface-press">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${emptyPercentage}%` }}
-              transition={{ duration: 1, delay: 0.3 }}
-              className="h-full rounded-full bg-accent-violet-mid"
-            />
-          </div>
+        <div className="space-y-3">
+          {segments.map((segment) => {
+            const Icon = segment.icon;
+
+            return (
+              <Link key={segment.label} to={segment.to} className="dashboard-legend-card dashboard-stat-card--link">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="dashboard-progress-icon"
+                    style={{ background: segment.softColor, color: segment.color }}
+                  >
+                    <Icon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <p className="text-base font-semibold text-ink-deep">{segment.displayLabel}</p>
+                    <p className="text-sm text-muted">{formatCount(segment.value)} phòng</p>
+                  </div>
+                </div>
+                <p className="text-lg font-bold" style={{ color: segment.color }}>
+                  {segment.percentage}%
+                </p>
+              </Link>
+            );
+          })}
         </div>
       </div>
-
-      <p className="mt-6 border-t border-hairline-cloud pt-4 text-center text-sm text-muted">
-        <span className="font-semibold text-ink-deep">Mẹo:</span> Tỷ lệ lấp đầy lý tưởng là trên 90%.
-      </p>
-    </motion.div>
+    </motion.section>
   );
 };
 

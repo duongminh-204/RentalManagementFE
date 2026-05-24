@@ -1,68 +1,75 @@
-import React from 'react';
 import { motion } from 'framer-motion';
-import { Target, CheckCircle2 } from 'lucide-react';
+import { BanknoteArrowUp } from 'lucide-react';
+import { formatCurrency } from '../utils/dashboardFormat';
 
 const itemVariants = {
-  hidden: { opacity: 0, y: 20 },
-  show: { opacity: 1, y: 0 }
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0 },
 };
 
-const RevenueChart = ({ monthlyRevenue, targetRevenue }) => {
-  const revenuePercentage = targetRevenue > 0 ? (monthlyRevenue / targetRevenue) * 100 : 0;
-  const isExceeded = monthlyRevenue >= targetRevenue;
+const RevenueChart = ({ monthlyRevenue, totalDebt }) => {
+  const invoiceAmount = Math.max(Number(monthlyRevenue) || 0, 0);
+  const debtAmount = Math.max(Number(totalDebt) || 0, 0);
+  const comparisonBase = Math.max(invoiceAmount, debtAmount, 1);
+  const estimatedCollected = Math.max(invoiceAmount - Math.min(debtAmount, invoiceAmount), 0);
+
+  const rows = [
+    {
+      key: 'invoice',
+      label: 'Đã lên hóa đơn tháng này',
+      amount: invoiceAmount,
+      color: 'linear-gradient(90deg, #2f7f32 0%, #b8e436 100%)',
+      toneClass: 'text-[#2f7f32]',
+    },
+    {
+      key: 'debt',
+      label: 'Cần thu tháng này',
+      amount: debtAmount,
+      color: 'linear-gradient(90deg, #ff9abb 0%, #d94d7e 100%)',
+      toneClass: 'text-accent-pink',
+    },
+  ];
 
   return (
-    <motion.div variants={itemVariants} className="card-compact flex flex-col justify-between">
-      <div>
-        <div className="mb-6 flex items-center gap-2">
-          <div className="rounded-lg bg-surface-press p-2">
-            <Target className="h-5 w-5 text-accent-violet" />
-          </div>
-          <h3 className="font-display text-lg font-semibold text-ink-deep">Mục tiêu doanh thu</h3>
+    <motion.section variants={itemVariants} className="dashboard-section-card">
+      <div className="mb-6 flex items-center gap-3">
+        <div className="rounded-2xl bg-[#eef1ff] p-3 text-accent-violet">
+          <BanknoteArrowUp className="h-6 w-6" />
         </div>
-
-        <div className="mb-6 grid grid-cols-2 gap-4">
-          <div>
-            <p className="mb-1 text-sm font-medium text-muted">Thực tế</p>
-            <p className="font-display text-2xl font-bold text-ink-deep">
-              {(monthlyRevenue / 1000000).toLocaleString('vi-VN')}M
-            </p>
-          </div>
-          <div>
-            <p className="mb-1 text-sm font-medium text-muted">Mục tiêu</p>
-            <p className="font-display text-2xl font-semibold text-muted">
-              {(targetRevenue / 1000000).toLocaleString('vi-VN')}M
-            </p>
-          </div>
-        </div>
-
         <div>
-          <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm font-semibold text-ink-deep">Tiến độ đạt được</span>
-            <span className={`text-sm font-bold ${isExceeded ? 'text-accent-lime' : 'text-accent-violet'}`}>
-              {revenuePercentage.toFixed(1)}%
-            </span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-press">
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${Math.min(revenuePercentage, 100)}%` }}
-              transition={{ duration: 1, ease: 'easeOut' }}
-              className={`h-full rounded-full ${isExceeded ? 'bg-accent-lime' : 'bg-primary'}`}
-            />
-          </div>
+          <h3 className="text-xl font-bold text-ink-deep">Tiền tháng này</h3>
         </div>
       </div>
 
-      {isExceeded && (
-        <div className="mt-6 flex items-center justify-center gap-2 rounded-xl border border-accent-lime/40 bg-accent-lime/10 py-3">
-          <CheckCircle2 className="h-5 w-5 text-accent-lime" />
-          <p className="text-sm font-bold text-ink-deep">
-            Đã vượt mục tiêu {((monthlyRevenue - targetRevenue) / 1000000).toLocaleString('vi-VN')}M
-          </p>
+      <div className="space-y-4">
+        {rows.map((row) => (
+          <div key={row.key} className="dashboard-money-row">
+            <div className="dashboard-money-row__header">
+              <p className="text-base font-semibold text-ink-deep">{row.label}</p>
+              <p className={`dashboard-money-row__value ${row.toneClass}`}>{formatCurrency(row.amount)}</p>
+            </div>
+            <div className="dashboard-money-row__bar">
+              <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${(row.amount / comparisonBase) * 100}%` }}
+                transition={{ duration: 0.8 }}
+                className="dashboard-money-row__fill"
+                style={{ background: row.color }}
+              />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="mt-6">
+        <div className="dashboard-legend-card">
+          <div>
+            <p className="text-sm font-semibold text-muted">Đã thu tháng này</p>
+            <p className="mt-2 text-xl font-bold text-[#2f7f32]">{formatCurrency(estimatedCollected)}</p>
+          </div>
         </div>
-      )}
-    </motion.div>
+      </div>
+    </motion.section>
   );
 };
 

@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import RoomTable from '../../../components/tables/RoomTable';
 import FloorPlanCanvas from './FloorPlanCanvas';
 import RoomStatusGuide from './RoomStatusGuide';
@@ -11,6 +12,7 @@ import { getRoomById } from '../api/roomsApi';
 import { normalizeRoomFromApi } from '../utils/roomHelpers';
 
 const RoomsList = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { rooms, loading, error, addRoom, editRoom, changeRoomStatus, removeRoom, refetch } =
     useRooms();
 
@@ -24,6 +26,28 @@ const RoomsList = () => {
   const [panelSaveError, setPanelSaveError] = useState(null);
   const [selectedRoomDetail, setSelectedRoomDetail] = useState(null);
   const [showRoomDetail, setShowRoomDetail] = useState(false);
+
+  useEffect(() => {
+    const statusFromQuery = searchParams.get('status');
+    const viewFromQuery = searchParams.get('view');
+    const allowedStatuses = ['all', 'occupied', 'vacant', 'maintenance'];
+    const allowedViews = ['floorplan', 'table'];
+
+    if (statusFromQuery && allowedStatuses.includes(statusFromQuery) && statusFromQuery !== statusFilter) {
+      setStatusFilter(statusFromQuery);
+    }
+
+    if (viewFromQuery && allowedViews.includes(viewFromQuery) && viewFromQuery !== viewMode) {
+      setViewMode(viewFromQuery);
+    }
+  }, [searchParams, statusFilter, viewMode]);
+
+  const updateRoomQuery = (nextViewMode, nextStatusFilter) => {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set('view', nextViewMode);
+    nextParams.set('status', nextStatusFilter);
+    setSearchParams(nextParams, { replace: true });
+  };
 
   // Filter rooms for table view
   const filteredRooms = useMemo(() => {
@@ -178,7 +202,10 @@ const RoomsList = () => {
           className="flex gap-2 mb-6"
         >
           <button
-            onClick={() => setViewMode('floorplan')}
+            onClick={() => {
+              setViewMode('floorplan');
+              updateRoomQuery('floorplan', statusFilter);
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
               viewMode === 'floorplan'
                 ? 'bg-primary text-on-primary'
@@ -189,7 +216,10 @@ const RoomsList = () => {
             Sơ đồ tầng
           </button>
           <button
-            onClick={() => setViewMode('table')}
+            onClick={() => {
+              setViewMode('table');
+              updateRoomQuery('table', statusFilter);
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
               viewMode === 'table'
                 ? 'bg-primary text-on-primary'
@@ -264,7 +294,11 @@ const RoomsList = () => {
                 <Filter size={20} className="text-gray-400" />
                 <select
                   value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
+                  onChange={(e) => {
+                    const nextStatus = e.target.value;
+                    setStatusFilter(nextStatus);
+                    updateRoomQuery(viewMode, nextStatus);
+                  }}
                   className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
                 >
                   <option value="all">Tất cả trạng thái</option>
