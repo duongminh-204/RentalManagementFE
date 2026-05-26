@@ -228,7 +228,7 @@ const InvoicesPage = () => {
   }, []);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="mb-10 rounded-[2rem] bg-white p-8 shadow-[var(--shadow-card)]">
         <div className="mb-8 max-w-3xl space-y-4">
           <span className="inline-flex rounded-full bg-primary/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
@@ -420,8 +420,8 @@ const InvoicesPage = () => {
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm">
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
+            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-2">
               <div className="mb-5 flex items-center justify-between gap-4">
                 <div>
                   <h2 className="text-lg font-semibold text-ink-deep">Đơn giá phòng</h2>
@@ -457,7 +457,7 @@ const InvoicesPage = () => {
               )}
             </div>
 
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm">
+            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-1">
               <h2 className="mb-4 text-lg font-semibold text-ink-deep">Tóm tắt chỉ số</h2>
               <div className="grid gap-4 text-sm text-ink-deep sm:grid-cols-2">
                 <div className="rounded-3xl bg-surface-light p-4">
@@ -479,39 +479,10 @@ const InvoicesPage = () => {
               </div>
             </div>
 
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm">
+            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-1">
               <h2 className="text-lg font-semibold text-ink-deep">Lưu ý khi tạo hoá đơn</h2>
               <p className="mt-3 text-sm leading-7 text-muted">
                 Kết quả hiển thị là bản tính toán nhanh, hệ thống sẽ đối chiếu lại khi lưu hoá đơn. Nếu cần, bạn có thể ghi đè phí bãi xe để đảm bảo số liệu chính xác.
-              </p>
-            </div>
-
-            <div className="space-y-3 rounded-3xl bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-ink-deep">Tóm tắt chỉ số</h2>
-              <div className="grid gap-3 text-sm text-ink-deep sm:grid-cols-2">
-                <div>
-                  <p className="font-medium">Tiêu thụ điện</p>
-                  <p>{electricConsumed} kWh</p>
-                </div>
-                <div>
-                  <p className="font-medium">Tiêu thụ nước</p>
-                  <p>{waterConsumed} m³</p>
-                </div>
-                <div>
-                  <p className="font-medium">Tiền điện</p>
-                  <p>{formatCurrency(previewElectricFee)}</p>
-                </div>
-                <div>
-                  <p className="font-medium">Tiền nước</p>
-                  <p>{formatCurrency(previewWaterFee)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3 rounded-3xl bg-white p-5 shadow-sm">
-              <h2 className="text-lg font-semibold text-ink-deep">Lưu ý</h2>
-              <p className="text-sm leading-6 text-muted">
-                Hệ thống tính toán nhanh theo giá đã cấu hình. Kết quả cuối cùng sẽ được đối chiếu với API khi tạo hoá đơn. Nếu phòng có phí bãi xe, có thể ghi đè bằng trường Phí bãi xe.
               </p>
             </div>
           </div>
