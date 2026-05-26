@@ -228,24 +228,48 @@ const InvoicesPage = () => {
   }, []);
 
   return (
-    <div className="mx-auto max-w-screen-2xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-10 rounded-[2rem] bg-white p-8 shadow-[var(--shadow-card)]">
-        <div className="mb-8 max-w-3xl space-y-4">
-          <span className="inline-flex rounded-full bg-primary/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
-            Hoá đơn
-          </span>
-          <div className="space-y-3">
-            <h1 className="text-4xl font-semibold tracking-tight text-ink-deep">Quản lý và lập hoá đơn</h1>
-            <p className="text-sm leading-7 text-muted">
-              Nhập chỉ số điện và nước mới để hệ thống tự động tính chi tiết phòng, điện, nước, dịch vụ và tổng hoá đơn. Xem trước ngay kết quả, thay đổi phí và theo dõi lịch sử hoá đơn trong cùng một trang.
-            </p>
+    <div className="mx-auto max-w-screen-2xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mb-8 rounded-[2rem] bg-white p-6 shadow-[var(--shadow-card)] border-l-4 border-primary/20">
+        <div className="mb-4 grid gap-4 lg:grid-cols-[1fr_360px] items-start">
+          <div className="space-y-2">
+            <span className="inline-flex rounded-full bg-primary/10 px-4 py-1 text-[11px] font-semibold uppercase tracking-[0.35em] text-primary">
+              Hoá đơn
+            </span>
+            <div className="space-y-1">
+              <h1 className="text-3xl font-semibold tracking-tight text-primary">Quản lý và lập hoá đơn</h1>
+              <p className="text-sm leading-6 text-muted">
+                Nhập chỉ số điện và nước mới để hệ thống tự động tính chi tiết phòng, điện, nước, dịch vụ và tổng hoá đơn. Xem trước ngay kết quả, thay đổi phí và theo dõi lịch sử hoá đơn trong cùng một trang.
+              </p>
+            </div>
+          </div>
+
+          <div className="rounded-[1.75rem] border border-hairline-cloud bg-primary/10 p-4 shadow-sm text-primary">
+            <h2 className="text-lg font-semibold">Tóm tắt chỉ số</h2>
+            <div className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
+              <div className="rounded-2xl bg-white p-3">
+                <p className="font-medium text-muted">Tiêu thụ điện</p>
+                <p className="mt-1 text-lg font-semibold text-primary">{electricConsumed} kWh</p>
+              </div>
+              <div className="rounded-2xl bg-white p-3">
+                <p className="font-medium text-muted">Tiêu thụ nước</p>
+                <p className="mt-1 text-lg font-semibold text-primary">{waterConsumed} m³</p>
+              </div>
+              <div className="rounded-2xl bg-white p-3">
+                <p className="font-medium text-muted">Tiền điện</p>
+                <p className="mt-1 text-lg font-semibold text-primary">{formatCurrency(previewElectricFee)}</p>
+              </div>
+              <div className="rounded-2xl bg-white p-3">
+                <p className="font-medium text-muted">Tiền nước</p>
+                <p className="mt-1 text-lg font-semibold text-primary">{formatCurrency(previewWaterFee)}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        <form className="grid gap-6 lg:grid-cols-[1.8fr_1.2fr]" onSubmit={handleSubmit}>
-          <div className="space-y-6 rounded-[1.75rem] bg-surface-light p-6 shadow-sm">
-            <div className="rounded-[1.5rem] bg-white p-6 shadow-sm">
-              <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <form className="grid gap-4 lg:grid-cols-[1fr_360px]" onSubmit={handleSubmit}>
+          <div className="space-y-4 rounded-[1.5rem] bg-surface-light p-4 shadow-sm">
+            <div className="rounded-[1.5rem] bg-white p-8 shadow-sm min-h-[520px]">
+              <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <p className="text-sm font-semibold uppercase tracking-[0.25em] text-accent-violet-mid">Chi tiết hoá đơn</p>
                   <h2 className="mt-3 text-2xl font-semibold text-ink-deep">Thông tin và chỉ số</h2>
@@ -262,7 +286,7 @@ const InvoicesPage = () => {
                   name="roomId"
                   value={formData.roomId}
                   onChange={handleChange}
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 >
                   <option value="">-- Chọn phòng --</option>
                   {rooms.map((room) => (
@@ -280,7 +304,7 @@ const InvoicesPage = () => {
                   name="monthYear"
                   value={formData.monthYear}
                   onChange={handleChange}
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
             </div>
@@ -295,7 +319,7 @@ const InvoicesPage = () => {
                   value={formData.electricNumberBf}
                   onChange={handleChange}
                   placeholder="Số đầu kỳ"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
 
@@ -308,7 +332,7 @@ const InvoicesPage = () => {
                   value={formData.electricNumberAt}
                   onChange={handleChange}
                   placeholder="Số cuối kỳ"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
             </div>
@@ -323,7 +347,7 @@ const InvoicesPage = () => {
                   value={formData.waterNumberBf}
                   onChange={handleChange}
                   placeholder="Số đầu kỳ"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
 
@@ -336,7 +360,7 @@ const InvoicesPage = () => {
                   value={formData.waterNumberAt}
                   onChange={handleChange}
                   placeholder="Số cuối kỳ"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
             </div>
@@ -350,7 +374,7 @@ const InvoicesPage = () => {
                   name="otherFee"
                   value={formData.otherFee}
                   onChange={handleChange}
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
               <label className="space-y-2">
@@ -361,7 +385,7 @@ const InvoicesPage = () => {
                   name="discountAmount"
                   value={formData.discountAmount}
                   onChange={handleChange}
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
             </div>
@@ -376,7 +400,7 @@ const InvoicesPage = () => {
                   value={formData.parkingFeeOverride}
                   onChange={handleChange}
                   placeholder="Bỏ trống nếu tính tự động"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
               <label className="space-y-2">
@@ -387,7 +411,7 @@ const InvoicesPage = () => {
                   value={formData.note}
                   onChange={handleChange}
                   placeholder="Ví dụ: Khách thuê đổi công tơ"
-                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-3 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
+                  className="w-full rounded-2xl border border-hairline-cloud bg-white px-4 py-4 text-sm text-ink-deep shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/10"
                 />
               </label>
             </div>
@@ -405,91 +429,26 @@ const InvoicesPage = () => {
               </div>
             )}
 
-            <div className="flex flex-col gap-4 rounded-[1.5rem] bg-white p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 rounded-[1.25rem] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm text-muted">Xem trước tổng hoá đơn</p>
-                <p className="mt-1 text-3xl font-semibold text-ink-deep">{formatCurrency(previewTotal)}</p>
+                <p className="mt-1 text-3xl font-semibold text-primary">{formatCurrency(previewTotal)}</p>
               </div>
               <button
                 type="submit"
                 disabled={loading || roomsLoading}
-                className="inline-flex items-center justify-center rounded-2xl bg-primary px-6 py-3 text-sm font-semibold text-white transition hover:bg-primary-dark disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-primary to-primary-dark px-6 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {loading ? 'Đang lập hoá đơn...' : 'Lập hoá đơn tự động'}
               </button>
             </div>
           </div>
 
-          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-4 lg:items-start">
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-2">
-              <div className="mb-5 flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-lg font-semibold text-ink-deep">Đơn giá phòng</h2>
-                  <p className="text-sm text-muted">Xem nhanh giá phòng, điện, nước và phí dịch vụ.</p>
-                </div>
-                <span className="rounded-full bg-surface-light px-3 py-1 text-sm font-medium text-muted">Dữ liệu theo phòng</span>
-              </div>
-              {selectedRoom ? (
-                <dl className="grid gap-4 text-sm text-ink-deep sm:grid-cols-2">
-                  <div>
-                    <dt className="font-medium">Phòng</dt>
-                    <dd>{selectedRoom.roomName || selectedRoom.roomNumber}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Tiền phòng</dt>
-                    <dd>{formatCurrency(roomFee)}</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Giá điện</dt>
-                    <dd>{formatCurrency(electricPrice)}/kWh</dd>
-                  </div>
-                  <div>
-                    <dt className="font-medium">Giá nước</dt>
-                    <dd>{formatCurrency(waterPrice)}/m³</dd>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <dt className="font-medium">Dịch vụ thêm</dt>
-                    <dd>{formatCurrency(serviceFee)}</dd>
-                  </div>
-                </dl>
-              ) : (
-                <p className="text-sm text-muted">Vui lòng chọn phòng để hiển thị đơn giá chi tiết.</p>
-              )}
-            </div>
-
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-1">
-              <h2 className="mb-4 text-lg font-semibold text-ink-deep">Tóm tắt chỉ số</h2>
-              <div className="grid gap-4 text-sm text-ink-deep sm:grid-cols-2">
-                <div className="rounded-3xl bg-surface-light p-4">
-                  <p className="font-medium text-muted">Tiêu thụ điện</p>
-                  <p className="mt-2 text-lg font-semibold">{electricConsumed} kWh</p>
-                </div>
-                <div className="rounded-3xl bg-surface-light p-4">
-                  <p className="font-medium text-muted">Tiêu thụ nước</p>
-                  <p className="mt-2 text-lg font-semibold">{waterConsumed} m³</p>
-                </div>
-                <div className="rounded-3xl bg-surface-light p-4">
-                  <p className="font-medium text-muted">Tiền điện</p>
-                  <p className="mt-2 text-lg font-semibold">{formatCurrency(previewElectricFee)}</p>
-                </div>
-                <div className="rounded-3xl bg-surface-light p-4">
-                  <p className="font-medium text-muted">Tiền nước</p>
-                  <p className="mt-2 text-lg font-semibold">{formatCurrency(previewWaterFee)}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm lg:col-span-1">
-              <h2 className="text-lg font-semibold text-ink-deep">Lưu ý khi tạo hoá đơn</h2>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                Kết quả hiển thị là bản tính toán nhanh, hệ thống sẽ đối chiếu lại khi lưu hoá đơn. Nếu cần, bạn có thể ghi đè phí bãi xe để đảm bảo số liệu chính xác.
-              </p>
-            </div>
-          </div>
+          <aside className="space-y-5"></aside>
           </div>
         </form>
 
-        <section className="rounded-[2rem] border border-hairline-cloud bg-white p-8 shadow-[var(--shadow-card)]">
+        <section className="rounded-[2rem] border border-hairline-cloud bg-white p-6 shadow-[var(--shadow-card)]">
           <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <p className="text-sm uppercase tracking-[0.3em] text-accent-violet-mid">Lịch sử hoá đơn</p>
@@ -503,7 +462,7 @@ const InvoicesPage = () => {
             </div>
           </div>
 
-          <form className="grid gap-4 lg:grid-cols-[1.5fr_1fr]" onSubmit={handleHistorySearch}>
+          <form className="grid gap-4 lg:grid-cols-[1fr_300px]" onSubmit={handleHistorySearch}>
             <div className="space-y-4 rounded-3xl bg-surface-light p-5">
               <div className="grid gap-4 sm:grid-cols-2">
                 <label className="space-y-2">
@@ -616,7 +575,7 @@ const InvoicesPage = () => {
 
           <div className="mt-6 overflow-hidden rounded-3xl border border-hairline-cloud">
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-hairline-cloud">
+              <table className="min-w-full lg:min-w-[1100px] divide-y divide-hairline-cloud">
                 <thead className="bg-surface-light text-left text-sm uppercase tracking-[0.2em] text-muted">
                   <tr>
                     <th className="px-4 py-3">Mã</th>
@@ -659,7 +618,7 @@ const InvoicesPage = () => {
         </section>
 
         {invoiceResult && (
-          <section className="rounded-[2rem] border border-hairline-cloud bg-white p-8 shadow-[var(--shadow-card)]">
+          <section className="rounded-[2rem] border border-hairline-cloud bg-white p-6 shadow-[var(--shadow-card)]">
             <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm uppercase tracking-[0.3em] text-accent-violet-mid">Kết quả hoá đơn</p>
@@ -670,7 +629,7 @@ const InvoicesPage = () => {
               </span>
             </div>
 
-            <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
+            <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
               <div className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
@@ -685,63 +644,83 @@ const InvoicesPage = () => {
                   </div>
                 </div>
 
-                <div className="overflow-hidden rounded-3xl border border-hairline-cloud bg-surface-light p-4">
-                  <div className="grid gap-3 text-sm text-ink-deep">
-                    <div className="flex items-center justify-between">
-                      <span>Tiền phòng</span>
-                      <span>{formatCurrency(invoiceResult.roomFee)}</span>
+                <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
+                  <div className="overflow-hidden rounded-3xl border border-hairline-cloud bg-surface-light p-6">
+                    <div>
+                      <p className="text-sm font-semibold uppercase tracking-[0.2em] text-accent-violet-mid">Đơn giá phòng</p>
+                      <h3 className="mt-2 text-xl font-semibold text-ink-deep">Xem nhanh giá phòng, điện, nước và phí dịch vụ</h3>
+                      <p className="mt-3 text-sm text-muted">Dữ liệu theo phòng. Vui lòng chọn phòng để hiển thị đơn giá chi tiết.</p>
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span>Tiền điện</span>
-                      <span>{formatCurrency(invoiceResult.electricFee)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Tiền nước</span>
-                      <span>{formatCurrency(invoiceResult.waterFee)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Dịch vụ</span>
-                      <span>{formatCurrency(invoiceResult.serviceFee)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Phí bãi xe</span>
-                      <span>{formatCurrency(invoiceResult.parkingFee)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Phí khác</span>
-                      <span>{formatCurrency(invoiceResult.otherFee)}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span>Giảm giá</span>
-                      <span>-{formatCurrency(invoiceResult.discountAmount)}</span>
-                    </div>
-                    <div className="rounded-3xl bg-surface-light px-4 py-3 text-base font-semibold text-ink-deep">
-                      <div className="flex items-center justify-between">
-                        <span>Tổng</span>
-                        <span>{formatCurrency(invoiceResult.totalAmount)}</span>
+
+                    <div className="mt-6 grid gap-4 text-sm text-ink-deep sm:grid-cols-2">
+                      <div className="rounded-3xl border border-hairline-cloud bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted">Tiêu thụ điện</p>
+                        <p className="mt-2 text-lg font-semibold">{electricConsumed} kWh</p>
+                      </div>
+                      <div className="rounded-3xl border border-hairline-cloud bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted">Tiêu thụ nước</p>
+                        <p className="mt-2 text-lg font-semibold">{waterConsumed} m³</p>
+                      </div>
+                      <div className="rounded-3xl border border-hairline-cloud bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted">Tiền điện</p>
+                        <p className="mt-2 text-lg font-semibold">{formatCurrency(previewElectricFee)}</p>
+                      </div>
+                      <div className="rounded-3xl border border-hairline-cloud bg-white p-4">
+                        <p className="text-xs uppercase tracking-[0.25em] text-muted">Tiền nước</p>
+                        <p className="mt-2 text-lg font-semibold">{formatCurrency(previewWaterFee)}</p>
                       </div>
                     </div>
-                  </div>
-                </div>
 
-                {invoiceResult.invoiceDetails?.length > 0 && (
-                  <div className="overflow-hidden rounded-3xl border border-hairline-cloud">
+                    <div className="mt-6 rounded-3xl border border-hairline-cloud bg-white p-4 text-sm text-ink-deep">
+                      <div className="grid gap-3">
+                        <div className="flex items-center justify-between">
+                          <span>Giá phòng</span>
+                          <span>{selectedRoom ? formatCurrency(roomFee) : '-'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Đơn giá điện</span>
+                          <span>{selectedRoom ? `${formatCurrency(electricPrice)}/kWh` : '-'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Đơn giá nước</span>
+                          <span>{selectedRoom ? `${formatCurrency(waterPrice)}/m³` : '-'}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Phí dịch vụ</span>
+                          <span>{selectedRoom ? formatCurrency(serviceFee) : '-'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="mt-6 rounded-3xl border border-hairline-cloud bg-white p-4 text-sm text-muted">
+                      <h4 className="text-base font-semibold text-ink-deep">Lưu ý khi tạo hoá đơn</h4>
+                      <p className="mt-3">
+                        Kết quả hiển thị là bản tính toán nhanh, hệ thống sẽ đối chiếu lại khi lưu hoá đơn. Nếu cần, bạn có thể ghi đè phí bãi xe để đảm bảo số liệu chính xác.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="overflow-hidden rounded-3xl border border-hairline-cloud bg-white">
                     <div className="bg-surface-light px-4 py-3 text-sm font-semibold uppercase tracking-[0.25em] text-muted">
                       Chi tiết hoá đơn
                     </div>
                     <div className="divide-y divide-hairline-cloud">
-                      {invoiceResult.invoiceDetails.map((detail) => (
-                        <div key={detail.invoiceDetailId} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto_auto]">
-                          <div className="text-sm text-ink-deep">{detail.itemName}</div>
-                          <div className="text-sm text-muted">{detail.quantity}</div>
-                          <div className="text-right text-sm font-medium text-ink-deep">
-                            {formatCurrency(detail.amount)}
+                      {invoiceResult.invoiceDetails?.length > 0 ? (
+                        invoiceResult.invoiceDetails.map((detail) => (
+                          <div key={detail.invoiceDetailId} className="grid gap-2 px-4 py-3 sm:grid-cols-[1fr_auto_auto]">
+                            <div className="text-sm text-ink-deep">{detail.itemName}</div>
+                            <div className="text-sm text-muted">{detail.quantity}</div>
+                            <div className="text-right text-sm font-medium text-ink-deep">
+                              {formatCurrency(detail.amount)}
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ))
+                      ) : (
+                        <div className="p-6 text-sm text-muted">Không có chi tiết hoá đơn.</div>
+                      )}
                     </div>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="space-y-4 rounded-3xl border border-hairline-cloud bg-surface-light p-5 text-center">
