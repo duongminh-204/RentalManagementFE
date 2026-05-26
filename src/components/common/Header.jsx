@@ -4,6 +4,7 @@ import {
   Building2,
   Car,
   FileSpreadsheet,
+  FileText,
   HandCoins,
   Home,
   LogOut,
@@ -34,6 +35,7 @@ const Header = () => {
     : [
         { label: 'Tổng quan', path: '/dashboard', icon: Home },
         { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+        { label: 'Hoá đơn', path: '/invoices', icon: FileText },
         { label: 'Công nợ', path: '/debts', icon: HandCoins },
         { label: 'Khách thuê', path: '/tenants', icon: Users },
         { label: 'Phương tiện', path: '/vehicles', icon: Car },

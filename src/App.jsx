@@ -5,6 +5,7 @@ import RoomsPage from "./features/rooms/pages/RoomsPage";
 import TenantsPage from "./features/tenants/pages/TenantsPage";
 import ContractsPage from "./features/contracts/pages/ContractsPage";
 import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
+import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 
 import { PrivateRoute } from './routes/PrivateRoute';
 
@@ -30,6 +31,14 @@ function App() {
           element={
             <PrivateRoute>
               <RoomsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <PrivateRoute>
+              <InvoicesPage />
             </PrivateRoute>
           }
         />
