@@ -486,39 +486,6 @@ const InvoicesPage = () => {
               </p>
             </div>
 
-            <div className="rounded-[1.75rem] border border-hairline-cloud bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-semibold text-ink-deep">Lưu ý khi tạo hoá đơn</h2>
-              <p className="mt-3 text-sm leading-7 text-muted">
-                Kết quả hiển thị là bản tính toán nhanh, hệ thống sẽ đối chiếu lại khi lưu hoá đơn. Nếu cần, bạn có thể ghi đè phí bãi xe để đảm bảo số liệu chính xác.
-              </p>
-            </div>
-          </div>
-                  <div>
-                    <p className="font-medium">Phòng</p>
-                    <p>{selectedRoom.roomName || selectedRoom.roomNumber}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Tiền phòng</p>
-                    <p>{formatCurrency(roomFee)}</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Giá điện</p>
-                    <p>{formatCurrency(electricPrice)}/kWh</p>
-                  </div>
-                  <div>
-                    <p className="font-medium">Giá nước</p>
-                    <p>{formatCurrency(waterPrice)}/m³</p>
-                  </div>
-                  <div className="sm:col-span-2">
-                    <p className="font-medium">Dịch vụ thêm</p>
-                    <p>{formatCurrency(serviceFee)}</p>
-                  </div>
-                </div>
-              ) : (
-                <p className="text-sm text-muted">Vui lòng chọn phòng để xem đơn giá.</p>
-              )}
-            </div>
-
             <div className="space-y-3 rounded-3xl bg-white p-5 shadow-sm">
               <h2 className="text-lg font-semibold text-ink-deep">Tóm tắt chỉ số</h2>
               <div className="grid gap-3 text-sm text-ink-deep sm:grid-cols-2">
@@ -547,6 +514,7 @@ const InvoicesPage = () => {
                 Hệ thống tính toán nhanh theo giá đã cấu hình. Kết quả cuối cùng sẽ được đối chiếu với API khi tạo hoá đơn. Nếu phòng có phí bãi xe, có thể ghi đè bằng trường Phí bãi xe.
               </p>
             </div>
+          </div>
           </div>
         </form>
 
