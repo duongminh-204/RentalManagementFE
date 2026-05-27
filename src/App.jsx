@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage, RegisterPage } from './features/auth';
 import { Dashboard } from './features/dashboard';
+import DebtDetailsPage from './features/dashboard/pages/DebtDetailsPage';
 import RoomsPage from "./features/rooms/pages/RoomsPage";
 import TenantsPage from "./features/tenants/pages/TenantsPage";
 import ContractsPage from "./features/contracts/pages/ContractsPage";
@@ -22,6 +23,14 @@ function App() {
           element={
             <PrivateRoute>
               <Dashboard />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/debts"
+          element={
+            <PrivateRoute>
+              <DebtDetailsPage />
             </PrivateRoute>
           }
         />

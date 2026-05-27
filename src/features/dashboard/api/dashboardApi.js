@@ -15,6 +15,16 @@ export const getDebtInfo = async () => {
   return response.data;
 };
 
+export const recordDebtPayment = async (invoiceId, payload = {}) => {
+  const response = await api.post(`/dashboard/debt/invoices/${invoiceId}/payments`, payload);
+  return response.data;
+};
+
+export const restoreDebtItem = async (invoiceId, itemKey) => {
+  const response = await api.post(`/dashboard/debt/invoices/${invoiceId}/items/${itemKey}/restore`);
+  return response.data;
+};
+
 export const getMonthlyRevenue = async (month, year) => {
   const response = await api.get(`/dashboard/revenue/${month}/${year}`);
   return response.data;
