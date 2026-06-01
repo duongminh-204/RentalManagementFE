@@ -104,7 +104,7 @@ const InvoicesPage = () => {
   const waterPrice = selectedRoom ? formatNumberField(selectedRoom.waterPrice) : 0;
   const serviceFee = selectedRoom
     ? (selectedRoom.roomServices || []).reduce(
-(sum, item) => sum + formatNumberField(item.unitPrice) * formatNumberField(item.quantity),
+        (sum, item) => sum + formatNumberField(item.unitPrice) * formatNumberField(item.quantity),
         0
       )
     : 0;
@@ -195,7 +195,7 @@ const InvoicesPage = () => {
       roomId: '',
       monthFrom: '',
       monthTo: '',
-status: ''
+      status: ''
     });
     setTimeout(loadInvoiceHistory, 0);
   };
@@ -290,7 +290,7 @@ status: ''
 
   return (
     <div className="page-content page-content--wide">
-{/* Title Header Section with Sentri Design styling */}
+      {/* Title Header Section with Sentri Design styling */}
       <div className="mb-8 overflow-hidden rounded-[2rem] border border-hairline-cloud bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="space-y-2">
@@ -338,7 +338,7 @@ status: ''
           <form className="space-y-6" onSubmit={handleSubmit}>
             {/* Select Room & Month Period */}
             <div className="grid gap-4 sm:grid-cols-2">
-<div className="space-y-2">
+              <div className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
                   <Building className="w-3.5 h-3.5 text-accent-violet-mid" /> Chọn phòng thuê
                 </span>
@@ -405,7 +405,7 @@ status: ''
             </div>
 
             {/* Water Fields */}
-<div className="rounded-2xl border border-hairline-cloud bg-surface-light/40 p-4 space-y-3">
+            <div className="rounded-2xl border border-hairline-cloud bg-surface-light/40 p-4 space-y-3">
               <p className="text-xs font-bold uppercase tracking-wider text-accent-violet-deep flex items-center gap-1.5">
                 <Droplet className="w-4 h-4 text-blue-500 fill-blue-500/20" /> Chỉ số nước (m³)
               </p>
@@ -471,7 +471,7 @@ status: ''
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
-<CreditCard className="w-3.5 h-3.5 text-accent-violet-mid" /> Phí xe máy/ô tô ghi đè
+                  <CreditCard className="w-3.5 h-3.5 text-accent-violet-mid" /> Phí xe máy/ô tô ghi đè
                 </span>
                 <input
                   type="number"
@@ -533,7 +533,7 @@ status: ''
                 ) : (
                   <>
                     Lập hóa đơn ngay <ArrowRight className="w-4 h-4" />
-</>
+                  </>
                 )}
               </button>
             </div>
@@ -588,7 +588,7 @@ status: ''
                       </p>
                     </div>
                     <span className="text-[10px] font-bold px-2 py-1 rounded bg-accent-pink text-ink-deep font-sans uppercase">
-{selectedRoom.status || 'Active'}
+                      {selectedRoom.status || 'Active'}
                     </span>
                   </div>
 
@@ -632,7 +632,7 @@ status: ''
                         <span className="text-on-primary font-semibold">+{formatCurrency(previewElectricFee)}</span>
                       </div>
                       <div className="flex justify-between">
-<span>3. Nước tiêu dùng ({waterConsumed} × {formatCurrency(waterPrice)}):</span>
+                        <span>3. Nước tiêu dùng ({waterConsumed} × {formatCurrency(waterPrice)}):</span>
                         <span className="text-on-primary font-semibold">+{formatCurrency(previewWaterFee)}</span>
                       </div>
                       <div className="flex justify-between">
@@ -684,7 +684,7 @@ status: ''
         </div>
 
         {/* Filter Controls Form */}
-<form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={handleHistorySearch}>
+        <form className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" onSubmit={handleHistorySearch}>
           <div className="space-y-1">
             <label className="text-xs font-bold text-ink-deep">Tìm nhanh</label>
             <div className="relative">
@@ -763,7 +763,7 @@ status: ''
         {/* History Data Table */}
         <div className="overflow-hidden rounded-2xl border border-hairline-cloud">
           <div className="overflow-x-auto">
-<table className="min-w-full divide-y divide-hairline-cloud">
+            <table className="min-w-full divide-y divide-hairline-cloud">
               <thead className="bg-surface-light text-left text-[11px] uppercase tracking-wider text-muted font-bold">
                 <tr>
                   <th className="px-6 py-4">Mã số</th>
@@ -811,7 +811,7 @@ status: ''
             <div className="bg-surface-light px-6 py-12 text-center text-sm text-muted">
               <Info className="w-8 h-8 text-muted mx-auto mb-2 opacity-50" />
               Không tìm thấy hoá đơn nào phù hợp với bộ lọc hiện tại.
-</div>
+            </div>
           )}
         </div>
       </section>
@@ -863,7 +863,7 @@ status: ''
                     <p className="text-sm font-medium text-ink-deep mt-0.5 text-accent-pink">
                       {invoiceResult.dueDate ? new Date(invoiceResult.dueDate).toLocaleDateString('vi-VN') : '—'}
                     </p>
-</div>
+                  </div>
                 </div>
 
                 {/* Services details lists */}
@@ -916,7 +916,7 @@ status: ''
                     <Printer className="w-4 h-4" /> In biên nhận
                   </button>
                   <button
-onClick={() => setInvoiceResult(null)}
+                    onClick={() => setInvoiceResult(null)}
                     className="btn-primary !py-2 !px-4 text-xs sm:text-sm hidden md:inline-flex"
                   >
                     Đóng
@@ -971,7 +971,7 @@ onClick={() => setInvoiceResult(null)}
                 )}
               </div>
             </motion.div>
-</div>
+          </div>
         )}
       </AnimatePresence>
     </div>
