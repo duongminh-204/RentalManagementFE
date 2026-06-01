@@ -106,6 +106,7 @@ const RoomManagementPanel = ({
     status: 'Working',
     note: '',
   });
+  const [editingDeviceId, setEditingDeviceId] = useState(null);
   const [buildings, setBuildings] = useState([]);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
@@ -416,9 +417,20 @@ const RoomManagementPanel = ({
     });
   };
 
-  const handleAddDevice = () =>
+  const handleSaveDevice = () =>
     runAction(async () => {
-      await roomMgmtApi.addDevice(roomId, deviceForm);
+      if (editingDeviceId) {
+        await roomMgmtApi.updateDevice(roomId, editingDeviceId, {
+          deviceName: deviceForm.deviceName,
+          quantity: deviceForm.quantity,
+          status: deviceForm.status,
+          note: deviceForm.note,
+          imageUrl: deviceForm.imageUrl || null
+        });
+        setEditingDeviceId(null);
+      } else {
+        await roomMgmtApi.addDevice(roomId, deviceForm);
+      }
       setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
     });
 
@@ -1095,20 +1107,45 @@ const RoomManagementPanel = ({
                       <option value="Repair">Đang sửa</option>
                     </select>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleAddDevice}
-                    disabled={busy || !deviceForm.deviceName.trim()}
-                    className="btn-primary w-full"
-                  >
-                    <Plus size={16} /> Thêm thiết bị
-                  </button>
+                  {editingDeviceId ? (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveDevice}
+                        disabled={busy || !deviceForm.deviceName.trim()}
+                        className="btn-primary flex-1 animate-fadeIn"
+                      >
+                        <Save size={16} /> Lưu cập nhật
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingDeviceId(null);
+                          setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
+                        }}
+                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
+                      >
+                        Hủy
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSaveDevice}
+                      disabled={busy || !deviceForm.deviceName.trim()}
+                      className="btn-primary w-full"
+                    >
+                      <Plus size={16} /> Thêm thiết bị
+                    </button>
+                  )}
                 </div>
                 <ul className="space-y-2">
                   {(room.devices || []).map((d) => (
                     <li
                       key={d.deviceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
+                        editingDeviceId === d.deviceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
+                      }`}
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {d.imageUrl ? (
@@ -1147,15 +1184,37 @@ const RoomManagementPanel = ({
                           </p>
                         </div>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          runAction(() => roomMgmtApi.deleteDevice(roomId, d.deviceId))
-                        }
-                        className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingDeviceId(d.deviceId);
+                            setDeviceForm({
+                              deviceName: d.deviceName,
+                              quantity: d.quantity,
+                              status: d.status,
+                              note: d.note || '',
+                              imageUrl: d.imageUrl || null
+                            });
+                          }}
+                          className={`rounded-md p-2 transition ${
+                            editingDeviceId === d.deviceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
+                          }`}
+                          title="Chỉnh sửa thiết bị"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runAction(() => roomMgmtApi.deleteDevice(roomId, d.deviceId))
+                          }
+                          className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
+                          title="Xóa thiết bị"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
