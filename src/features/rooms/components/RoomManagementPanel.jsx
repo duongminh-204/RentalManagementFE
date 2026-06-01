@@ -107,6 +107,7 @@ const RoomManagementPanel = ({
     note: '',
   });
   const [editingDeviceId, setEditingDeviceId] = useState(null);
+  const [editingRoomServiceId, setEditingRoomServiceId] = useState(null);
   const [buildings, setBuildings] = useState([]);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
@@ -452,13 +453,21 @@ const RoomManagementPanel = ({
     });
   };
 
-  const handleAddService = () =>
+  const handleSaveRoomService = () =>
     runAction(async () => {
-      await roomMgmtApi.assignRoomService(roomId, {
-        serviceId: Number(selectedServiceId),
-        quantity: Number(serviceQty) || 1,
-      });
+      if (editingRoomServiceId) {
+        await roomMgmtApi.updateRoomService(roomId, editingRoomServiceId, {
+          quantity: Number(serviceQty) || 1,
+        });
+        setEditingRoomServiceId(null);
+      } else {
+        await roomMgmtApi.assignRoomService(roomId, {
+          serviceId: Number(selectedServiceId),
+          quantity: Number(serviceQty) || 1,
+        });
+      }
       setSelectedServiceId('');
+      setServiceQty(1);
     });
 
   const handleRemoveRoomTenant = async (contractId) => {
@@ -1228,7 +1237,8 @@ const RoomManagementPanel = ({
                   <select
                     value={selectedServiceId}
                     onChange={(e) => setSelectedServiceId(e.target.value)}
-                    className="text-input min-w-0 flex-1"
+                    className="text-input min-w-0 flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                    disabled={!!editingRoomServiceId}
                   >
                     <option value="">Chọn dịch vụ…</option>
                     {serviceCatalog.map((s) => (
@@ -1244,21 +1254,51 @@ const RoomManagementPanel = ({
                     value={serviceQty}
                     onChange={(e) => setServiceQty(e.target.value)}
                     className="text-input w-20"
+                    placeholder="SL"
                   />
-                  <button
-                    type="button"
-                    onClick={handleAddService}
-                    disabled={busy || !selectedServiceId}
-                    className="btn-primary"
-                  >
-                    <Plus size={18} />
-                  </button>
+                  {editingRoomServiceId ? (
+                    <div className="flex gap-1 shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSaveRoomService}
+                        disabled={busy || !serviceQty}
+                        className="btn-primary animate-fadeIn"
+                        title="Lưu cập nhật"
+                      >
+                        <Save size={16} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRoomServiceId(null);
+                          setSelectedServiceId('');
+                          setServiceQty(1);
+                        }}
+                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
+                        title="Hủy"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handleSaveRoomService}
+                      disabled={busy || !selectedServiceId}
+                      className="btn-primary"
+                      title="Thêm dịch vụ"
+                    >
+                      <Plus size={18} />
+                    </button>
+                  )}
                 </div>
                 <ul className="space-y-2">
                   {(room.roomServices || []).map((rs) => (
                     <li
                       key={rs.roomServiceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud bg-surface-press/30 px-3 py-2"
+                      className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
+                        editingRoomServiceId === rs.roomServiceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
+                      }`}
                     >
                       <div>
                         <p className="font-medium text-ink-deep">{rs.serviceName}</p>
@@ -1267,17 +1307,34 @@ const RoomManagementPanel = ({
                           {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
                         </p>
                       </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          runAction(() =>
-                            roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
-                          )
-                        }
-                        className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
-                      >
-                        <Trash2 size={16} />
-                      </button>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingRoomServiceId(rs.roomServiceId);
+                            setSelectedServiceId(rs.serviceId);
+                            setServiceQty(rs.quantity);
+                          }}
+                          className={`rounded-md p-2 transition ${
+                            editingRoomServiceId === rs.roomServiceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
+                          }`}
+                          title="Chỉnh sửa dịch vụ"
+                        >
+                          <Pencil size={16} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            runAction(() =>
+                              roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
+                            )
+                          }
+                          className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
+                          title="Xóa dịch vụ"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </li>
                   ))}
                 </ul>
