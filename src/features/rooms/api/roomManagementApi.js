@@ -82,3 +82,17 @@ export const uploadDeviceImage = async (roomId, deviceId, file) => {
   );
   return data;
 };
+
+export const createService = async (payload) => {
+  const { data } = await api.post('/room-management/services', payload);
+  return data;
+};
+
+export const updateService = async (serviceId, payload) => {
+  const { data } = await api.put(`/room-management/services/${serviceId}`, payload);
+  return data;
+};
+
+export const deleteService = async (serviceId) => {
+  await api.delete(`/room-management/services/${serviceId}`);
+};

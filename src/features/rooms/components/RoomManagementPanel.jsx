@@ -122,6 +122,14 @@ const RoomManagementPanel = ({
   const [contractFormLoading, setContractFormLoading] = useState(false);
   const [contractFormError, setContractFormError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
+  const [showCatalogManager, setShowCatalogManager] = useState(false);
+  const [catalogForm, setCatalogForm] = useState({
+    serviceName: '',
+    unitPrice: '',
+    unit: '',
+    description: ''
+  });
+  const [editingCatalogServiceId, setEditingCatalogServiceId] = useState(null);
 
   const roomId = room?.id ?? room?.roomId;
   const isCreate = mode === 'create';
@@ -469,6 +477,33 @@ const RoomManagementPanel = ({
       setSelectedServiceId('');
       setServiceQty(1);
     });
+
+  const handleSaveCatalogService = () =>
+    runAction(async () => {
+      const payload = {
+        serviceName: catalogForm.serviceName,
+        unitPrice: Number(catalogForm.unitPrice) || 0,
+        unit: catalogForm.unit || null,
+        description: catalogForm.description || null,
+        isActive: true
+      };
+      if (editingCatalogServiceId) {
+        await roomMgmtApi.updateService(editingCatalogServiceId, payload);
+        setEditingCatalogServiceId(null);
+      } else {
+        await roomMgmtApi.createService(payload);
+      }
+      setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
+      await loadCatalogs();
+    });
+
+  const handleDeleteCatalogService = (serviceId) => {
+    if (!window.confirm('Bạn có chắc muốn xóa dịch vụ này khỏi danh mục hệ thống?')) return;
+    runAction(async () => {
+      await roomMgmtApi.deleteService(serviceId);
+      await loadCatalogs();
+    });
+  };
 
   const handleRemoveRoomTenant = async (contractId) => {
     if (
@@ -1216,9 +1251,7 @@ const RoomManagementPanel = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() =>
-                            runAction(() => roomMgmtApi.deleteDevice(roomId, d.deviceId))
-                          }
+                          onClick={() => handleDeleteDevice(d.deviceId)}
                           className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
                           title="Xóa thiết bị"
                         >
@@ -1228,118 +1261,268 @@ const RoomManagementPanel = ({
                     </li>
                   ))}
                 </ul>
+                {!room.devices?.length && (
+                  <p className="text-center text-sm text-muted">Chưa có thiết bị</p>
+                )}
               </div>
             )}
 
             {activeTab === 'services' && canManageExtras && (
               <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    value={selectedServiceId}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    className="text-input min-w-0 flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                    disabled={!!editingRoomServiceId}
-                  >
-                    <option value="">Chọn dịch vụ…</option>
-                    {serviceCatalog.map((s) => (
-                      <option key={s.serviceId} value={s.serviceId}>
-                        {s.serviceName} — {formatCurrency(s.unitPrice)}
-                        {s.unit ? `/${s.unit}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={serviceQty}
-                    onChange={(e) => setServiceQty(e.target.value)}
-                    className="text-input w-20"
-                    placeholder="SL"
-                  />
-                  {editingRoomServiceId ? (
-                    <div className="flex gap-1 shrink-0">
-                      <button
-                        type="button"
-                        onClick={handleSaveRoomService}
-                        disabled={busy || !serviceQty}
-                        className="btn-primary animate-fadeIn"
-                        title="Lưu cập nhật"
-                      >
-                        <Save size={16} />
-                      </button>
+                {showCatalogManager ? (
+                  <div className="space-y-4 rounded-xl border border-hairline-violet bg-surface-light p-4">
+                    <div className="flex items-center justify-between border-b border-hairline-cloud pb-2">
+                      <h3 className="font-display text-sm font-semibold uppercase text-accent-violet">
+                        Quản lý Danh mục Dịch vụ mẫu
+                      </h3>
                       <button
                         type="button"
                         onClick={() => {
-                          setEditingRoomServiceId(null);
-                          setSelectedServiceId('');
-                          setServiceQty(1);
+                          setShowCatalogManager(false);
+                          setEditingCatalogServiceId(null);
+                          setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
                         }}
-                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
-                        title="Hủy"
+                        className="text-xs font-semibold text-accent-violet hover:underline"
                       >
-                        <X size={16} />
+                        Quay lại gán phòng
                       </button>
                     </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSaveRoomService}
-                      disabled={busy || !selectedServiceId}
-                      className="btn-primary"
-                      title="Thêm dịch vụ"
-                    >
-                      <Plus size={18} />
-                    </button>
-                  )}
-                </div>
-                <ul className="space-y-2">
-                  {(room.roomServices || []).map((rs) => (
-                    <li
-                      key={rs.roomServiceId}
-                      className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
-                        editingRoomServiceId === rs.roomServiceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
-                      }`}
-                    >
-                      <div>
-                        <p className="font-medium text-ink-deep">{rs.serviceName}</p>
-                        <p className="text-xs text-muted">
-                          {formatCurrency(rs.unitPrice)}
-                          {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
-                        </p>
+
+                    <div className="space-y-3 bg-surface-press/40 p-3 rounded-lg border border-hairline-cloud">
+                      <p className="text-xs font-semibold text-ink-deep uppercase tracking-wider">
+                        {editingCatalogServiceId ? 'Cập nhật dịch vụ mẫu' : 'Thêm dịch vụ mẫu mới'}
+                      </p>
+                      <div className="space-y-2">
+                        <input
+                          placeholder="Tên dịch vụ mẫu (VD: Điện, Nước, Internet...)"
+                          value={catalogForm.serviceName}
+                          onChange={(e) => setCatalogForm((p) => ({ ...p, serviceName: e.target.value }))}
+                          className="text-input text-xs"
+                        />
+                        <div className="grid grid-cols-2 gap-2">
+                          <input
+                            type="number"
+                            placeholder="Đơn giá (VND)"
+                            value={catalogForm.unitPrice}
+                            onChange={(e) => setCatalogForm((p) => ({ ...p, unitPrice: e.target.value }))}
+                            className="text-input text-xs"
+                            min={0}
+                          />
+                          <input
+                            placeholder="Đơn vị tính (VD: kWh, m3, tháng)"
+                            value={catalogForm.unit}
+                            onChange={(e) => setCatalogForm((p) => ({ ...p, unit: e.target.value }))}
+                            className="text-input text-xs"
+                          />
+                        </div>
+                        <input
+                          placeholder="Mô tả dịch vụ (không bắt buộc)"
+                          value={catalogForm.description}
+                          onChange={(e) => setCatalogForm((p) => ({ ...p, description: e.target.value }))}
+                          className="text-input text-xs"
+                        />
                       </div>
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex gap-2">
                         <button
                           type="button"
-                          onClick={() => {
-                            setEditingRoomServiceId(rs.roomServiceId);
-                            setSelectedServiceId(rs.serviceId);
-                            setServiceQty(rs.quantity);
-                          }}
-                          className={`rounded-md p-2 transition ${
-                            editingRoomServiceId === rs.roomServiceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
+                          onClick={handleSaveCatalogService}
+                          disabled={busy || !catalogForm.serviceName.trim()}
+                          className="btn-primary text-xs py-1.5 flex-1"
+                        >
+                          {editingCatalogServiceId ? <><Save size={14} /> Lưu thay đổi</> : <><Plus size={14} /> Thêm vào DM</>}
+                        </button>
+                        {editingCatalogServiceId && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingCatalogServiceId(null);
+                              setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
+                            }}
+                            className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-1.5 text-xs font-semibold text-ink-deep hover:bg-surface-press"
+                          >
+                            Hủy
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-semibold uppercase text-accent-violet-mid tracking-wide">
+                        Danh sách dịch vụ mẫu hệ thống ({serviceCatalog.length})
+                      </p>
+                      <ul className="space-y-2 max-h-60 overflow-y-auto pr-1">
+                        {serviceCatalog.map((s) => (
+                          <li
+                            key={s.serviceId}
+                            className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light text-xs transition ${
+                              editingCatalogServiceId === s.serviceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-ink-deep truncate">{s.serviceName}</p>
+                              <p className="text-muted text-[10px] truncate">
+                                {formatCurrency(s.unitPrice)}{s.unit ? ` / ${s.unit}` : ''}
+                                {s.description ? ` · ${s.description}` : ''}
+                              </p>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingCatalogServiceId(s.serviceId);
+                                  setCatalogForm({
+                                    serviceName: s.serviceName,
+                                    unitPrice: String(s.unitPrice),
+                                    unit: s.unit || '',
+                                    description: s.description || ''
+                                  });
+                                }}
+                                className="rounded-md p-1.5 text-accent-violet hover:bg-surface-press"
+                                title="Sửa dịch vụ mẫu"
+                              >
+                                <Pencil size={14} />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteCatalogService(s.serviceId)}
+                                className="rounded-md p-1.5 text-accent-pink hover:bg-surface-press"
+                                title="Xóa dịch vụ mẫu"
+                              >
+                                <Trash2 size={14} />
+                              </button>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                      {!serviceCatalog.length && (
+                        <p className="text-center py-4 text-xs text-muted">Chưa có dịch vụ nào trong hệ thống</p>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between border-b border-hairline-cloud pb-1.5">
+                      <p className="text-xs font-semibold uppercase text-accent-violet-mid tracking-wide">
+                        Gán dịch vụ vào phòng
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setShowCatalogManager(true)}
+                        className="text-xs font-bold text-accent-violet hover:underline flex items-center gap-1 bg-surface-press px-2 py-1 rounded-md border border-hairline-cloud"
+                      >
+                        ⚙️ Quản lý danh mục mẫu
+                      </button>
+                    </div>
+
+                    <div className="flex flex-wrap gap-2">
+                      <select
+                        value={selectedServiceId}
+                        onChange={(e) => setSelectedServiceId(e.target.value)}
+                        className="text-input min-w-0 flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
+                        disabled={!!editingRoomServiceId}
+                      >
+                        <option value="">Chọn dịch vụ mẫu…</option>
+                        {serviceCatalog.map((s) => (
+                          <option key={s.serviceId} value={s.serviceId}>
+                            {s.serviceName} — {formatCurrency(s.unitPrice)}
+                            {s.unit ? `/${s.unit}` : ''}
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        type="number"
+                        min={1}
+                        value={serviceQty}
+                        onChange={(e) => setServiceQty(e.target.value)}
+                        className="text-input w-20"
+                        placeholder="SL"
+                      />
+                      {editingRoomServiceId ? (
+                        <div className="flex gap-1 shrink-0">
+                          <button
+                            type="button"
+                            onClick={handleSaveRoomService}
+                            disabled={busy || !serviceQty}
+                            className="btn-primary animate-fadeIn"
+                            title="Lưu cập nhật"
+                          >
+                            <Save size={16} />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingRoomServiceId(null);
+                              setSelectedServiceId('');
+                              setServiceQty(1);
+                            }}
+                            className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
+                            title="Hủy"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleSaveRoomService}
+                          disabled={busy || !selectedServiceId}
+                          className="btn-primary"
+                          title="Thêm dịch vụ"
+                        >
+                          <Plus size={18} />
+                        </button>
+                      )}
+                    </div>
+                    <ul className="space-y-2">
+                      {(room.roomServices || []).map((rs) => (
+                        <li
+                          key={rs.roomServiceId}
+                          className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
+                            editingRoomServiceId === rs.roomServiceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
                           }`}
-                          title="Chỉnh sửa dịch vụ"
                         >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() =>
-                            runAction(() =>
-                              roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
-                            )
-                          }
-                          className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
-                          title="Xóa dịch vụ"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-                {!room.roomServices?.length && (
-                  <p className="text-center text-sm text-muted">Chưa có dịch vụ</p>
+                          <div>
+                            <p className="font-medium text-ink-deep">{rs.serviceName}</p>
+                            <p className="text-xs text-muted">
+                              {formatCurrency(rs.unitPrice)}
+                              {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingRoomServiceId(rs.roomServiceId);
+                                setSelectedServiceId(rs.serviceId);
+                                setServiceQty(rs.quantity);
+                              }}
+                              className={`rounded-md p-2 transition ${
+                                editingRoomServiceId === rs.roomServiceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
+                              }`}
+                              title="Chỉnh sửa dịch vụ"
+                            >
+                              <Pencil size={16} />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                runAction(() =>
+                                  roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
+                                )
+                              }
+                              className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
+                              title="Xóa dịch vụ"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {!room.roomServices?.length && (
+                      <p className="text-center text-sm text-muted">Chưa có dịch vụ nào được gán cho phòng này</p>
+                    )}
+                  </>
                 )}
               </div>
             )}
