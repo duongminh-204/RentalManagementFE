@@ -422,6 +422,24 @@ const RoomManagementPanel = ({
       setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
     });
 
+  const handleDeviceImageUpload = (deviceId, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const okType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
+    const okExt = /\.(png|jpe?g)$/i.test(file.name);
+    if (!okType && !okExt) {
+      setLocalError('Chỉ chấp nhận ảnh PNG hoặc JPG');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLocalError('Ảnh tối đa 5MB');
+      return;
+    }
+    runAction(async () => {
+      await roomMgmtApi.uploadDeviceImage(roomId, deviceId, file);
+    });
+  };
+
   const handleAddService = () =>
     runAction(async () => {
       await roomMgmtApi.assignRoomService(roomId, {
@@ -1090,13 +1108,44 @@ const RoomManagementPanel = ({
                   {(room.devices || []).map((d) => (
                     <li
                       key={d.deviceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2"
+                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
                     >
-                      <div>
-                        <p className="font-medium text-ink-deep">{d.deviceName}</p>
-                        <p className="text-xs text-muted">
-                          SL: {d.quantity} · {d.status}
-                        </p>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        {d.imageUrl ? (
+                          <div className="relative group h-12 w-12 shrink-0 overflow-hidden rounded-md border border-hairline-cloud bg-surface-press">
+                            <img
+                              src={d.imageUrl}
+                              alt={d.deviceName}
+                              className="h-full w-full object-cover cursor-pointer transition hover:scale-105"
+                              onClick={() => setPreviewImage(d.imageUrl)}
+                            />
+                            <label className="absolute inset-0 flex items-center justify-center bg-ink-deep/50 text-white opacity-0 group-hover:opacity-100 cursor-pointer transition">
+                              <ImageIcon size={14} />
+                              <input
+                                type="file"
+                                accept="image/png, image/jpeg, image/jpg"
+                                className="hidden"
+                                onChange={(e) => handleDeviceImageUpload(d.deviceId, e)}
+                              />
+                            </label>
+                          </div>
+                        ) : (
+                          <label className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-hairline-cloud bg-surface-press text-muted cursor-pointer hover:bg-surface-press/80 hover:text-accent-violet transition" title="Tải ảnh lên">
+                            <ImageIcon size={16} />
+                            <input
+                              type="file"
+                              accept="image/png, image/jpeg, image/jpg"
+                              className="hidden"
+                              onChange={(e) => handleDeviceImageUpload(d.deviceId, e)}
+                            />
+                          </label>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-ink-deep truncate">{d.deviceName}</p>
+                          <p className="text-xs text-muted truncate">
+                            SL: {d.quantity} · {d.status}
+                          </p>
+                        </div>
                       </div>
                       <button
                         type="button"

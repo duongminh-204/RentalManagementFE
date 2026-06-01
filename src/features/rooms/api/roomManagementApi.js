@@ -68,3 +68,17 @@ export const assignTenant = async (roomId, payload) => {
 export const removeTenant = async (roomId, contractId) => {
   await api.delete(`/room-management/rooms/${roomId}/tenants/${contractId}`);
 };
+
+/** Upload ảnh thiết bị (PNG/JPG) */
+export const uploadDeviceImage = async (roomId, deviceId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post(
+    `/room-management/rooms/${roomId}/devices/${deviceId}/upload-image`,
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
+  return data;
+};

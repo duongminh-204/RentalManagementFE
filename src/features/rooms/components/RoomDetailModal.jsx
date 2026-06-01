@@ -108,6 +108,8 @@ const ImageGallery = ({ images }) => {
 };
 
 const DevicesList = ({ devices }) => {
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   if (!devices?.length) {
     return (
       <p className="rounded-lg border border-dashed border-hairline-cloud px-4 py-6 text-center text-sm text-muted">
@@ -117,10 +119,11 @@ const DevicesList = ({ devices }) => {
   }
 
   return (
-    <div className="overflow-hidden rounded-xl border border-hairline-cloud">
+    <div className="overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light">
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-hairline-cloud bg-surface-press">
+            <th className="px-4 py-2.5 font-semibold text-ink-deep w-16">Ảnh</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">Thiết bị</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">SL</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">Trạng thái</th>
@@ -133,6 +136,20 @@ const DevicesList = ({ devices }) => {
               key={device.deviceId ?? device.deviceName}
               className="border-b border-hairline-cloud last:border-0"
             >
+              <td className="px-4 py-3">
+                {device.imageUrl ? (
+                  <img
+                    src={device.imageUrl}
+                    alt={device.deviceName}
+                    className="h-10 w-10 rounded-md border border-hairline-cloud object-cover cursor-pointer hover:opacity-80 transition"
+                    onClick={() => setPreviewUrl(device.imageUrl)}
+                  />
+                ) : (
+                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-press text-muted/65">
+                    <Package size={16} />
+                  </div>
+                )}
+              </td>
               <td className="px-4 py-3 font-medium text-ink-deep">{device.deviceName}</td>
               <td className="px-4 py-3 text-muted">{device.quantity}</td>
               <td className="px-4 py-3">
@@ -143,6 +160,12 @@ const DevicesList = ({ devices }) => {
           ))}
         </tbody>
       </table>
+      <ImageModal
+        isOpen={!!previewUrl}
+        onClose={() => setPreviewUrl(null)}
+        src={previewUrl || ''}
+        alt="Ảnh thiết bị"
+      />
     </div>
   );
 };

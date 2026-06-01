@@ -88,6 +88,7 @@ export const normalizeDeviceFromApi = (device) => {
     quantity: Number(device.quantity) || 1,
     status: device.status ?? 'Working',
     note: device.note ?? null,
+    imageUrl: resolveMediaUrl(device.imageUrl ?? device.ImageUrl ?? null),
   };
 };
 
