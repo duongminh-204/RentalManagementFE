@@ -1149,15 +1149,16 @@ const RoomManagementPanel = ({
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {d.imageUrl ? (
-                          <div className="relative group h-12 w-12 shrink-0 overflow-hidden rounded-md border border-hairline-cloud bg-surface-press">
+                          <div className="relative h-12 w-12 shrink-0 rounded-md border border-hairline-cloud bg-surface-press">
                             <img
                               src={d.imageUrl}
                               alt={d.deviceName}
-                              className="h-full w-full object-cover cursor-pointer transition hover:scale-105"
+                              className="h-full w-full rounded-md object-cover cursor-pointer transition hover:opacity-80"
                               onClick={() => setPreviewImage(d.imageUrl)}
+                              title="Click để xem ảnh lớn"
                             />
-                            <label className="absolute inset-0 flex items-center justify-center bg-ink-deep/50 text-white opacity-0 group-hover:opacity-100 cursor-pointer transition">
-                              <ImageIcon size={14} />
+                            <label className="absolute right-0.5 bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink-deep/75 text-white cursor-pointer hover:bg-primary transition shadow-sm" title="Thay đổi ảnh">
+                              <ImageIcon size={10} />
                               <input
                                 type="file"
                                 accept="image/png, image/jpeg, image/jpg"
