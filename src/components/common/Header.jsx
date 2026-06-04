@@ -111,10 +111,18 @@ const Header = () => {
                         {role || 'Chưa có quyền'}
                       </p>
                     </div>
+                    <Link
+                      to="/profile"
+                      onClick={() => setIsProfileOpen(false)}
+                      className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-ink-deep transition-colors hover:bg-surface-press"
+                    >
+                      <User size={18} />
+                      Hồ sơ của tôi
+                    </Link>
                     <button
                       type="button"
                       onClick={handleLogout}
-                      className="flex w-full items-center gap-2 px-4 py-3 text-left text-sm font-medium text-accent-pink transition-colors hover:bg-surface-press"
+                      className="flex w-full items-center gap-2 border-t border-hairline-cloud px-4 py-3 text-left text-sm font-medium text-accent-pink transition-colors hover:bg-surface-press"
                     >
                       <LogOut size={18} />
                       Đăng xuất
@@ -157,6 +165,14 @@ const Header = () => {
                   </Link>
                 );
               })}
+              <Link
+                to="/profile"
+                onClick={() => setIsOpen(false)}
+                className={`nav-link w-full ${isActive('/profile') ? 'nav-link-active' : ''}`}
+              >
+                <User size={18} />
+                Hồ sơ của tôi
+              </Link>
               <button
                 type="button"
                 onClick={handleLogout}

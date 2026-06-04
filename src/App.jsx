@@ -6,6 +6,7 @@ import TenantsPage from "./features/tenants/pages/TenantsPage";
 import ContractsPage from "./features/contracts/pages/ContractsPage";
 import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
+import { ProfilePage } from './features/profile';
 
 import { PrivateRoute } from './routes/PrivateRoute';
 
@@ -63,6 +64,14 @@ function App() {
           element={
             <PrivateRoute>
               <VehiclesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           }
         />
