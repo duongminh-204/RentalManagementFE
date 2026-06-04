@@ -5,6 +5,7 @@ import { getRoleHomePath } from '../../../hooks/useAuth';
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+console.log("GOOGLE_CLIENT_ID =", GOOGLE_CLIENT_ID);
 
 // Tải script Google Identity Services một lần (không thêm dependency npm)
 const loadGsiScript = () =>
