@@ -15,7 +15,7 @@ export default function LoginPage() {
   return (
     <div className="auth-canvas flex min-h-screen items-center justify-center p-4">
       <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 md:grid-cols-2">
-        <AuthIllustration title="Trọ" highlight="EZ" logoSrc={logo} />
+        <AuthIllustration title={<span className="text-white">Trọ</span>} highlight="EZ" logoSrc={logo} />
         <div className="flex flex-col items-center gap-4">
           <LoginForm />
           <div className="flex w-full items-center gap-3">
