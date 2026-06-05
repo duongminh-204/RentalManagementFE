@@ -119,7 +119,6 @@ const RoomsList = () => {
             try {
               await roomMgmtApi.assignRoomService(newId, {
                 serviceId: Number(svc.serviceId),
-                quantity: Number(svc.quantity) || 1,
               });
             } catch (assignErr) {
               console.error('Error assigning service on create:', assignErr);
@@ -128,10 +127,10 @@ const RoomsList = () => {
           for (const dev of initialDevices) {
             try {
               await roomMgmtApi.addDevice(newId, {
+                deviceCatalogId: dev.deviceCatalogId ? Number(dev.deviceCatalogId) : undefined,
                 deviceName: dev.deviceName,
                 quantity: Number(dev.quantity) || 1,
                 status: dev.status || 'Working',
-                note: null,
               });
             } catch (deviceErr) {
               console.error('Error adding device on create:', deviceErr);

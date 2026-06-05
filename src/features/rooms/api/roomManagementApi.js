@@ -5,6 +5,25 @@ export const getServiceCatalog = async () => {
   return data;
 };
 
+export const getDeviceCatalog = async () => {
+  const { data } = await api.get('/room-management/device-catalog');
+  return data;
+};
+
+export const createDeviceCatalog = async (payload) => {
+  const { data } = await api.post('/room-management/device-catalog', payload);
+  return data;
+};
+
+export const updateDeviceCatalog = async (deviceCatalogId, payload) => {
+  const { data } = await api.put(`/room-management/device-catalog/${deviceCatalogId}`, payload);
+  return data;
+};
+
+export const deleteDeviceCatalog = async (deviceCatalogId) => {
+  await api.delete(`/room-management/device-catalog/${deviceCatalogId}`);
+};
+
 export const getTenantCandidates = async () => {
   const { data } = await api.get('/room-management/tenants/candidates');
   return data;
@@ -45,14 +64,6 @@ export const deleteDevice = async (roomId, deviceId) => {
 
 export const assignRoomService = async (roomId, payload) => {
   const { data } = await api.post(`/room-management/rooms/${roomId}/services`, payload);
-  return data;
-};
-
-export const updateRoomService = async (roomId, roomServiceId, payload) => {
-  const { data } = await api.put(
-    `/room-management/rooms/${roomId}/services/${roomServiceId}`,
-    payload
-  );
   return data;
 };
 

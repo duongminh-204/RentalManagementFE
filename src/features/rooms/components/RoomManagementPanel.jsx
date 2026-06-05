@@ -96,20 +96,6 @@ const TABS = [
   { id: 'services', label: 'Dịch vụ', icon: Package },
 ];
 
-// Thiết bị gợi ý sẵn để chủ trọ tích nhanh khi tạo phòng (backend lưu theo tên)
-const SUGGESTED_DEVICES = [
-  'Máy lạnh',
-  'Tủ lạnh',
-  'Máy giặt',
-  'Tivi',
-  'Giường',
-  'Tủ quần áo',
-  'Bàn ghế',
-  'Bình nóng lạnh',
-  'Quạt',
-  'Bếp',
-];
-
 // Map tên thiết bị/dịch vụ → icon (đồng bộ với trang Thiết bị & Dịch vụ)
 const KEYWORD_ICONS = [
   [['máy lạnh', 'điều hòa', 'điều hoà'], AirVent],
@@ -175,6 +161,7 @@ const RoomManagementPanel = ({
   const [roomImageFile, setRoomImageFile] = useState(null);
   const [roomImagePreview, setRoomImagePreview] = useState(null);
   const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [deviceCatalog, setDeviceCatalog] = useState([]);
   const [createDeviceSel, setCreateDeviceSel] = useState({});
   const [createServiceSel, setCreateServiceSel] = useState({});
   const [buildings, setBuildings] = useState([]);
@@ -223,10 +210,11 @@ const RoomManagementPanel = ({
   useEffect(() => {
     if (!isCreate) return;
     let active = true;
-    roomMgmtApi
-      .getServiceCatalog()
-      .then((data) => {
-        if (active) setServiceCatalog(Array.isArray(data) ? data : []);
+    Promise.all([roomMgmtApi.getServiceCatalog(), roomMgmtApi.getDeviceCatalog()])
+      .then(([services, devices]) => {
+        if (!active) return;
+        setServiceCatalog(Array.isArray(services) ? services : []);
+        setDeviceCatalog(Array.isArray(devices) ? devices : []);
       })
       .catch((e) => console.error(e));
     return () => {
@@ -234,11 +222,11 @@ const RoomManagementPanel = ({
     };
   }, [isCreate]);
 
-  const toggleCreateDevice = (name) => {
+  const toggleCreateDevice = (deviceCatalogId) => {
     setCreateDeviceSel((prev) => {
       const next = { ...prev };
-      if (next[name] != null) delete next[name];
-      else next[name] = 1;
+      if (next[deviceCatalogId] != null) delete next[deviceCatalogId];
+      else next[deviceCatalogId] = 1;
       return next;
     });
   };
@@ -247,7 +235,7 @@ const RoomManagementPanel = ({
     setCreateServiceSel((prev) => {
       const next = { ...prev };
       if (next[serviceId] != null) delete next[serviceId];
-      else next[serviceId] = 1;
+      else next[serviceId] = true;
       return next;
     });
   };
@@ -473,14 +461,19 @@ const RoomManagementPanel = ({
     };
 
     if (isCreate) {
-      payload.initialDevices = Object.entries(createDeviceSel).map(([deviceName, quantity]) => ({
-        deviceName,
-        quantity: Number(quantity) || 1,
-        status: 'Working',
-      }));
-      payload.initialServices = Object.entries(createServiceSel).map(([serviceId, quantity]) => ({
+      payload.initialDevices = Object.entries(createDeviceSel).map(([deviceCatalogId, quantity]) => {
+        const catalogItem = deviceCatalog.find(
+          (d) => String(d.deviceCatalogId) === String(deviceCatalogId)
+        );
+        return {
+          deviceCatalogId: Number(deviceCatalogId),
+          deviceName: catalogItem?.name || '',
+          quantity: Number(quantity) || 1,
+          status: 'Working',
+        };
+      });
+      payload.initialServices = Object.keys(createServiceSel).map((serviceId) => ({
         serviceId: Number(serviceId),
-        quantity: Number(quantity) || 1,
       }));
     }
 
@@ -969,16 +962,21 @@ const RoomManagementPanel = ({
                       Tích chọn để thêm ngay khi tạo phòng. Có thể chỉnh số lượng và bổ sung sau ở các tab tương ứng.
                     </p>
 
-                    {/* Thiết bị gợi ý */}
+                    {/* Thiết bị từ danh mục */}
                     <div>
                       <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-deep">Thiết bị</p>
+                      {deviceCatalog.length === 0 ? (
+                        <p className="text-xs text-muted">
+                          Chưa có thiết bị trong danh mục. Thêm thiết bị ở trang Thiết bị &amp; Dịch vụ.
+                        </p>
+                      ) : (
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-                        {SUGGESTED_DEVICES.map((name) => {
-                          const checked = createDeviceSel[name] != null;
-                          const DeviceIcon = resolveItemIcon(name);
+                        {deviceCatalog.map((d) => {
+                          const checked = createDeviceSel[d.deviceCatalogId] != null;
+                          const DeviceIcon = resolveItemIcon(d.name);
                           return (
                             <div
-                              key={name}
+                              key={d.deviceCatalogId}
                               className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
                                 checked ? 'border-accent-violet bg-surface-light' : 'border-hairline-cloud bg-surface-light'
                               }`}
@@ -987,7 +985,7 @@ const RoomManagementPanel = ({
                                 <input
                                   type="checkbox"
                                   checked={checked}
-                                  onChange={() => toggleCreateDevice(name)}
+                                  onChange={() => toggleCreateDevice(d.deviceCatalogId)}
                                   className="h-4 w-4 rounded border-gray-300 text-primary"
                                 />
                                 <span
@@ -997,17 +995,17 @@ const RoomManagementPanel = ({
                                 >
                                   <DeviceIcon size={16} />
                                 </span>
-                                <span className="text-sm text-ink-deep">{name}</span>
+                                <span className="text-sm text-ink-deep">{d.name}</span>
                               </label>
                               {checked && (
                                 <input
                                   type="number"
                                   min={1}
-                                  value={createDeviceSel[name]}
+                                  value={createDeviceSel[d.deviceCatalogId]}
                                   onChange={(e) =>
                                     setCreateDeviceSel((prev) => ({
                                       ...prev,
-                                      [name]: Math.max(1, Number(e.target.value) || 1),
+                                      [d.deviceCatalogId]: Math.max(1, Number(e.target.value) || 1),
                                     }))
                                   }
                                   className="text-input w-16 py-1 text-sm"
@@ -1018,6 +1016,7 @@ const RoomManagementPanel = ({
                           );
                         })}
                       </div>
+                      )}
                     </div>
 
                     {/* Dịch vụ từ danh mục */}
@@ -1058,21 +1057,6 @@ const RoomManagementPanel = ({
                                     </span>
                                   </span>
                                 </label>
-                                {checked && (
-                                  <input
-                                    type="number"
-                                    min={1}
-                                    value={createServiceSel[s.serviceId]}
-                                    onChange={(e) =>
-                                      setCreateServiceSel((prev) => ({
-                                        ...prev,
-                                        [s.serviceId]: Math.max(1, Number(e.target.value) || 1),
-                                      }))
-                                    }
-                                    className="text-input w-16 py-1 text-sm"
-                                    title="Số lượng"
-                                  />
-                                )}
                               </div>
                             );
                           })}
@@ -1317,7 +1301,7 @@ const RoomManagementPanel = ({
                         <p className="font-medium text-ink-deep">{rs.serviceName}</p>
                         <p className="text-xs text-muted">
                           {formatCurrency(rs.unitPrice)}
-                          {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
+                          {rs.unit ? `/${rs.unit}` : ''}
                         </p>
                       </div>
                     </li>

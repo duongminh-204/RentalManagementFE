@@ -1,145 +1,330 @@
-import { useState } from 'react';
-
-// ===== Danh sách phòng hiện tại của trọ =====
-const ROOMS = ['101', '102', '103', '104', '105', '201', '202', '203', '204'];
-
-// ===== Catalog thiết bị (danh sách chọn bên trái) =====
-const DEVICE_CATALOG = [
-  { id: 'c-ac', name: 'Máy lạnh', type: 'Điện lạnh', icon: 'AirVent' },
-  { id: 'c-fridge', name: 'Tủ lạnh', type: 'Nhà bếp', icon: 'Refrigerator' },
-  { id: 'c-washer', name: 'Máy giặt', type: 'Điện gia dụng', icon: 'WashingMachine' },
-  { id: 'c-tv', name: 'Tivi', type: 'Điện gia dụng', icon: 'Tv' },
-  { id: 'c-microwave', name: 'Lò vi sóng', type: 'Nhà bếp', icon: 'Microwave' },
-  { id: 'c-fan', name: 'Quạt trần', type: 'Điện gia dụng', icon: 'Fan' },
-  { id: 'c-light', name: 'Đèn LED', type: 'Điện gia dụng', icon: 'Lightbulb' },
-  { id: 'c-bed', name: 'Giường ngủ', type: 'Nội thất', icon: 'BedDouble' },
-  { id: 'c-sofa', name: 'Ghế sofa', type: 'Nội thất', icon: 'Sofa' },
-  { id: 'c-wardrobe', name: 'Tủ quần áo', type: 'Nội thất', icon: 'Shirt' },
-  { id: 'c-heater', name: 'Bình nóng lạnh', type: 'Điện gia dụng', icon: 'Flame' },
-  { id: 'c-camera', name: 'Camera an ninh', type: 'An ninh', icon: 'Cctv' },
-  { id: 'c-desk', name: 'Bàn làm việc', type: 'Nội thất', icon: 'Table' },
-  { id: 'c-lock', name: 'Khóa cửa thông minh', type: 'An ninh', icon: 'Lock' },
-];
-
-// ===== Catalog dịch vụ =====
-const SERVICE_CATALOG = [
-  { id: 's-internet', name: 'Internet cáp quang', type: 'Internet', icon: 'Wifi', price: '150000' },
-  { id: 's-clean', name: 'Dọn vệ sinh', type: 'Vệ sinh', icon: 'Sparkles', price: '50000' },
-  { id: 's-parking', name: 'Giữ xe', type: 'Giữ xe', icon: 'Car', price: '100000' },
-  { id: 's-laundry', name: 'Giặt ủi', type: 'Giặt ủi', icon: 'WashingMachine', price: '20000' },
-  { id: 's-water', name: 'Nước uống', type: 'Nước uống', icon: 'Droplet', price: '12000' },
-  { id: 's-security', name: 'Bảo vệ 24/7', type: 'An ninh', icon: 'ShieldCheck', price: '0' },
-];
-
-export const CATALOG = [
-  ...DEVICE_CATALOG.map((c) => ({ ...c, category: 'device' })),
-  ...SERVICE_CATALOG.map((c) => ({ ...c, category: 'service' })),
-];
-
-const catalogById = (catalogId) => CATALOG.find((c) => c.id === catalogId);
-
-const createId = () =>
-  typeof crypto !== 'undefined' && crypto.randomUUID
-    ? crypto.randomUUID()
-    : `it-${Date.now()}-${Math.random().toString(16).slice(2)}`;
-
-const makeItem = (roomNumber, catalogItem) => ({
-  id: createId(),
-  roomNumber,
-  catalogId: catalogItem.id,
-  name: catalogItem.name,
-  type: catalogItem.type,
-  category: catalogItem.category,
-  icon: catalogItem.icon,
-  price: catalogItem.price ?? '',
-  status: 'active',
-  image: null,
-});
-
-// Gán sẵn vài mục cho một số phòng để minh hoạ
-const seed = (roomNumber, catalogId, overrides = {}) => {
-  const c = catalogById(catalogId);
-  return { ...makeItem(roomNumber, c), ...overrides };
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as roomMgmtApi from '../../rooms/api/roomManagementApi';
+import { getAllRooms, getRoomById } from '../../rooms/api/roomsApi';
+import { normalizeRoomFromApi } from '../../rooms/utils/roomHelpers';
+const mapDeviceStatusToApi = (status) => {
+  if (status === 'maintenance') return 'Repair';
+  if (status === 'broken') return 'Broken';
+  return 'Working';
 };
 
-const INITIAL_ITEMS = [
-  seed('101', 'c-ac'),
-  seed('101', 'c-fridge'),
-  seed('101', 's-internet'),
-  seed('102', 'c-washer', { status: 'maintenance' }),
-  seed('102', 'c-tv'),
-  seed('201', 'c-camera'),
-  seed('201', 's-security'),
-];
+const mapDeviceStatusFromApi = (status) => {
+  const s = String(status || '').toLowerCase();
+  if (s === 'repair' || s === 'repairing' || s === 'maintenance') return 'maintenance';
+  if (s === 'broken' || s === 'faulty') return 'broken';
+  return 'active';
+};
 
-const createCatalogId = (category) =>
-  `${category === 'service' ? 's' : 'c'}-${Date.now()}-${Math.random()
-    .toString(16)
-    .slice(2, 6)}`;
+const guessIconFromName = (name) => {
+  const lower = (name || '').toLowerCase();
+  const rules = [
+    [['máy lạnh', 'điều hòa'], 'AirVent'],
+    [['tủ lạnh'], 'Refrigerator'],
+    [['máy giặt', 'giặt'], 'WashingMachine'],
+    [['tivi'], 'Tv'],
+    [['quạt'], 'Fan'],
+    [['đèn'], 'Lightbulb'],
+    [['giường'], 'BedDouble'],
+    [['sofa', 'ghế'], 'Sofa'],
+    [['tủ quần áo', 'tủ áo'], 'Shirt'],
+    [['internet', 'wifi', 'mạng'], 'Wifi'],
+    [['camera'], 'Cctv'],
+    [['nóng lạnh', 'bình nóng'], 'Flame'],
+    [['bếp'], 'CookingPot'],
+    [['khóa', 'khoá'], 'Lock'],
+    [['bàn'], 'Table'],
+    [['vệ sinh', 'dọn'], 'Sparkles'],
+    [['giữ xe', 'gửi xe'], 'Car'],
+    [['nước uống'], 'Droplet'],
+    [['điện'], 'Zap'],
+    [['bảo vệ', 'an ninh'], 'ShieldCheck'],
+  ];
+  for (const [keywords, icon] of rules) {
+    if (keywords.some((kw) => lower.includes(kw))) return icon;
+  }
+  return 'Package';
+};
+
+const mapDeviceCatalogItem = (item) => ({
+  id: item.deviceCatalogId,
+  deviceCatalogId: item.deviceCatalogId,
+  name: item.name,
+  icon: item.icon || guessIconFromName(item.name),
+  category: 'device',
+});
+
+const mapServiceCatalogItem = (item) => ({
+  id: item.serviceId,
+  serviceId: item.serviceId,
+  name: item.serviceName,
+  price: item.unitPrice,
+  billingCycle: item.billingCycle || 'Monthly',
+  unit: item.unit,
+  icon: item.icon || guessIconFromName(item.serviceName),
+  category: 'service',
+});
+
+const buildItemsFromRoomDetails = (rooms, roomDetails) => {
+  const result = [];
+  for (const room of rooms) {
+    const detail = roomDetails[room.id];
+    if (!detail) continue;
+    const roomLabel = room.roomNumber || room.roomName;
+
+    for (const d of detail.devices || []) {
+      result.push({
+        id: `device-${d.deviceId}`,
+        deviceId: d.deviceId,
+        roomId: room.id,
+        roomNumber: roomLabel,
+        catalogId: d.deviceCatalogId ?? d.deviceName,
+        name: d.deviceName,
+        category: 'device',
+        status: mapDeviceStatusFromApi(d.status),
+        image: d.imageUrl,
+        icon: guessIconFromName(d.deviceName),
+      });
+    }
+
+    for (const rs of detail.roomServices || []) {
+      result.push({
+        id: `service-${rs.roomServiceId}`,
+        roomServiceId: rs.roomServiceId,
+        roomId: room.id,
+        roomNumber: roomLabel,
+        catalogId: rs.serviceId,
+        name: rs.serviceName,
+        price: rs.unitPrice,
+        billingCycle: rs.billingCycle,
+        category: 'service',
+        status: 'active',
+        icon: guessIconFromName(rs.serviceName),
+      });
+    }
+  }
+  return result;
+};
 
 export const useDevices = () => {
-  const [items, setItems] = useState(INITIAL_ITEMS);
-  const [catalog, setCatalog] = useState(CATALOG);
+  const [rooms, setRooms] = useState([]);
+  const [deviceCatalog, setDeviceCatalog] = useState([]);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [roomDetails, setRoomDetails] = useState({});
+  const [selectedRoomId, setSelectedRoomId] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState(null);
 
-  const getRoomItems = (roomNumber) =>
-    items.filter((it) => String(it.roomNumber) === String(roomNumber));
+  const refreshRoomDetail = useCallback(async (roomId) => {
+    if (!roomId) return;
+    const raw = await getRoomById(roomId);
+    const detail = normalizeRoomFromApi(raw);
+    setRoomDetails((prev) => ({ ...prev, [roomId]: detail }));
+    return detail;
+  }, []);
 
-  const isAssigned = (roomNumber, catalogId) =>
-    items.some(
-      (it) => String(it.roomNumber) === String(roomNumber) && it.catalogId === catalogId
+  const loadAllRoomDetails = useCallback(async (roomList) => {
+    const entries = await Promise.all(
+      roomList.map(async (room) => {
+        try {
+          const raw = await getRoomById(room.id);
+          return [room.id, normalizeRoomFromApi(raw)];
+        } catch {
+          return [room.id, null];
+        }
+      })
     );
+    setRoomDetails(Object.fromEntries(entries.filter(([, v]) => v)));
+  }, []);
 
-  const addCatalogItem = ({ name, category, price = '', icon }) => {
-    const trimmed = (name || '').trim();
-    if (!trimmed) return;
-    const newItem = {
-      id: createCatalogId(category),
-      name: trimmed,
-      type: 'Khác',
-      category: category === 'service' ? 'service' : 'device',
-      price: category === 'service' ? price : '',
-      ...(icon ? { icon } : {}),
-    };
-    setCatalog((prev) => [...prev, newItem]);
-  };
+  const loadCatalogs = useCallback(async () => {
+    const [devices, services] = await Promise.all([
+      roomMgmtApi.getDeviceCatalog(),
+      roomMgmtApi.getServiceCatalog(),
+    ]);
+    setDeviceCatalog((Array.isArray(devices) ? devices : []).map(mapDeviceCatalogItem));
+    setServiceCatalog((Array.isArray(services) ? services : []).map(mapServiceCatalogItem));
+  }, []);
 
-  const removeCatalogItem = (catalogId) => {
-    setCatalog((prev) => prev.filter((c) => c.id !== catalogId));
-    // Gỡ luôn các mục đã gán cho phòng tham chiếu tới catalog này
-    setItems((prev) => prev.filter((it) => it.catalogId !== catalogId));
-  };
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const rawRooms = await getAllRooms();
+      const normalizedRooms = (Array.isArray(rawRooms) ? rawRooms : [])
+        .map(normalizeRoomFromApi)
+        .filter(Boolean);
+      setRooms(normalizedRooms);
+      await Promise.all([loadCatalogs(), loadAllRoomDetails(normalizedRooms)]);
+      setSelectedRoomId((prev) => {
+        if (prev && normalizedRooms.some((r) => r.id === prev)) return prev;
+        return normalizedRooms[0]?.id ?? null;
+      });
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Không tải được dữ liệu');
+    } finally {
+      setLoading(false);
+    }
+  }, [loadAllRoomDetails, loadCatalogs]);
 
-  const toggleCatalogItem = (roomNumber, catalogItem) => {
-    setItems((prev) => {
-      const exists = prev.find(
-        (it) => String(it.roomNumber) === String(roomNumber) && it.catalogId === catalogItem.id
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  const items = useMemo(
+    () => buildItemsFromRoomDetails(rooms, roomDetails),
+    [rooms, roomDetails]
+  );
+
+  const isAssigned = useCallback(
+    (roomId, catalogId) =>
+      items.some(
+        (it) => String(it.roomId) === String(roomId) && String(it.catalogId) === String(catalogId)
+      ),
+    [items]
+  );
+
+  const runMutation = useCallback(async (fn) => {
+    setSaving(true);
+    setError(null);
+    try {
+      await fn();
+      await refresh();
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra');
+      throw err;
+    } finally {
+      setSaving(false);
+    }
+  }, [refresh]);
+
+  const addCatalogItem = useCallback(
+    async ({ name, category, price = '', billingCycle = 'Monthly', icon }) => {
+      const trimmed = (name || '').trim();
+      if (!trimmed) return;
+      const guessedIcon = icon || guessIconFromName(trimmed);
+
+      await runMutation(async () => {
+        if (category === 'service') {
+          await roomMgmtApi.createService({
+            serviceName: trimmed,
+            unitPrice: Number(price) || 0,
+            billingCycle,
+            icon: guessedIcon,
+          });
+        } else {
+          await roomMgmtApi.createDeviceCatalog({
+            name: trimmed,
+            icon: guessedIcon,
+          });
+        }
+      });
+    },
+    [runMutation]
+  );
+
+  const removeCatalogItem = useCallback(
+    async (catalogItem) => {
+      await runMutation(async () => {
+        if (catalogItem.category === 'service') {
+          await roomMgmtApi.deleteService(catalogItem.serviceId ?? catalogItem.id);
+        } else {
+          await roomMgmtApi.deleteDeviceCatalog(catalogItem.deviceCatalogId ?? catalogItem.id);
+        }
+      });
+    },
+    [runMutation]
+  );
+
+  const toggleCatalogItem = useCallback(
+    async (roomId, catalogItem) => {
+      const existing = items.find(
+        (it) =>
+          String(it.roomId) === String(roomId) &&
+          String(it.catalogId) === String(catalogItem.id)
       );
-      if (exists) {
-        return prev.filter((it) => it.id !== exists.id);
-      }
-      return [...prev, makeItem(roomNumber, catalogItem)];
-    });
-  };
 
-  const removeItem = (itemId) => {
-    setItems((prev) => prev.filter((it) => it.id !== itemId));
-  };
+      await runMutation(async () => {
+        if (existing) {
+          if (existing.category === 'service') {
+            await roomMgmtApi.deleteRoomService(roomId, existing.roomServiceId);
+          } else {
+            await roomMgmtApi.deleteDevice(roomId, existing.deviceId);
+          }
+          return;
+        }
 
-  const changeStatus = (itemId, status) => {
-    setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, status } : it)));
-  };
+        if (catalogItem.category === 'service') {
+          await roomMgmtApi.assignRoomService(roomId, {
+            serviceId: catalogItem.serviceId ?? catalogItem.id,
+          });
+        } else {
+          await roomMgmtApi.addDevice(roomId, {
+            deviceCatalogId: catalogItem.deviceCatalogId ?? catalogItem.id,
+            deviceName: catalogItem.name,
+            quantity: 1,
+            status: 'Working',
+          });
+        }
+      });
+    },
+    [items, runMutation]
+  );
 
-  const setItemImage = (itemId, image) => {
-    setItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, image } : it)));
-  };
+  const removeItem = useCallback(
+    async (item) => {
+      await runMutation(async () => {
+        if (item.category === 'service') {
+          await roomMgmtApi.deleteRoomService(item.roomId, item.roomServiceId);
+        } else {
+          await roomMgmtApi.deleteDevice(item.roomId, item.deviceId);
+        }
+      });
+    },
+    [runMutation]
+  );
+
+  const changeStatus = useCallback(
+    async (item, status) => {
+      if (item.category !== 'device') return;
+      await runMutation(async () => {
+        await roomMgmtApi.updateDevice(item.roomId, item.deviceId, {
+          deviceName: item.name,
+          quantity: 1,
+          status: mapDeviceStatusToApi(status),
+          imageUrl: item.image?.startsWith('http') ? item.image : undefined,
+        });
+      });
+    },
+    [runMutation]
+  );
+
+  const setItemImage = useCallback(
+    async (item, file) => {
+      if (!file || item.category !== 'device') return;
+      await runMutation(async () => {
+        await roomMgmtApi.uploadDeviceImage(item.roomId, item.deviceId, file);
+      });
+    },
+    [runMutation]
+  );
+
+  const selectedRoom = useMemo(
+    () => rooms.find((r) => r.id === selectedRoomId) ?? null,
+    [rooms, selectedRoomId]
+  );
 
   return {
-    rooms: ROOMS,
-    catalog,
-    deviceCatalog: catalog.filter((c) => c.category === 'device'),
-    serviceCatalog: catalog.filter((c) => c.category === 'service'),
+    rooms,
+    selectedRoomId,
+    setSelectedRoomId,
+    selectedRoom,
+    deviceCatalog,
+    serviceCatalog,
     items,
-    getRoomItems,
+    loading,
+    saving,
+    error,
     isAssigned,
     toggleCatalogItem,
     removeItem,
@@ -147,5 +332,7 @@ export const useDevices = () => {
     setItemImage,
     addCatalogItem,
     removeCatalogItem,
+    refresh,
+    refreshRoomDetail,
   };
 };
