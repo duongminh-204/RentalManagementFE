@@ -1,6 +1,39 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { X, Check, AlertCircle } from 'lucide-react';
+import {
+  X,
+  Check,
+  AlertCircle,
+  Wifi,
+  Snowflake,
+  Refrigerator,
+  WashingMachine,
+  Tv,
+  BedDouble,
+  Sofa,
+  Shirt,
+  Flame,
+  ParkingCircle,
+  ShieldCheck,
+  Camera,
+} from 'lucide-react';
+
+const AMENITIES = [
+  { id: 'wifi', label: 'Wifi miễn phí', icon: Wifi },
+  { id: 'airConditioner', label: 'Máy lạnh', icon: Snowflake },
+  { id: 'fridge', label: 'Tủ lạnh', icon: Refrigerator },
+  { id: 'washingMachine', label: 'Máy giặt', icon: WashingMachine },
+  { id: 'tv', label: 'Tivi', icon: Tv },
+  { id: 'bed', label: 'Giường ngủ', icon: BedDouble },
+  { id: 'furniture', label: 'Nội thất', icon: Sofa },
+  { id: 'wardrobe', label: 'Tủ quần áo', icon: Shirt },
+  { id: 'waterHeater', label: 'Bình nóng lạnh', icon: Flame },
+  { id: 'parking', label: 'Chỗ để xe', icon: ParkingCircle },
+  { id: 'security', label: 'An ninh 24/7', icon: ShieldCheck },
+  { id: 'camera', label: 'Camera giám sát', icon: Camera },
+];
+
+const INITIAL_VISIBLE_AMENITIES = 6;
 
 const RoomFormComponent = ({ 
   onSubmit, 
@@ -18,10 +51,24 @@ const RoomFormComponent = ({
     area: '',
     maxPeople: '',
     status: 'vacant',
-    description: ''
+    description: '',
+    amenities: []
   });
 
   const [validationErrors, setValidationErrors] = useState({});
+  const [showAllAmenities, setShowAllAmenities] = useState(false);
+
+  const toggleAmenity = (amenityId) => {
+    setFormData(prev => {
+      const exists = prev.amenities.includes(amenityId);
+      return {
+        ...prev,
+        amenities: exists
+          ? prev.amenities.filter(id => id !== amenityId)
+          : [...prev.amenities, amenityId]
+      };
+    });
+  };
 
   useEffect(() => {
     if (initialData) {
@@ -34,7 +81,8 @@ const RoomFormComponent = ({
         area: initialData.area ?? '',
         maxPeople: initialData.maxPeople ?? '',
         status: initialData.status || 'vacant',
-        description: initialData.description || ''
+        description: initialData.description || '',
+        amenities: Array.isArray(initialData.amenities) ? initialData.amenities : []
       });
     }
   }, [initialData]);
@@ -251,6 +299,49 @@ const RoomFormComponent = ({
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet transition-all resize-none"
           />
         </div>
+
+        {/* Tiện ích */}
+        <section
+          className="bg-white p-8"
+          style={{ borderRadius: '20px', border: '1px solid #E5E7EB' }}
+        >
+          <h3 className="text-[32px] font-bold leading-tight text-gray-900">Tiện ích</h3>
+          <p className="mt-1 text-gray-500">
+            Chọn các tiện ích có sẵn trong phòng để khách thuê dễ dàng tham khảo.
+          </p>
+          <hr className="my-6 border-t border-gray-200" />
+
+          <div className="grid grid-cols-1 gap-y-6 gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
+            {(showAllAmenities ? AMENITIES : AMENITIES.slice(0, INITIAL_VISIBLE_AMENITIES)).map(
+              ({ id, label, icon: Icon }) => {
+                const checked = formData.amenities.includes(id);
+                return (
+                  <label
+                    key={id}
+                    className="flex cursor-pointer items-center gap-3 select-none"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleAmenity(id)}
+                      className="h-5 w-5 shrink-0 cursor-pointer rounded border-gray-300 text-primary focus-visible:outline-accent-violet"
+                    />
+                    <Icon size={20} className="shrink-0 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">{label}</span>
+                  </label>
+                );
+              }
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setShowAllAmenities(prev => !prev)}
+            className="mt-8 rounded-full border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:border-gray-500"
+          >
+            {showAllAmenities ? 'Thu gọn' : 'Xem thêm tiện ích'}
+          </button>
+        </section>
 
         {/* Buttons */}
         <div className="flex gap-4 pt-6">
