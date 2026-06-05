@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { LoginPage, RegisterPage } from './features/auth';
 import { Dashboard } from './features/dashboard';
 import RoomsPage from "./features/rooms/pages/RoomsPage";
+import { BuildingPage, BuildingCreate, BuildingEdit } from "./features/buildings";
 import TenantsPage from "./features/tenants/pages/TenantsPage";
 import ContractsPage from "./features/contracts/pages/ContractsPage";
 import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
@@ -33,6 +34,30 @@ function App() {
           element={
             <PrivateRoute>
               <RoomsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/buildings"
+          element={
+            <PrivateRoute>
+              <BuildingPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/buildings/create"
+          element={
+            <PrivateRoute>
+              <BuildingCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/buildings/:id/edit"
+          element={
+            <PrivateRoute>
+              <BuildingEdit />
             </PrivateRoute>
           }
         />

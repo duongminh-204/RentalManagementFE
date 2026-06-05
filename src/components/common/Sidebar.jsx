@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
+  Building,
   Building2,
   Car,
   Cpu,
@@ -17,6 +18,7 @@ import { getStoredRole, getStoredUser } from '../../hooks/useAuth';
 
 const navItems = [
   { label: 'Tổng quan', path: '/dashboard', icon: Home },
+  { label: 'Quản lý tòa nhà', path: '/buildings', icon: Building },
   { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
   { label: 'Khách thuê', path: '/tenants', icon: Users },
   { label: 'Hợp đồng', path: '/contracts', icon: FileText },

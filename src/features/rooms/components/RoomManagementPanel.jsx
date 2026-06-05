@@ -1008,9 +1008,6 @@ const RoomManagementPanel = ({
 
             {activeTab === 'devices' && canManageExtras && (
               <div className="space-y-4">
-                <p className="rounded-lg border border-hairline-cloud bg-surface-press/40 px-3 py-2 text-xs text-muted">
-                  Danh sách thiết bị của phòng (chỉ xem). Việc thêm / sửa / xóa thiết bị được thực hiện ở trang Thiết bị.
-                </p>
                 <ul className="space-y-2">
                   {(room.devices || []).map((d) => (
                     <li
@@ -1049,9 +1046,6 @@ const RoomManagementPanel = ({
 
             {activeTab === 'services' && canManageExtras && (
               <div className="space-y-4">
-                <p className="rounded-lg border border-hairline-cloud bg-surface-press/40 px-3 py-2 text-xs text-muted">
-                  Danh sách dịch vụ của phòng (chỉ xem). Việc thêm / sửa / xóa dịch vụ được thực hiện ở trang Dịch vụ.
-                </p>
                 <ul className="space-y-2">
                   {(room.roomServices || []).map((rs) => (
                     <li
