@@ -1,16 +1,17 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search,
-  Filter,
-  Plus,
-  Pencil,
+  DoorClosed,
   Trash2,
+  Upload,
   Cpu,
   CheckCircle2,
   Wrench,
   AlertCircle,
-  // Icon theo loại / thiết bị cụ thể
+  Plus,
+  X,
+  Check,
+  // Icon thiết bị / dịch vụ
   AirVent,
   Refrigerator,
   WashingMachine,
@@ -22,49 +23,40 @@ import {
   Sofa,
   Armchair,
   Shirt,
-  Wifi,
-  Router,
+  Flame,
   Cctv,
   Camera,
-  Flame,
-  ShowerHead,
-  Bath,
-  CookingPot,
-  Utensils,
-  Speaker,
-  Monitor,
+  Table,
   Lock,
   KeyRound,
-  Table,
-  Plug,
-  Snowflake,
-  ShieldCheck,
-  Package,
-  // Icon dịch vụ
+  Wifi,
+  Router,
   Sparkles,
   Car,
   Droplet,
+  ShowerHead,
+  Bath,
+  Speaker,
+  Monitor,
+  Utensils,
   Zap,
+  ShieldCheck,
+  Plug,
+  Snowflake,
+  CookingPot,
+  Package,
 } from 'lucide-react';
 import { useDevices } from '../hooks/useDevices';
-import {
-  DEVICE_STATUS_OPTIONS,
-  TYPE_ICON,
-  ITEM_CATEGORY_OPTIONS,
-  getStatusConfig,
-  getCategory,
-} from '../constants';
-import DeviceFormModal from './DeviceFormModal';
+import { DEVICE_STATUS_OPTIONS, TYPE_ICON, getStatusConfig } from '../constants';
 
-// Bộ icon dùng được (resolve theo tên)
 const ICON_REGISTRY = {
   AirVent, Refrigerator, WashingMachine, Tv, Microwave, Fan, Lightbulb,
-  BedDouble, Sofa, Armchair, Shirt, Wifi, Router, Cctv, Camera, Flame,
-  ShowerHead, Bath, CookingPot, Utensils, Speaker, Monitor, Lock, KeyRound,
-  Table, Plug, Snowflake, ShieldCheck, Package, Sparkles, Car, Droplet, Zap,
+  BedDouble, Sofa, Armchair, Shirt, Flame, Cctv, Camera, Table, Lock, KeyRound,
+  Wifi, Router, Sparkles, Car, Droplet, ShowerHead, Bath, Speaker, Monitor,
+  Utensils, Zap, ShieldCheck, Plug, Snowflake, CookingPot, Package,
 };
 
-// Đoán icon theo từ khóa trong tên (cho mục mới chưa gán icon)
+// Đoán icon theo từ khóa tên (cho mục mới do người dùng thêm)
 const KEYWORD_ICONS = [
   [['máy lạnh', 'điều hòa', 'điều hoà'], AirVent],
   [['tủ lạnh'], Refrigerator],
@@ -74,7 +66,7 @@ const KEYWORD_ICONS = [
   [['quạt'], Fan],
   [['đèn'], Lightbulb],
   [['giường'], BedDouble],
-  [['sofa', 'ghế sofa'], Sofa],
+  [['sofa'], Sofa],
   [['ghế'], Armchair],
   [['tủ quần áo', 'tủ áo', 'tủ đồ'], Shirt],
   [['internet', 'mạng', 'wifi', 'modem', 'router'], Wifi],
@@ -82,18 +74,17 @@ const KEYWORD_ICONS = [
   [['nóng lạnh', 'bình nóng'], Flame],
   [['vòi sen', 'sen tắm'], ShowerHead],
   [['bồn tắm', 'bồn'], Bath],
-  [['bếp gas', 'bếp ga', 'bếp từ', 'bếp'], CookingPot],
+  [['bếp'], CookingPot],
   [['nồi'], Utensils],
   [['khóa', 'khoá'], Lock],
-  [['chìa', 'key'], KeyRound],
   [['loa'], Speaker],
   [['màn hình', 'máy tính', 'monitor'], Monitor],
   [['bàn'], Table],
-  // Dịch vụ
-  [['vệ sinh', 'dọn', 'dọn dẹp'], Sparkles],
+  [['vệ sinh', 'dọn'], Sparkles],
   [['giữ xe', 'gửi xe', 'bãi xe', 'đỗ xe'], Car],
   [['nước uống', 'nước'], Droplet],
   [['điện'], Zap],
+  [['bảo vệ', 'an ninh'], ShieldCheck],
 ];
 
 const STATUS_ICONS = {
@@ -102,15 +93,13 @@ const STATUS_ICONS = {
   broken: { Icon: AlertCircle, className: 'text-red-500' },
 };
 
-const getDeviceIcon = (device) => {
-  if (device.icon && ICON_REGISTRY[device.icon]) return ICON_REGISTRY[device.icon];
-
-  const name = (device.name || '').toLowerCase();
+const resolveIcon = (item) => {
+  if (item.icon && ICON_REGISTRY[item.icon]) return ICON_REGISTRY[item.icon];
+  const name = (item.name || '').toLowerCase();
   for (const [keywords, Icon] of KEYWORD_ICONS) {
     if (keywords.some((kw) => name.includes(kw))) return Icon;
   }
-
-  return ICON_REGISTRY[TYPE_ICON[device.type]] || Package;
+  return ICON_REGISTRY[TYPE_ICON[item.type]] || Package;
 };
 
 const formatPrice = (value) => {
@@ -120,76 +109,256 @@ const formatPrice = (value) => {
 };
 
 const DevicesList = () => {
-  const { devices, addDevice, editDevice, removeDevice, changeDeviceStatus } = useDevices();
+  const {
+    rooms,
+    deviceCatalog,
+    serviceCatalog,
+    items,
+    isAssigned,
+    toggleCatalogItem,
+    removeItem,
+    changeStatus,
+    setItemImage,
+    addCatalogItem,
+    removeCatalogItem,
+  } = useDevices();
 
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [categoryFilter, setCategoryFilter] = useState('all'); // all | device | service
-  const [modalMode, setModalMode] = useState(null); // null | 'create' | 'edit'
-  const [editingDevice, setEditingDevice] = useState(null);
+  const [selectedRoom, setSelectedRoom] = useState(rooms[0]);
+  const [addingFor, setAddingFor] = useState(null); // null | 'device' | 'service'
+  const [newName, setNewName] = useState('');
+  const [newPrice, setNewPrice] = useState('');
 
-  const filteredDevices = useMemo(() => {
-    const term = searchTerm.trim().toLowerCase();
-    return devices.filter((device) => {
-      const matchSearch =
-        device.name.toLowerCase().includes(term) ||
-        device.roomNumber.toString().toLowerCase().includes(term);
-      const matchStatus = statusFilter === 'all' || device.status === statusFilter;
-      const matchCategory =
-        categoryFilter === 'all' || getCategory(device) === categoryFilter;
-      return matchSearch && matchStatus && matchCategory;
-    });
-  }, [devices, searchTerm, statusFilter, categoryFilter]);
-
-  const counts = useMemo(
-    () => ({
-      all: devices.length,
-      device: devices.filter((d) => getCategory(d) === 'device').length,
-      service: devices.filter((d) => getCategory(d) === 'service').length,
-    }),
-    [devices]
+  const roomItems = useMemo(
+    () => items.filter((it) => String(it.roomNumber) === String(selectedRoom)),
+    [items, selectedRoom]
   );
+  const roomDevices = roomItems.filter((it) => it.category === 'device');
+  const roomServices = roomItems.filter((it) => it.category === 'service');
 
-  const categoryTabs = [
-    { value: 'all', label: 'Tất cả' },
-    ...ITEM_CATEGORY_OPTIONS.map((option) => ({ value: option.value, label: option.label })),
-  ];
+  const countByRoom = (room) =>
+    items.filter((it) => String(it.roomNumber) === String(room)).length;
 
-  const openCreate = () => {
-    setEditingDevice(null);
-    setModalMode('create');
+  const handleImage = (item, e) => {
+    const file = e.target.files?.[0];
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = () => setItemImage(item.id, reader.result);
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
-  const openEdit = (device) => {
-    setEditingDevice(device);
-    setModalMode('edit');
+  const startAdding = (category) => {
+    setAddingFor(category);
+    setNewName('');
+    setNewPrice('');
   };
 
-  const closeModal = () => {
-    setModalMode(null);
-    setEditingDevice(null);
+  const cancelAdding = () => {
+    setAddingFor(null);
+    setNewName('');
+    setNewPrice('');
   };
 
-  const handleSubmit = (formData) => {
-    if (modalMode === 'edit' && editingDevice) {
-      editDevice(editingDevice.id, formData);
-    } else {
-      addDevice(formData);
+  const confirmAdding = () => {
+    if (!newName.trim()) return;
+    addCatalogItem({ name: newName, category: addingFor, price: newPrice });
+    cancelAdding();
+  };
+
+  const handleRemoveCatalog = (item) => {
+    if (
+      window.confirm(
+        `Xóa "${item.name}" khỏi danh sách? Mọi phòng đang dùng mục này cũng sẽ bị gỡ.`
+      )
+    ) {
+      removeCatalogItem(item.id);
     }
-    closeModal();
   };
 
-  const handleDelete = (device) => {
-    if (window.confirm(`Bạn có chắc muốn xóa "${device.name}"?`)) {
-      removeDevice(device.id);
+  // ===== Ô chọn bên trái (lưới icon + nhãn) =====
+  const CatalogCell = ({ item }) => {
+    const Icon = resolveIcon(item);
+    const checked = isAssigned(selectedRoom, item.id);
+    return (
+      <div className="group/cell relative">
+        <button
+          type="button"
+          onClick={() => toggleCatalogItem(selectedRoom, item)}
+          className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
+            checked
+              ? 'border-primary bg-primary/5'
+              : 'border-hairline-cloud hover:border-gray-400 hover:bg-surface-press'
+          }`}
+        >
+          <span
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${
+              checked ? 'bg-primary text-on-primary' : 'bg-surface-light text-gray-500'
+            }`}
+          >
+            {checked ? <Check size={18} /> : <Icon size={18} />}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-ink-deep">{item.name}</span>
+            {item.category === 'service' && (
+              <span className="block truncate text-xs text-gray-400">{formatPrice(item.price)}</span>
+            )}
+          </span>
+        </button>
+
+        {/* Xóa khỏi danh sách */}
+        <button
+          type="button"
+          onClick={() => handleRemoveCatalog(item)}
+          title="Xóa khỏi danh sách"
+          className="absolute -right-2 -top-2 hidden h-6 w-6 items-center justify-center rounded-full border border-red-200 bg-white text-accent-pink shadow-sm hover:bg-red-50 group-hover/cell:flex"
+        >
+          <X size={13} />
+        </button>
+      </div>
+    );
+  };
+
+  // ===== Khu vực thêm mục mới =====
+  const AddArea = ({ category }) => {
+    const active = addingFor === category;
+    if (!active) {
+      return (
+        <button
+          type="button"
+          onClick={() => startAdding(category)}
+          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-3 text-sm font-medium text-gray-500 transition-colors hover:border-gray-500 hover:text-ink-deep"
+        >
+          <Plus size={16} />
+          Thêm {category === 'service' ? 'dịch vụ' : 'thiết bị'} mới
+        </button>
+      );
     }
+    return (
+      <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+        <input
+          autoFocus
+          type="text"
+          value={newName}
+          onChange={(e) => setNewName(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && confirmAdding()}
+          placeholder={category === 'service' ? 'Tên dịch vụ...' : 'Tên thiết bị...'}
+          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+        />
+        {category === 'service' && (
+          <input
+            type="number"
+            min="0"
+            value={newPrice}
+            onChange={(e) => setNewPrice(e.target.value)}
+            placeholder="Giá (₫) - để trống nếu miễn phí"
+            className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+          />
+        )}
+        <div className="mt-2 flex gap-2">
+          <button
+            type="button"
+            onClick={confirmAdding}
+            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90"
+          >
+            <Check size={15} />
+            Lưu
+          </button>
+          <button
+            type="button"
+            onClick={cancelAdding}
+            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-surface-press"
+          >
+            Hủy
+          </button>
+        </div>
+      </div>
+    );
   };
 
-  const cycleStatus = (device) => {
-    const order = ['active', 'maintenance', 'broken'];
-    const next = order[(order.indexOf(device.status) + 1) % order.length];
-    changeDeviceStatus(device.id, next);
+  // ===== Item bên phải (đã gán cho phòng) =====
+  const AssignedRow = ({ item }) => {
+    const Icon = resolveIcon(item);
+    const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.active;
+    const StatusIcon = statusIcon.Icon;
+    return (
+      <motion.div
+        layout
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.97 }}
+        className="flex items-center gap-3 rounded-xl border border-hairline-cloud p-3"
+      >
+        {/* Ảnh / icon — bấm để upload */}
+        <label
+          title="Tải ảnh lên"
+          className="group/img relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-hairline-cloud bg-surface-light text-ink-deep"
+        >
+          {item.image ? (
+            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+          ) : (
+            <Icon size={20} />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-ink-deep/50 text-on-primary opacity-0 transition-opacity group-hover/img:opacity-100">
+            <Upload size={16} />
+          </span>
+          <input type="file" accept="image/*" onChange={(e) => handleImage(item, e)} className="hidden" />
+        </label>
+
+        {/* Tên + meta */}
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-medium text-ink-deep">{item.name}</p>
+          <p className="truncate text-xs text-gray-400">
+            {item.category === 'service' ? formatPrice(item.price) : item.type}
+            {' · '}
+            <span className={statusIcon.className}>{getStatusConfig(item.status).label}</span>
+          </p>
+        </div>
+
+        {/* Trạng thái */}
+        <StatusIcon size={18} className={`shrink-0 ${statusIcon.className}`} />
+        <select
+          value={item.status}
+          onChange={(e) => changeStatus(item.id, e.target.value)}
+          className="shrink-0 rounded-lg border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+        >
+          {DEVICE_STATUS_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+
+        {/* Gỡ khỏi phòng */}
+        <button
+          type="button"
+          onClick={() => removeItem(item.id)}
+          title="Gỡ khỏi phòng"
+          className="shrink-0 rounded-lg border border-red-200 p-2 text-accent-pink transition-colors hover:bg-red-50"
+        >
+          <Trash2 size={15} />
+        </button>
+      </motion.div>
+    );
   };
+
+  const RoomSection = ({ title, list, emptyText }) => (
+    <div>
+      <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">{title}</h4>
+      {list.length === 0 ? (
+        <p className="rounded-lg border border-dashed border-hairline-cloud px-4 py-6 text-center text-sm text-gray-400">
+          {emptyText}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          <AnimatePresence>
+            {list.map((item) => (
+              <AssignedRow key={item.id} item={item} />
+            ))}
+          </AnimatePresence>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
@@ -199,181 +368,120 @@ const DevicesList = () => {
           style={{ borderRadius: '20px', border: '1px solid #E5E7EB' }}
         >
           {/* Header */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <h1 className="text-[32px] font-bold leading-tight text-ink-deep">
-                Quản lý thiết bị &amp; dịch vụ
-              </h1>
-              <p className="mt-1 text-gray-500">
-                Quản lý thiết bị, dịch vụ và trạng thái của từng phòng.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={openCreate}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 font-semibold text-on-primary transition-opacity hover:opacity-90"
-            >
-              <Plus size={20} />
-              Thêm mục
-            </button>
+          <div>
+            <h1 className="text-[32px] font-bold leading-tight text-ink-deep">
+              Quản lý thiết bị &amp; dịch vụ
+            </h1>
+            <p className="mt-1 text-gray-500">
+              Chọn phòng, tích vào danh sách bên trái để thêm thiết bị / dịch vụ cho phòng.
+            </p>
           </div>
 
-          {/* Tabs phân loại */}
-          <div className="mt-5 flex flex-wrap gap-2">
-            {categoryTabs.map((tab) => {
-              const active = categoryFilter === tab.value;
-              return (
-                <button
-                  key={tab.value}
-                  type="button"
-                  onClick={() => setCategoryFilter(tab.value)}
-                  className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
-                    active
-                      ? 'bg-primary text-on-primary'
-                      : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
-                  }`}
-                >
-                  {tab.label} ({counts[tab.value]})
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Toolbar */}
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-2.5 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Tìm theo tên hoặc phòng..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-lg border border-gray-300 py-2 pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-              />
-            </div>
-            <div className="flex items-center gap-2">
-              <Filter size={18} className="text-gray-400" />
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-              >
-                <option value="all">Tất cả trạng thái</option>
-                {DEVICE_STATUS_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
+          {/* Box danh sách phòng */}
+          <div className="mt-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">
+            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
+              <DoorClosed size={18} className="text-accent-violet-mid" />
+              Phòng trọ
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {rooms.map((room) => {
+                const active = selectedRoom === room;
+                const count = countByRoom(room);
+                return (
+                  <button
+                    key={room}
+                    type="button"
+                    onClick={() => setSelectedRoom(room)}
+                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                      active
+                        ? 'bg-primary text-on-primary'
+                        : 'border border-hairline-cloud bg-white text-ink-deep hover:bg-surface-press'
+                    }`}
+                  >
+                    Phòng {room}
+                    <span
+                      className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                        active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Divider */}
           <hr className="my-6 border-t border-gray-200" />
 
-          {/* Grid */}
-          {filteredDevices.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-14 text-center">
-              <Cpu size={40} className="text-gray-300" />
-              <p className="mt-3 font-medium text-gray-600">Chưa có mục nào</p>
-              <p className="text-sm text-gray-400">Nhấn "Thêm mục" để thêm thiết bị hoặc dịch vụ.</p>
+          {/* 2 cột: trái = catalog checkbox, phải = chi tiết phòng */}
+          <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+            {/* Cột trái */}
+            <div className="rounded-xl border border-hairline-cloud p-5">
+              <p className="mb-4 text-base font-bold text-ink-deep">
+                Danh sách thiết bị &amp; dịch vụ
+              </p>
+
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Thiết bị
+              </h4>
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {deviceCatalog.map((item) => (
+                  <CatalogCell key={item.id} item={item} />
+                ))}
+              </div>
+              <div className="mb-6">
+                <AddArea category="device" />
+              </div>
+
+              <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
+                Dịch vụ
+              </h4>
+              <div className="mb-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {serviceCatalog.map((item) => (
+                  <CatalogCell key={item.id} item={item} />
+                ))}
+              </div>
+              <AddArea category="service" />
             </div>
-          ) : (
-            <div className="grid grid-cols-1 gap-y-6 gap-x-12 sm:grid-cols-2 lg:grid-cols-3">
-              <AnimatePresence>
-                {filteredDevices.map((device) => {
-                  const TypeIcon = getDeviceIcon(device);
-                  const status = getStatusConfig(device.status);
-                  const statusIcon = STATUS_ICONS[device.status] || STATUS_ICONS.active;
-                  const StatusIcon = statusIcon.Icon;
-                  const isService = getCategory(device) === 'service';
-                  const subLine = isService
-                    ? `${device.roomNumber || 'Toàn nhà'} · ${formatPrice(device.price)}`
-                    : `Phòng ${device.roomNumber}`;
-                  return (
-                    <motion.div
-                      key={device.id}
-                      layout
-                      initial={{ opacity: 0, y: 12 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95 }}
-                      className="group flex items-center gap-3"
-                    >
-                      {/* Icon / ảnh thiết bị */}
-                      <div className="flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light text-ink-deep">
-                        {device.image ? (
-                          <img
-                            src={device.image}
-                            alt={device.name}
-                            className="h-full w-full object-cover"
-                          />
-                        ) : (
-                          <TypeIcon size={20} />
-                        )}
-                      </div>
 
-                      {/* Tên + phòng + trạng thái */}
-                      <button
-                        type="button"
-                        onClick={() => openEdit(device)}
-                        className="min-w-0 flex-1 text-left"
-                      >
-                        <p className="truncate font-medium text-ink-deep">{device.name}</p>
-                        <p className="truncate text-xs text-gray-400">
-                          {subLine} · {status.label}
-                        </p>
-                      </button>
+            {/* Cột phải */}
+            <div className="rounded-xl border border-hairline-cloud p-5">
+              <div className="mb-4 flex items-center justify-between">
+                <p className="text-base font-bold text-ink-deep">Phòng {selectedRoom}</p>
+                <span className="text-sm text-gray-400">
+                  {roomDevices.length} thiết bị · {roomServices.length} dịch vụ
+                </span>
+              </div>
 
-                      {/* Trạng thái + hành động */}
-                      <div className="relative ml-auto flex h-9 w-[88px] shrink-0 items-center justify-end">
-                        <button
-                          type="button"
-                          onClick={() => cycleStatus(device)}
-                          title="Bấm để đổi trạng thái"
-                          className={`transition-opacity group-hover:opacity-0 ${statusIcon.className}`}
-                        >
-                          <StatusIcon size={22} />
-                        </button>
-
-                        <div className="absolute right-0 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                          <button
-                            type="button"
-                            onClick={() => openEdit(device)}
-                            title="Sửa"
-                            className="rounded-lg border border-gray-300 p-2 text-ink-deep transition-colors hover:bg-surface-press"
-                          >
-                            <Pencil size={15} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => handleDelete(device)}
-                            title="Xóa"
-                            className="rounded-lg border border-red-200 p-2 text-accent-pink transition-colors hover:bg-red-50"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        </div>
-                      </div>
-                    </motion.div>
-                  );
-                })}
-              </AnimatePresence>
+              {roomItems.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <Cpu size={36} className="text-gray-300" />
+                  <p className="mt-3 text-sm font-medium text-gray-600">
+                    Phòng này chưa có thiết bị / dịch vụ
+                  </p>
+                  <p className="text-sm text-gray-400">
+                    Tích vào danh sách bên trái để thêm.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <RoomSection
+                    title="Thiết bị"
+                    list={roomDevices}
+                    emptyText="Chưa có thiết bị. Tích ở danh sách Thiết bị bên trái."
+                  />
+                  <RoomSection
+                    title="Dịch vụ"
+                    list={roomServices}
+                    emptyText="Chưa có dịch vụ. Tích ở danh sách Dịch vụ bên trái."
+                  />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </section>
       </div>
-
-      {/* Modal thêm / sửa */}
-      <AnimatePresence>
-        {modalMode && (
-          <DeviceFormModal
-            mode={modalMode}
-            initialData={editingDevice}
-            onSubmit={handleSubmit}
-            onClose={closeModal}
-          />
-        )}
-      </AnimatePresence>
     </div>
   );
 };

@@ -19,7 +19,14 @@ const EMPTY_FORM = {
   description: '',
 };
 
-const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClose }) => {
+const DeviceFormModal = ({
+  mode = 'create',
+  initialData = null,
+  defaultRoom = '',
+  defaultCategory = 'device',
+  onSubmit,
+  onClose,
+}) => {
   const [formData, setFormData] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const fileInputRef = useRef(null);
@@ -28,9 +35,15 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
     if (initialData) {
       setFormData({ ...EMPTY_FORM, ...initialData });
     } else {
-      setFormData(EMPTY_FORM);
+      const category = defaultCategory || 'device';
+      setFormData({
+        ...EMPTY_FORM,
+        category,
+        type: getTypesByCategory(category)[0],
+        roomNumber: defaultRoom || '',
+      });
     }
-  }, [initialData]);
+  }, [initialData, defaultRoom, defaultCategory]);
 
   const isService = formData.category === 'service';
 
@@ -190,7 +203,7 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
               placeholder={
                 isService
                   ? 'VD: Internet, Giữ xe, Dọn vệ sinh...'
-                  : 'VD: Máy lạnh Daikin, Tủ lạnh Toshiba...'
+                  : 'VD: Máy lạnh, Tủ lạnh, Máy giặt...'
               }
               className={`w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
                 errors.name

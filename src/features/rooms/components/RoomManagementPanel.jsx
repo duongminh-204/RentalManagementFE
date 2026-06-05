@@ -97,17 +97,6 @@ const RoomManagementPanel = ({
   const [info, setInfo] = useState(emptyInfo());
   const [roomImageFile, setRoomImageFile] = useState(null);
   const [roomImagePreview, setRoomImagePreview] = useState(null);
-  const [serviceCatalog, setServiceCatalog] = useState([]);
-  const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [serviceQty, setServiceQty] = useState(1);
-  const [deviceForm, setDeviceForm] = useState({
-    deviceName: '',
-    quantity: 1,
-    status: 'Working',
-    note: '',
-  });
-  const [editingDeviceId, setEditingDeviceId] = useState(null);
-  const [editingRoomServiceId, setEditingRoomServiceId] = useState(null);
   const [buildings, setBuildings] = useState([]);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
@@ -122,14 +111,6 @@ const RoomManagementPanel = ({
   const [contractFormLoading, setContractFormLoading] = useState(false);
   const [contractFormError, setContractFormError] = useState(null);
   const [previewImage, setPreviewImage] = useState(null);
-  const [showCatalogManager, setShowCatalogManager] = useState(false);
-  const [catalogForm, setCatalogForm] = useState({
-    serviceName: '',
-    unitPrice: '',
-    unit: '',
-    description: ''
-  });
-  const [editingCatalogServiceId, setEditingCatalogServiceId] = useState(null);
 
   const roomId = room?.id ?? room?.roomId;
   const isCreate = mode === 'create';
@@ -163,15 +144,6 @@ const RoomManagementPanel = ({
     }
   }, [buildings, isCreate, info.buildingId]);
 
-  const loadCatalogs = useCallback(async () => {
-    try {
-      const services = await roomMgmtApi.getServiceCatalog();
-      setServiceCatalog(Array.isArray(services) ? services : []);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
-
   const loadBuildings = useCallback(async () => {
     setBuildingsLoading(true);
     setBuildingError(null);
@@ -185,10 +157,6 @@ const RoomManagementPanel = ({
       setBuildingsLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    if (canManageExtras) loadCatalogs();
-  }, [canManageExtras, loadCatalogs]);
 
   useEffect(() => {
     loadBuildings();
@@ -423,85 +391,6 @@ const RoomManagementPanel = ({
       await roomMgmtApi.uploadRoomImage(roomId, roomImageFile);
       setRoomImageFile(null);
       setRoomImagePreview(null);
-    });
-  };
-
-  const handleSaveDevice = () =>
-    runAction(async () => {
-      if (editingDeviceId) {
-        await roomMgmtApi.updateDevice(roomId, editingDeviceId, {
-          deviceName: deviceForm.deviceName,
-          quantity: deviceForm.quantity,
-          status: deviceForm.status,
-          note: deviceForm.note,
-          imageUrl: deviceForm.imageUrl || null
-        });
-        setEditingDeviceId(null);
-      } else {
-        await roomMgmtApi.addDevice(roomId, deviceForm);
-      }
-      setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
-    });
-
-  const handleDeviceImageUpload = (deviceId, e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const okType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
-    const okExt = /\.(png|jpe?g)$/i.test(file.name);
-    if (!okType && !okExt) {
-      setLocalError('Chỉ chấp nhận ảnh PNG hoặc JPG');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setLocalError('Ảnh tối đa 5MB');
-      return;
-    }
-    runAction(async () => {
-      await roomMgmtApi.uploadDeviceImage(roomId, deviceId, file);
-    });
-  };
-
-  const handleSaveRoomService = () =>
-    runAction(async () => {
-      if (editingRoomServiceId) {
-        await roomMgmtApi.updateRoomService(roomId, editingRoomServiceId, {
-          quantity: Number(serviceQty) || 1,
-        });
-        setEditingRoomServiceId(null);
-      } else {
-        await roomMgmtApi.assignRoomService(roomId, {
-          serviceId: Number(selectedServiceId),
-          quantity: Number(serviceQty) || 1,
-        });
-      }
-      setSelectedServiceId('');
-      setServiceQty(1);
-    });
-
-  const handleSaveCatalogService = () =>
-    runAction(async () => {
-      const payload = {
-        serviceName: catalogForm.serviceName,
-        unitPrice: Number(catalogForm.unitPrice) || 0,
-        unit: catalogForm.unit || null,
-        description: catalogForm.description || null,
-        isActive: true
-      };
-      if (editingCatalogServiceId) {
-        await roomMgmtApi.updateService(editingCatalogServiceId, payload);
-        setEditingCatalogServiceId(null);
-      } else {
-        await roomMgmtApi.createService(payload);
-      }
-      setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
-      await loadCatalogs();
-    });
-
-  const handleDeleteCatalogService = (serviceId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa dịch vụ này khỏi danh mục hệ thống?')) return;
-    runAction(async () => {
-      await roomMgmtApi.deleteService(serviceId);
-      await loadCatalogs();
     });
   };
 
@@ -1119,108 +1008,28 @@ const RoomManagementPanel = ({
 
             {activeTab === 'devices' && canManageExtras && (
               <div className="space-y-4">
-                <div className="space-y-2 rounded-xl border border-hairline-cloud bg-surface-press/40 p-3">
-                  <input
-                    placeholder="Tên thiết bị"
-                    value={deviceForm.deviceName}
-                    onChange={(e) =>
-                      setDeviceForm((p) => ({ ...p, deviceName: e.target.value }))
-                    }
-                    className="text-input"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="SL"
-                      value={deviceForm.quantity}
-                      onChange={(e) =>
-                        setDeviceForm((p) => ({ ...p, quantity: Number(e.target.value) }))
-                      }
-                      className="text-input"
-                    />
-                    <select
-                      value={deviceForm.status}
-                      onChange={(e) =>
-                        setDeviceForm((p) => ({ ...p, status: e.target.value }))
-                      }
-                      className="text-input"
-                    >
-                      <option value="Working">Hoạt động</option>
-                      <option value="Broken">Hỏng</option>
-                      <option value="Repair">Đang sửa</option>
-                    </select>
-                  </div>
-                  {editingDeviceId ? (
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        onClick={handleSaveDevice}
-                        disabled={busy || !deviceForm.deviceName.trim()}
-                        className="btn-primary flex-1 animate-fadeIn"
-                      >
-                        <Save size={16} /> Lưu cập nhật
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingDeviceId(null);
-                          setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
-                        }}
-                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
-                      >
-                        Hủy
-                      </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handleSaveDevice}
-                      disabled={busy || !deviceForm.deviceName.trim()}
-                      className="btn-primary w-full"
-                    >
-                      <Plus size={16} /> Thêm thiết bị
-                    </button>
-                  )}
-                </div>
+                <p className="rounded-lg border border-hairline-cloud bg-surface-press/40 px-3 py-2 text-xs text-muted">
+                  Danh sách thiết bị của phòng (chỉ xem). Việc thêm / sửa / xóa thiết bị được thực hiện ở trang Thiết bị.
+                </p>
                 <ul className="space-y-2">
                   {(room.devices || []).map((d) => (
                     <li
                       key={d.deviceId}
-                      className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
-                        editingDeviceId === d.deviceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
-                      }`}
+                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
                     >
                       <div className="flex items-center gap-3 min-w-0 flex-1">
                         {d.imageUrl ? (
-                          <div className="relative h-12 w-12 shrink-0 rounded-md border border-hairline-cloud bg-surface-press">
-                            <img
-                              src={d.imageUrl}
-                              alt={d.deviceName}
-                              className="h-full w-full rounded-md object-cover cursor-pointer transition hover:opacity-80"
-                              onClick={() => setPreviewImage(d.imageUrl)}
-                              title="Click để xem ảnh lớn"
-                            />
-                            <label className="absolute right-0.5 bottom-0.5 flex h-5 w-5 items-center justify-center rounded-full bg-ink-deep/75 text-white cursor-pointer hover:bg-primary transition shadow-sm" title="Thay đổi ảnh">
-                              <ImageIcon size={10} />
-                              <input
-                                type="file"
-                                accept="image/png, image/jpeg, image/jpg"
-                                className="hidden"
-                                onChange={(e) => handleDeviceImageUpload(d.deviceId, e)}
-                              />
-                            </label>
-                          </div>
+                          <img
+                            src={d.imageUrl}
+                            alt={d.deviceName}
+                            className="h-12 w-12 shrink-0 rounded-md border border-hairline-cloud object-cover cursor-pointer transition hover:opacity-80"
+                            onClick={() => setPreviewImage(d.imageUrl)}
+                            title="Click để xem ảnh lớn"
+                          />
                         ) : (
-                          <label className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-hairline-cloud bg-surface-press text-muted cursor-pointer hover:bg-surface-press/80 hover:text-accent-violet transition" title="Tải ảnh lên">
+                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-hairline-cloud bg-surface-press text-muted">
                             <ImageIcon size={16} />
-                            <input
-                              type="file"
-                              accept="image/png, image/jpeg, image/jpg"
-                              className="hidden"
-                              onChange={(e) => handleDeviceImageUpload(d.deviceId, e)}
-                            />
-                          </label>
+                          </div>
                         )}
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-ink-deep truncate">{d.deviceName}</p>
@@ -1228,35 +1037,6 @@ const RoomManagementPanel = ({
                             SL: {d.quantity} · {d.status}
                           </p>
                         </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingDeviceId(d.deviceId);
-                            setDeviceForm({
-                              deviceName: d.deviceName,
-                              quantity: d.quantity,
-                              status: d.status,
-                              note: d.note || '',
-                              imageUrl: d.imageUrl || null
-                            });
-                          }}
-                          className={`rounded-md p-2 transition ${
-                            editingDeviceId === d.deviceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
-                          }`}
-                          title="Chỉnh sửa thiết bị"
-                        >
-                          <Pencil size={16} />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteDevice(d.deviceId)}
-                          className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
-                          title="Xóa thiết bị"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                       </div>
                     </li>
                   ))}
@@ -1269,260 +1049,27 @@ const RoomManagementPanel = ({
 
             {activeTab === 'services' && canManageExtras && (
               <div className="space-y-4">
-                {showCatalogManager ? (
-                  <div className="space-y-4 rounded-xl border border-hairline-violet bg-surface-light p-4">
-                    <div className="flex items-center justify-between border-b border-hairline-cloud pb-2">
-                      <h3 className="font-display text-sm font-semibold uppercase text-accent-violet">
-                        Quản lý Danh mục Dịch vụ mẫu
-                      </h3>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setShowCatalogManager(false);
-                          setEditingCatalogServiceId(null);
-                          setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
-                        }}
-                        className="text-xs font-semibold text-accent-violet hover:underline"
-                      >
-                        Quay lại gán phòng
-                      </button>
-                    </div>
-
-                    <div className="space-y-3 bg-surface-press/40 p-3 rounded-lg border border-hairline-cloud">
-                      <p className="text-xs font-semibold text-ink-deep uppercase tracking-wider">
-                        {editingCatalogServiceId ? 'Cập nhật dịch vụ mẫu' : 'Thêm dịch vụ mẫu mới'}
-                      </p>
-                      <div className="space-y-2">
-                        <input
-                          placeholder="Tên dịch vụ mẫu (VD: Điện, Nước, Internet...)"
-                          value={catalogForm.serviceName}
-                          onChange={(e) => setCatalogForm((p) => ({ ...p, serviceName: e.target.value }))}
-                          className="text-input text-xs"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                          <input
-                            type="number"
-                            placeholder="Đơn giá (VND)"
-                            value={catalogForm.unitPrice}
-                            onChange={(e) => setCatalogForm((p) => ({ ...p, unitPrice: e.target.value }))}
-                            className="text-input text-xs"
-                            min={0}
-                          />
-                          <input
-                            placeholder="Đơn vị tính (VD: kWh, m3, tháng)"
-                            value={catalogForm.unit}
-                            onChange={(e) => setCatalogForm((p) => ({ ...p, unit: e.target.value }))}
-                            className="text-input text-xs"
-                          />
-                        </div>
-                        <input
-                          placeholder="Mô tả dịch vụ (không bắt buộc)"
-                          value={catalogForm.description}
-                          onChange={(e) => setCatalogForm((p) => ({ ...p, description: e.target.value }))}
-                          className="text-input text-xs"
-                        />
+                <p className="rounded-lg border border-hairline-cloud bg-surface-press/40 px-3 py-2 text-xs text-muted">
+                  Danh sách dịch vụ của phòng (chỉ xem). Việc thêm / sửa / xóa dịch vụ được thực hiện ở trang Dịch vụ.
+                </p>
+                <ul className="space-y-2">
+                  {(room.roomServices || []).map((rs) => (
+                    <li
+                      key={rs.roomServiceId}
+                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
+                    >
+                      <div>
+                        <p className="font-medium text-ink-deep">{rs.serviceName}</p>
+                        <p className="text-xs text-muted">
+                          {formatCurrency(rs.unitPrice)}
+                          {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
+                        </p>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={handleSaveCatalogService}
-                          disabled={busy || !catalogForm.serviceName.trim()}
-                          className="btn-primary text-xs py-1.5 flex-1"
-                        >
-                          {editingCatalogServiceId ? <><Save size={14} /> Lưu thay đổi</> : <><Plus size={14} /> Thêm vào DM</>}
-                        </button>
-                        {editingCatalogServiceId && (
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingCatalogServiceId(null);
-                              setCatalogForm({ serviceName: '', unitPrice: '', unit: '', description: '' });
-                            }}
-                            className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-1.5 text-xs font-semibold text-ink-deep hover:bg-surface-press"
-                          >
-                            Hủy
-                          </button>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase text-accent-violet-mid tracking-wide">
-                        Danh sách dịch vụ mẫu hệ thống ({serviceCatalog.length})
-                      </p>
-                      <ul className="space-y-2 max-h-60 overflow-y-auto pr-1">
-                        {serviceCatalog.map((s) => (
-                          <li
-                            key={s.serviceId}
-                            className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light text-xs transition ${
-                              editingCatalogServiceId === s.serviceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
-                            }`}
-                          >
-                            <div className="min-w-0 flex-1">
-                              <p className="font-medium text-ink-deep truncate">{s.serviceName}</p>
-                              <p className="text-muted text-[10px] truncate">
-                                {formatCurrency(s.unitPrice)}{s.unit ? ` / ${s.unit}` : ''}
-                                {s.description ? ` · ${s.description}` : ''}
-                              </p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingCatalogServiceId(s.serviceId);
-                                  setCatalogForm({
-                                    serviceName: s.serviceName,
-                                    unitPrice: String(s.unitPrice),
-                                    unit: s.unit || '',
-                                    description: s.description || ''
-                                  });
-                                }}
-                                className="rounded-md p-1.5 text-accent-violet hover:bg-surface-press"
-                                title="Sửa dịch vụ mẫu"
-                              >
-                                <Pencil size={14} />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteCatalogService(s.serviceId)}
-                                className="rounded-md p-1.5 text-accent-pink hover:bg-surface-press"
-                                title="Xóa dịch vụ mẫu"
-                              >
-                                <Trash2 size={14} />
-                              </button>
-                            </div>
-                          </li>
-                        ))}
-                      </ul>
-                      {!serviceCatalog.length && (
-                        <p className="text-center py-4 text-xs text-muted">Chưa có dịch vụ nào trong hệ thống</p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between border-b border-hairline-cloud pb-1.5">
-                      <p className="text-xs font-semibold uppercase text-accent-violet-mid tracking-wide">
-                        Gán dịch vụ vào phòng
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => setShowCatalogManager(true)}
-                        className="text-xs font-bold text-accent-violet hover:underline flex items-center gap-1 bg-surface-press px-2 py-1 rounded-md border border-hairline-cloud"
-                      >
-                        ⚙️ Quản lý danh mục mẫu
-                      </button>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <select
-                        value={selectedServiceId}
-                        onChange={(e) => setSelectedServiceId(e.target.value)}
-                        className="text-input min-w-0 flex-1 disabled:opacity-60 disabled:cursor-not-allowed"
-                        disabled={!!editingRoomServiceId}
-                      >
-                        <option value="">Chọn dịch vụ mẫu…</option>
-                        {serviceCatalog.map((s) => (
-                          <option key={s.serviceId} value={s.serviceId}>
-                            {s.serviceName} — {formatCurrency(s.unitPrice)}
-                            {s.unit ? `/${s.unit}` : ''}
-                          </option>
-                        ))}
-                      </select>
-                      <input
-                        type="number"
-                        min={1}
-                        value={serviceQty}
-                        onChange={(e) => setServiceQty(e.target.value)}
-                        className="text-input w-20"
-                        placeholder="SL"
-                      />
-                      {editingRoomServiceId ? (
-                        <div className="flex gap-1 shrink-0">
-                          <button
-                            type="button"
-                            onClick={handleSaveRoomService}
-                            disabled={busy || !serviceQty}
-                            className="btn-primary animate-fadeIn"
-                            title="Lưu cập nhật"
-                          >
-                            <Save size={16} />
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setEditingRoomServiceId(null);
-                              setSelectedServiceId('');
-                              setServiceQty(1);
-                            }}
-                            className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
-                            title="Hủy"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleSaveRoomService}
-                          disabled={busy || !selectedServiceId}
-                          className="btn-primary"
-                          title="Thêm dịch vụ"
-                        >
-                          <Plus size={18} />
-                        </button>
-                      )}
-                    </div>
-                    <ul className="space-y-2">
-                      {(room.roomServices || []).map((rs) => (
-                        <li
-                          key={rs.roomServiceId}
-                          className={`flex items-center justify-between rounded-lg border px-3 py-2 bg-surface-light transition ${
-                            editingRoomServiceId === rs.roomServiceId ? 'border-accent-violet ring-1 ring-accent-violet/30' : 'border-hairline-cloud'
-                          }`}
-                        >
-                          <div>
-                            <p className="font-medium text-ink-deep">{rs.serviceName}</p>
-                            <p className="text-xs text-muted">
-                              {formatCurrency(rs.unitPrice)}
-                              {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1 shrink-0">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingRoomServiceId(rs.roomServiceId);
-                                setSelectedServiceId(rs.serviceId);
-                                setServiceQty(rs.quantity);
-                              }}
-                              className={`rounded-md p-2 transition ${
-                                editingRoomServiceId === rs.roomServiceId ? 'text-accent-violet bg-surface-press' : 'text-muted hover:text-accent-violet hover:bg-surface-press'
-                              }`}
-                              title="Chỉnh sửa dịch vụ"
-                            >
-                              <Pencil size={16} />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() =>
-                                runAction(() =>
-                                  roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
-                                )
-                              }
-                              className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
-                              title="Xóa dịch vụ"
-                            >
-                              <Trash2 size={16} />
-                            </button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                    {!room.roomServices?.length && (
-                      <p className="text-center text-sm text-muted">Chưa có dịch vụ nào được gán cho phòng này</p>
-                    )}
-                  </>
+                    </li>
+                  ))}
+                </ul>
+                {!room.roomServices?.length && (
+                  <p className="text-center text-sm text-muted">Chưa có dịch vụ nào được gán cho phòng này</p>
                 )}
               </div>
             )}
