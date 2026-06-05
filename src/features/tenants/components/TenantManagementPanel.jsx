@@ -15,7 +15,9 @@ import {
   Calendar,
   Banknote,
   FileText,
+  Building2,
 } from 'lucide-react';
+import * as buildingsApi from '../../buildings/api/buildingsApi';
 import {
   denormalizeTenantForApi,
   formatCurrency,
@@ -31,7 +33,7 @@ import {
 } from '../utils/tenantHelpers';
 import DateInput from '../../../components/common/DateInput';
 import { getAllRooms } from '../../rooms/api/roomsApi';
-import { normalizeRoomsList } from '../../rooms/utils/roomHelpers';
+import { normalizeRoomsList, groupRoomsByBuilding } from '../../rooms/utils/roomHelpers';
 import { getTenantHistory } from '../api/tenantsApi';
 import ImageModal from '../../../components/common/ImageModal';
 
@@ -78,6 +80,7 @@ const TenantManagementPanel = ({
   const [activeTab, setActiveTab] = useState('info');
   const [form, setForm] = useState(emptyForm());
   const [rooms, setRooms] = useState([]);
+  const [buildings, setBuildings] = useState([]);
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [idCardFile, setIdCardFile] = useState(null);
@@ -95,10 +98,15 @@ const TenantManagementPanel = ({
   const tenantId = tenant?.id;
 
   useEffect(() => {
-    getAllRooms()
-      .then((payload) => setRooms(normalizeRoomsList(payload)))
+    Promise.all([getAllRooms(), buildingsApi.getAllBuildings()])
+      .then(([roomsPayload, buildingsPayload]) => {
+        setRooms(normalizeRoomsList(roomsPayload));
+        setBuildings(Array.isArray(buildingsPayload) ? buildingsPayload : []);
+      })
       .catch(console.error);
   }, []);
+
+  const roomsByBuilding = groupRoomsByBuilding(rooms, buildings);
 
   useEffect(() => {
     if (tenant && !isCreate) {
@@ -322,9 +330,17 @@ const TenantManagementPanel = ({
                 {isCreate ? 'Thêm khách mới' : tenant.fullName}
               </h2>
               {tenant && !isCreate && (
-                <span className={`mt-2 inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase ${getTenantStatusBadgeClass(tenant.status)}`}>
-                  {getTenantStatusLabel(tenant.status)}
-                </span>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className={`inline-block rounded-full border px-2.5 py-0.5 text-[10px] font-semibold uppercase ${getTenantStatusBadgeClass(tenant.status)}`}>
+                    {getTenantStatusLabel(tenant.status)}
+                  </span>
+                  {tenant.buildingName && (
+                    <span className="inline-flex items-center gap-1 rounded-xs bg-on-dark-faint px-2 py-0.5 text-[10px] font-medium text-on-dark-muted">
+                      <Building2 size={11} />
+                      {tenant.buildingName}
+                    </span>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -526,10 +542,14 @@ const TenantManagementPanel = ({
                       </label>
                       <select name="roomId" value={form.roomId} onChange={handleChange} className="text-input">
                         <option value="">— Chưa gán phòng —</option>
-                        {rooms.map((r) => (
-                          <option key={r.id} value={r.id}>
-                            {r.roomNumber || r.roomName}
-                          </option>
+                        {roomsByBuilding.map((group) => (
+                          <optgroup key={group.buildingId ?? group.buildingName} label={group.buildingName}>
+                            {group.rooms.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                Phòng {r.roomNumber || r.roomName}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
                       </select>
                     </div>
@@ -674,9 +694,17 @@ const TenantManagementPanel = ({
                         className="rounded-xl border border-hairline-cloud bg-ink-deep p-4 text-on-primary"
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold">
-                            Phòng <span className="chip-lime text-ink-deep">{h.roomNumber}</span>
-                          </p>
+                          <div>
+                            {h.buildingName && (
+                              <p className="mb-1 flex items-center gap-1.5 text-xs text-on-dark-muted">
+                                <Building2 size={12} />
+                                {h.buildingName}
+                              </p>
+                            )}
+                            <p className="font-semibold">
+                              Phòng <span className="chip-lime text-ink-deep">{h.roomNumber}</span>
+                            </p>
+                          </div>
                           <span className="text-xs uppercase text-on-dark-muted">{h.status}</span>
                         </div>
                         <p className="mt-2 text-xs text-on-dark-muted">

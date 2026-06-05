@@ -15,7 +15,9 @@ import {
   User,
   FileText,
   AlertTriangle,
+  Building2,
 } from 'lucide-react';
+import { groupRoomsByBuilding } from '../../rooms/utils/roomHelpers';
 import {
   validateLicensePlate,
   VEHICLE_TYPES,
@@ -57,6 +59,7 @@ const VehicleManagementPanel = ({
   mode = 'edit',
   tenants = [],
   rooms = [],
+  buildings = [],
   loading = false,
   onClose,
   onSave,
@@ -77,6 +80,7 @@ const VehicleManagementPanel = ({
 
   const isCreate = mode === 'create';
   const vehicleId = vehicle?.id;
+  const roomsByBuilding = groupRoomsByBuilding(rooms, buildings);
 
   useEffect(() => {
     if (vehicle && !isCreate) {
@@ -245,6 +249,12 @@ const VehicleManagementPanel = ({
                     {getVehicleStatusLabel(vehicle?.status)}
                   </span>
                   <span className="text-xs text-on-dark-muted">{getVehicleTypeLabel(vehicle?.type)}</span>
+                  {vehicle?.buildingName && (
+                    <span className="inline-flex items-center gap-1 rounded-xs bg-on-dark-faint px-2 py-0.5 text-[10px] font-medium text-on-dark-muted">
+                      <Building2 size={11} />
+                      {vehicle.buildingName}
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -480,6 +490,8 @@ const VehicleManagementPanel = ({
                           {tenants.map((t) => (
                             <option key={t.id} value={t.id}>
                               {t.fullName}
+                              {t.buildingName ? ` · ${t.buildingName}` : ''}
+                              {t.roomNumber ? ` · P.${t.roomNumber}` : ''}
                             </option>
                           ))}
                         </select>
@@ -493,10 +505,14 @@ const VehicleManagementPanel = ({
                         </label>
                         <select name="roomId" value={form.roomId} onChange={handleChange} className="text-input">
                           <option value="">— Chọn phòng —</option>
-                          {rooms.map((r) => (
-                            <option key={r.id} value={r.id}>
-                              Phòng {r.roomNumber || r.roomName}
-                            </option>
+                          {roomsByBuilding.map((group) => (
+                            <optgroup key={group.buildingId ?? group.buildingName} label={group.buildingName}>
+                              {group.rooms.map((r) => (
+                                <option key={r.id} value={r.id}>
+                                  Phòng {r.roomNumber || r.roomName}
+                                </option>
+                              ))}
+                            </optgroup>
                           ))}
                         </select>
                         {validationErrors.roomId && (

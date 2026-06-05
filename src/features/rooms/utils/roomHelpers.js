@@ -293,3 +293,31 @@ export const formatAdditionalServices = (services) => {
   }
   return services || '';
 };
+
+/** Nhóm phòng theo tòa nhà — dùng cho dropdown chọn phòng */
+export const groupRoomsByBuilding = (rooms = [], buildings = []) => {
+  const buildingMap = new Map(
+    buildings.map((b) => [String(b.buildingId ?? b.id), b])
+  );
+  const groups = new Map();
+
+  rooms.forEach((room) => {
+    const bid = room.buildingId != null ? String(room.buildingId) : '__none__';
+    if (!groups.has(bid)) {
+      const building = buildingMap.get(bid);
+      groups.set(bid, {
+        buildingId: room.buildingId ?? null,
+        buildingName:
+          building?.buildingName ??
+          building?.name ??
+          (bid === '__none__' ? 'Chưa gán tòa' : `Tòa #${bid}`),
+        rooms: [],
+      });
+    }
+    groups.get(bid).rooms.push(room);
+  });
+
+  return [...groups.values()].sort((a, b) =>
+    (a.buildingName || '').localeCompare(b.buildingName || '', 'vi')
+  );
+};

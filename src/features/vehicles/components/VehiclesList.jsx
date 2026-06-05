@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   Plus,
   Search,
@@ -7,7 +7,9 @@ import {
   AlertTriangle,
   Banknote,
   ShieldCheck,
+  Building2,
 } from 'lucide-react';
+import * as buildingsApi from '../../buildings/api/buildingsApi';
 import VehicleListItem from './VehicleListItem';
 import VehicleManagementPanel from './VehicleManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
@@ -51,9 +53,24 @@ const VehiclesList = () => {
     fetchParkingFeeSummary,
   } = useVehicles();
 
+  const [buildings, setBuildings] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
+
+  useEffect(() => {
+    let active = true;
+    buildingsApi
+      .getAllBuildings()
+      .then((data) => {
+        if (active) setBuildings(Array.isArray(data) ? data : []);
+      })
+      .catch(console.error);
+    return () => {
+      active = false;
+    };
+  }, []);
   const [panelMode, setPanelMode] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [panelLoading, setPanelLoading] = useState(false);
@@ -76,6 +93,12 @@ const VehiclesList = () => {
     return map;
   }, [rooms]);
 
+  const countVehiclesByBuilding = useCallback(
+    (buildingId) =>
+      vehicles.filter((v) => String(v.buildingId) === String(buildingId)).length,
+    [vehicles]
+  );
+
   const filteredVehicles = useMemo(() => {
     const q = searchTerm.toLowerCase().trim();
     return vehicles.filter((v) => {
@@ -87,9 +110,12 @@ const VehiclesList = () => {
         tenant?.fullName?.toLowerCase().includes(q);
       const matchStatus = statusFilter === 'all' || v.status === statusFilter;
       const matchType = typeFilter === 'all' || v.type === typeFilter;
-      return matchSearch && matchStatus && matchType;
+      const matchBuilding =
+        selectedBuildingId === 'all' ||
+        String(v.buildingId) === String(selectedBuildingId);
+      return matchSearch && matchStatus && matchType && matchBuilding;
     });
-  }, [vehicles, searchTerm, statusFilter, typeFilter, tenantById]);
+  }, [vehicles, searchTerm, statusFilter, typeFilter, tenantById, selectedBuildingId]);
 
   const stats = useMemo(
     () => ({
@@ -238,6 +264,58 @@ const VehiclesList = () => {
           </div>
         )}
 
+        <div className="mb-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
+            <Building2 size={18} className="text-accent-violet-mid" />
+            Phương tiện theo tòa nhà
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedBuildingId('all')}
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                selectedBuildingId === 'all'
+                  ? 'bg-primary text-on-primary'
+                  : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+              }`}
+            >
+              Tất cả tòa nhà
+              <span
+                className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                  selectedBuildingId === 'all' ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                }`}
+              >
+                {vehicles.length}
+              </span>
+            </button>
+            {buildings.map((building) => {
+              const active = String(selectedBuildingId) === String(building.buildingId);
+              const count = countVehiclesByBuilding(building.buildingId);
+              return (
+                <button
+                  key={building.buildingId}
+                  type="button"
+                  onClick={() => setSelectedBuildingId(building.buildingId)}
+                  className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-primary text-on-primary'
+                      : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+                  }`}
+                >
+                  {building.buildingName}
+                  <span
+                    className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                      active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {parkingFeeSummary && (
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
             <div className="flex items-center gap-3">
@@ -329,6 +407,7 @@ const VehiclesList = () => {
             mode={panelMode === 'create' ? 'create' : 'edit'}
             tenants={tenants}
             rooms={rooms}
+            buildings={buildings}
             loading={panelLoading}
             onClose={handleClosePanel}
             onSave={panelMode ? handleSave : undefined}
