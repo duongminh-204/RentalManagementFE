@@ -5,21 +5,35 @@ export const normalizeContractFromApi = (raw) => {
     raw.isTerminated ?? raw.IsTerminated ?? raw.status === 'terminated';
   const startDate = raw.startDate ?? raw.StartDate;
   const endDate = raw.endDate ?? raw.EndDate;
-  const status = getContractStatus(startDate, endDate, isTerminated);
+  const status = getContractStatus(startDate, endDate, isTerminated, raw.status);
 
   return {
     id,
-    // contractNumber: raw.contractNumber ?? raw.ContractNumber ?? '',
     tenantId: raw.tenantId ?? raw.TenantId ?? null,
     roomId: raw.roomId ?? raw.RoomId ?? null,
+    parentContractId: raw.parentContractId ?? raw.ParentContractId ?? null,
+    tenantName: raw.tenantName ?? raw.TenantName ?? '',
+    roomName: raw.roomName ?? raw.RoomName ?? '',
     startDate,
     endDate,
+    rentPrice: Number(raw.rentPrice ?? raw.RentPrice ?? raw.rentalPrice) || 0,
     deposit: Number(raw.deposit ?? raw.Deposit) || 0,
+    paymentCycle: raw.paymentCycle ?? raw.PaymentCycle ?? 'Monthly',
+    depositStatus: raw.depositStatus ?? raw.DepositStatus ?? 'Holding',
+    depositRefundAmount: Number(raw.depositRefundAmount ?? raw.DepositRefundAmount) || 0,
+    depositDeductionAmount: Number(raw.depositDeductionAmount ?? raw.DepositDeductionAmount) || 0,
     terms: raw.terms ?? raw.Terms ?? '',
     notes: raw.notes ?? raw.Notes ?? '',
     status,
     fileUrl: raw.fileUrl ?? raw.FileUrl ?? null,
     isTerminated,
+    terminationReason: raw.terminationReason ?? raw.TerminationReason ?? '',
+    terminatedAt: raw.terminatedAt ?? raw.TerminatedAt ?? null,
+    renewalHistory: raw.renewalHistory ?? raw.RenewalHistory ?? [],
+    depositHistory: raw.depositHistory ?? raw.DepositHistory ?? [],
+    tenant: raw.tenant ?? null,
+    room: raw.room ?? null,
+    paymentHistory: raw.paymentHistory ?? raw.PaymentHistory ?? [],
   };
 };
 
@@ -66,8 +80,16 @@ export const getActiveContractForRoom = (contracts) => {
 
 /** Loại trạng thái thủ công — hệ thống tự tính theo ngày */
 export const prepareContractPayload = (data) => {
-  const { status: _status, ...rest } = data ?? {};
-  return rest;
+  const { status: _status, contractFile: _file, tenantName: _tn, roomName: _rn, ...rest } = data ?? {};
+  return {
+    ...rest,
+    tenantId: Number(rest.tenantId),
+    roomId: Number(rest.roomId),
+    rentPrice: Number(rest.rentPrice) || 0,
+    deposit: Number(rest.deposit) || 0,
+    paymentCycle: rest.paymentCycle || 'Monthly',
+    status: 'Active',
+  };
 };
 
 // Get contract status label
@@ -77,6 +99,7 @@ export const getContractStatusLabel = (status) => {
     expiring_soon: 'Sắp hết hạn',
     expired: 'Hết hạn',
     terminated: 'Đã chấm dứt',
+    cancelled: 'Đã hủy',
     pending: 'Chờ ký',
   };
   return statusMap[status] || status;
@@ -89,6 +112,7 @@ export const getContractStatusColor = (status) => {
     expiring_soon: 'bg-orange-100 text-orange-800',
     expired: 'bg-red-100 text-red-800',
     terminated: 'bg-gray-100 text-gray-800',
+    cancelled: 'bg-purple-100 text-purple-800',
     pending: 'bg-blue-100 text-blue-800',
   };
   return colorMap[status] || 'bg-gray-100 text-gray-800';
@@ -109,8 +133,9 @@ export const calculateDaysUntilExpiry = (expiryDate) => {
 };
 
 // Get contract status based on dates vs today
-export const getContractStatus = (startDate, endDate, isTerminated = false) => {
-  if (isTerminated) return 'terminated';
+export const getContractStatus = (startDate, endDate, isTerminated = false, apiStatus = null) => {
+  if (isTerminated || apiStatus === 'terminated') return 'terminated';
+  if (apiStatus === 'cancelled') return 'cancelled';
   if (!startDate || !endDate) return 'pending';
 
   const today = new Date();
@@ -199,7 +224,24 @@ export const getStatusBadge = (status) => {
   return badges[status] || { label: status, icon: '?', color: 'gray' };
 };
 
-// Calculate renewal date
+export const getPaymentCycleLabel = (cycle) => {
+  const map = {
+    Monthly: 'Hàng tháng',
+    Quarterly: 'Hàng quý',
+    Flexible: 'Linh hoạt',
+  };
+  return map[cycle] || cycle;
+};
+
+export const getDepositStatusLabel = (status) => {
+  const map = {
+    Holding: 'Đang giữ cọc',
+    Refunded: 'Đã hoàn cọc',
+    Deducted: 'Đã khấu trừ',
+  };
+  return map[status] || status;
+};
+
 export const calculateRenewalDate = (expiryDate, months = 12) => {
   const date = new Date(expiryDate);
   date.setMonth(date.getMonth() + months);
