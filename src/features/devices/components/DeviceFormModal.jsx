@@ -1,14 +1,21 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { X, Check, Upload, ImageOff, Trash2 } from 'lucide-react';
-import { DEVICE_STATUS_OPTIONS, DEVICE_TYPES } from '../constants';
+import {
+  DEVICE_STATUS_OPTIONS,
+  DEVICE_TYPES,
+  ITEM_CATEGORY_OPTIONS,
+  getTypesByCategory,
+} from '../constants';
 
 const EMPTY_FORM = {
+  category: 'device',
   name: '',
   type: DEVICE_TYPES[0],
   roomNumber: '',
   status: 'active',
   image: null,
+  price: '',
   description: '',
 };
 
@@ -25,10 +32,20 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
     }
   }, [initialData]);
 
+  const isService = formData.category === 'service';
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
     if (errors[name]) setErrors((prev) => ({ ...prev, [name]: '' }));
+  };
+
+  const handleCategoryChange = (category) => {
+    setFormData((prev) => ({
+      ...prev,
+      category,
+      type: getTypesByCategory(category)[0],
+    }));
   };
 
   const handleImageChange = (e) => {
@@ -53,8 +70,11 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
 
   const validate = () => {
     const next = {};
-    if (!formData.name.trim()) next.name = 'Tên thiết bị là bắt buộc';
-    if (!formData.roomNumber.toString().trim()) next.roomNumber = 'Phòng là bắt buộc';
+    if (!formData.name.trim()) next.name = 'Tên là bắt buộc';
+    // Dịch vụ có thể áp dụng toàn nhà nên không bắt buộc nhập phòng
+    if (!isService && !formData.roomNumber.toString().trim()) {
+      next.roomNumber = 'Phòng là bắt buộc';
+    }
     setErrors(next);
     return Object.keys(next).length === 0;
   };
@@ -75,7 +95,9 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
       >
         <div className="mb-6 flex items-center justify-between">
           <h2 className="text-xl font-bold text-gray-900">
-            {mode === 'edit' ? 'Sửa thiết bị' : 'Thêm thiết bị mới'}
+            {mode === 'edit'
+              ? `Sửa ${isService ? 'dịch vụ' : 'thiết bị'}`
+              : 'Thêm mục mới'}
           </h2>
           <button
             type="button"
@@ -87,9 +109,35 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-5">
-          {/* Ảnh thiết bị */}
+          {/* Phân loại: Thiết bị / Dịch vụ */}
           <div>
-            <label className="mb-2 block text-sm font-semibold text-gray-700">Ảnh thiết bị</label>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">Phân loại</label>
+            <div className="grid grid-cols-2 gap-2">
+              {ITEM_CATEGORY_OPTIONS.map((option) => {
+                const selected = formData.category === option.value;
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleCategoryChange(option.value)}
+                    className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${
+                      selected
+                        ? 'border-primary bg-primary text-on-primary'
+                        : 'border-gray-300 text-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Ảnh */}
+          <div>
+            <label className="mb-2 block text-sm font-semibold text-gray-700">
+              {isService ? 'Ảnh dịch vụ' : 'Ảnh thiết bị'}
+            </label>
             <div className="flex items-center gap-4">
               <div className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dashed border-gray-300 bg-gray-50">
                 {formData.image ? (
@@ -129,17 +177,21 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
             {errors.image && <p className="mt-1 text-sm text-red-500">{errors.image}</p>}
           </div>
 
-          {/* Tên thiết bị */}
+          {/* Tên */}
           <div>
             <label className="mb-2 block text-sm font-semibold text-gray-700">
-              Tên thiết bị <span className="text-red-500">*</span>
+              {isService ? 'Tên dịch vụ' : 'Tên thiết bị'} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="VD: Máy lạnh Daikin, Tủ lạnh Toshiba..."
+              placeholder={
+                isService
+                  ? 'VD: Internet, Giữ xe, Dọn vệ sinh...'
+                  : 'VD: Máy lạnh Daikin, Tủ lạnh Toshiba...'
+              }
               className={`w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
                 errors.name
                   ? 'border-red-500 focus:ring-red-500'
@@ -150,16 +202,18 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
           </div>
 
           <div className="grid grid-cols-2 gap-4">
-            {/* Loại thiết bị */}
+            {/* Loại */}
             <div>
-              <label className="mb-2 block text-sm font-semibold text-gray-700">Loại thiết bị</label>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                {isService ? 'Loại dịch vụ' : 'Loại thiết bị'}
+              </label>
               <select
                 name="type"
                 value={formData.type}
                 onChange={handleChange}
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-all focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
               >
-                {DEVICE_TYPES.map((type) => (
+                {getTypesByCategory(formData.category).map((type) => (
                   <option key={type} value={type}>
                     {type}
                   </option>
@@ -167,17 +221,18 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
               </select>
             </div>
 
-            {/* Phòng */}
+            {/* Phòng / phạm vi áp dụng */}
             <div>
               <label className="mb-2 block text-sm font-semibold text-gray-700">
-                Phòng <span className="text-red-500">*</span>
+                {isService ? 'Áp dụng cho' : 'Phòng'}
+                {!isService && <span className="text-red-500"> *</span>}
               </label>
               <input
                 type="text"
                 name="roomNumber"
                 value={formData.roomNumber}
                 onChange={handleChange}
-                placeholder="VD: 101"
+                placeholder={isService ? 'VD: Toàn nhà, Tầng hầm...' : 'VD: 101'}
                 className={`w-full rounded-lg border px-4 py-2 transition-all focus:outline-none focus:ring-2 ${
                   errors.roomNumber
                     ? 'border-red-500 focus:ring-red-500'
@@ -187,6 +242,24 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
               {errors.roomNumber && <p className="mt-1 text-sm text-red-500">{errors.roomNumber}</p>}
             </div>
           </div>
+
+          {/* Giá dịch vụ (chỉ dịch vụ) */}
+          {isService && (
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-gray-700">
+                Giá dịch vụ (₫)
+              </label>
+              <input
+                type="number"
+                name="price"
+                min="0"
+                value={formData.price}
+                onChange={handleChange}
+                placeholder="VD: 150000 (để 0 nếu miễn phí)"
+                className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-all focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+              />
+            </div>
+          )}
 
           {/* Trạng thái */}
           <div>
@@ -225,7 +298,7 @@ const DeviceFormModal = ({ mode = 'create', initialData = null, onSubmit, onClos
               className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary py-3 font-semibold text-on-primary transition-opacity hover:opacity-90"
             >
               <Check size={20} />
-              {mode === 'edit' ? 'Cập nhật' : 'Thêm thiết bị'}
+              {mode === 'edit' ? 'Cập nhật' : `Thêm ${isService ? 'dịch vụ' : 'thiết bị'}`}
             </button>
             <button
               type="button"

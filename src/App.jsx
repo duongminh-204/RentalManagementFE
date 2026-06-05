@@ -76,6 +76,7 @@ function App() {
             </PrivateRoute>
           }
         />
+        <Route path="/services" element={<Navigate to="/devices" replace />} />
         <Route
           path="/profile"
           element={

@@ -11,7 +11,6 @@ import {
   Menu,
   User,
   Users,
-  Wrench,
   X,
 } from 'lucide-react';
 import { getStoredRole, getStoredUser } from '../../hooks/useAuth';
@@ -22,8 +21,7 @@ const navItems = [
   { label: 'Khách thuê', path: '/tenants', icon: Users },
   { label: 'Hợp đồng', path: '/contracts', icon: FileText },
   { label: 'Phương tiện', path: '/vehicles', icon: Car },
-  { label: 'Quản lý thiết bị', path: '/devices', icon: Cpu },
-  { label: 'Dịch vụ', path: '/services', icon: Wrench },
+  { label: 'Thiết bị & Dịch vụ', path: '/devices', icon: Cpu },
   { label: 'Hoá đơn', path: '/invoices', icon: HandCoins },
   { label: 'Hồ sơ', path: '/profile', icon: User },
 ];
