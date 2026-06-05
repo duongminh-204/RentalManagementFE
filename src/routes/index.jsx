@@ -8,14 +8,6 @@ import ContractDetailPage from '../features/contracts/pages/ContractDetailPage';
 export const contractRoutes = (
   <>
     <Route
-      path="/contracts"
-      element={
-        <PrivateRoute>
-          <ContractsPage />
-        </PrivateRoute>
-      }
-    />
-    <Route
       path="/contracts/create"
       element={
         <PrivateRoute>
@@ -28,6 +20,14 @@ export const contractRoutes = (
       element={
         <PrivateRoute>
           <ContractDetailPage />
+        </PrivateRoute>
+      }
+    />
+    <Route
+      path="/contracts"
+      element={
+        <PrivateRoute>
+          <ContractsPage />
         </PrivateRoute>
       }
     />

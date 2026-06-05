@@ -540,23 +540,9 @@ const InvoicesPage = () => {
           </form>
         </div>
 
-        {/* Right Column: Real-time Terminal Calculator (card-dark polarity flip) */}
+        {/* Right Column: Fee calculator */}
         <div className="card-dark flex flex-col min-h-[450px]">
-          <div className="flex items-center justify-between border-b border-hairline-violet pb-4 mb-4">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
-              <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-mono text-on-dark-muted ml-2">utility_calculator.sh</span>
-            </div>
-            <span className="text-[10px] font-mono rounded bg-hairline-violet px-2 py-0.5 text-on-dark-muted">v2.4</span>
-          </div>
-
           <div className="flex-1 font-mono text-xs space-y-4">
-            <div>
-              <span className="text-accent-lime">sentri@rental-node</span>:<span className="text-accent-pink">~/billing</span>$ ./calculate_room_fees.sh
-            </div>
-
             <AnimatePresence mode="wait">
               {!selectedRoom ? (
                 <motion.div
