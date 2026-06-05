@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import Header from '../components/common/Header';
-import Footer from '../components/common/Footer';
+import Sidebar from '../components/common/Sidebar';
 import { getStoredRole, getRoleHomePath } from '../hooks/useAuth';
 
 export const PrivateRoute = ({ children, allowedRoles }) => {
@@ -61,10 +60,11 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-surface-light">
-      <Header />
-      <main className="flex-1">{children}</main>
-      <Footer />
+    <div className="min-h-screen bg-surface-light">
+      <Sidebar />
+      <div className="lg:pl-64">
+        <main className="min-h-screen">{children}</main>
+      </div>
     </div>
   );
 };
