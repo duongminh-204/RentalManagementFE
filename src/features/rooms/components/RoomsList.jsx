@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Filter, LayoutGrid, List } from 'lucide-react';
+import { Search, Filter, LayoutGrid, List, Building2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import RoomTable from '../../../components/tables/RoomTable';
 import FloorPlanCanvas from './FloorPlanCanvas';
@@ -10,12 +10,16 @@ import RoomManagementPanel from './RoomManagementPanel';
 import { useRooms } from '../hooks/useRooms';
 import { getRoomById } from '../api/roomsApi';
 import { normalizeRoomFromApi } from '../utils/roomHelpers';
+import * as buildingsApi from '../../buildings/api/buildingsApi';
+import * as roomMgmtApi from '../api/roomManagementApi';
 
 const RoomsList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { rooms, loading, error, addRoom, editRoom, changeRoomStatus, removeRoom, refetch } =
     useRooms();
 
+  const [buildings, setBuildings] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [viewMode, setViewMode] = useState('floorplan'); // 'floorplan' or 'table'
@@ -42,6 +46,19 @@ const RoomsList = () => {
     }
   }, [searchParams, statusFilter, viewMode]);
 
+  useEffect(() => {
+    let active = true;
+    buildingsApi
+      .getAllBuildings()
+      .then((data) => {
+        if (active) setBuildings(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => console.error('Error loading buildings:', err));
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const updateRoomQuery = (nextViewMode, nextStatusFilter) => {
     const nextParams = new URLSearchParams(searchParams);
     nextParams.set('view', nextViewMode);
@@ -49,14 +66,23 @@ const RoomsList = () => {
     setSearchParams(nextParams, { replace: true });
   };
 
-  // Filter rooms for table view
+  // Rooms thuộc tòa nhà đang chọn
+  const roomsForBuilding = useMemo(() => {
+    if (selectedBuildingId === 'all') return rooms;
+    return rooms.filter((room) => String(room.buildingId) === String(selectedBuildingId));
+  }, [rooms, selectedBuildingId]);
+
+  const countRoomsByBuilding = (buildingId) =>
+    rooms.filter((room) => String(room.buildingId) === String(buildingId)).length;
+
+  // Filter rooms for table view (trong phạm vi tòa nhà đang chọn)
   const filteredRooms = useMemo(() => {
-    return rooms.filter(room => {
+    return roomsForBuilding.filter(room => {
       const matchSearch = room.roomNumber?.toLowerCase().includes(searchTerm.toLowerCase());
       const matchStatus = statusFilter === 'all' || room.status === statusFilter;
       return matchSearch && matchStatus;
     });
-  }, [rooms, searchTerm, statusFilter]);
+  }, [roomsForBuilding, searchTerm, statusFilter]);
 
   const loadRoomIntoPanel = async (roomId, fallback) => {
     setPanelLoading(true);
@@ -85,8 +111,33 @@ const RoomsList = () => {
       setPanelSaveLoading(true);
       setPanelSaveError(null);
       if (panelMode === 'create') {
-        const created = await addRoom(formData);
+        const { initialDevices = [], initialServices = [], ...roomData } = formData;
+        const created = await addRoom(roomData);
         const newId = created?.id ?? created?.roomId;
+        if (newId) {
+          for (const svc of initialServices) {
+            try {
+              await roomMgmtApi.assignRoomService(newId, {
+                serviceId: Number(svc.serviceId),
+                quantity: Number(svc.quantity) || 1,
+              });
+            } catch (assignErr) {
+              console.error('Error assigning service on create:', assignErr);
+            }
+          }
+          for (const dev of initialDevices) {
+            try {
+              await roomMgmtApi.addDevice(newId, {
+                deviceName: dev.deviceName,
+                quantity: Number(dev.quantity) || 1,
+                status: dev.status || 'Working',
+                note: null,
+              });
+            } catch (deviceErr) {
+              console.error('Error adding device on create:', deviceErr);
+            }
+          }
+        }
         setPanelMode('edit');
         if (newId) {
           await loadRoomIntoPanel(newId, created);
@@ -168,10 +219,10 @@ const RoomsList = () => {
   };
 
   const stats = {
-    total: rooms.length,
-    occupied: rooms.filter(r => r.status === 'occupied').length,
-    vacant: rooms.filter(r => r.status === 'vacant').length,
-    maintenance: rooms.filter(r => r.status === 'maintenance').length,
+    total: roomsForBuilding.length,
+    occupied: roomsForBuilding.filter(r => r.status === 'occupied').length,
+    vacant: roomsForBuilding.filter(r => r.status === 'vacant').length,
+    maintenance: roomsForBuilding.filter(r => r.status === 'maintenance').length,
   };
 
   const statCards = [
@@ -194,6 +245,63 @@ const RoomsList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
+
+        {/* Building Selector */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-6 rounded-xl border border-hairline-cloud bg-surface-light p-4"
+        >
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
+            <Building2 size={18} className="text-accent-violet-mid" />
+            Quản lý phòng theo tòa nhà
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedBuildingId('all')}
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                selectedBuildingId === 'all'
+                  ? 'bg-primary text-on-primary'
+                  : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+              }`}
+            >
+              Tất cả tòa nhà
+              <span
+                className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                  selectedBuildingId === 'all' ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                }`}
+              >
+                {rooms.length}
+              </span>
+            </button>
+            {buildings.map((building) => {
+              const active = String(selectedBuildingId) === String(building.buildingId);
+              return (
+                <button
+                  key={building.buildingId}
+                  type="button"
+                  onClick={() => setSelectedBuildingId(building.buildingId)}
+                  className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-primary text-on-primary'
+                      : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+                  }`}
+                  title={building.address || ''}
+                >
+                  {building.buildingName}
+                  <span
+                    className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                      active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                    }`}
+                  >
+                    {countRoomsByBuilding(building.buildingId)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </motion.div>
 
         {/* View Mode Selector */}
         <motion.div
@@ -243,7 +351,7 @@ const RoomsList = () => {
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(440px,520px)] lg:items-stretch xl:gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(480px,560px)]">
               <div className="min-h-[520px] overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light p-3 lg:min-h-[600px] xl:min-h-[640px]">
                 <FloorPlanCanvas
-                  rooms={rooms}
+                  rooms={roomsForBuilding}
                   selectedRoomId={selectedRoomId}
                   onRoomClick={handleRoomClick}
                   onRoomHover={handleRoomHover}
@@ -254,6 +362,7 @@ const RoomsList = () => {
               <RoomManagementPanel
                 room={panelMode === 'create' ? null : managementRoom}
                 mode={panelMode === 'create' ? 'create' : 'edit'}
+                defaultBuildingId={selectedBuildingId === 'all' ? null : selectedBuildingId}
                 loading={panelLoading}
                 onClose={handleClosePanel}
                 onSaveRoom={panelMode ? handlePanelSaveRoom : undefined}

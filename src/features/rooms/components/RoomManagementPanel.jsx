@@ -15,6 +15,31 @@ import {
   Pencil,
   RefreshCw,
   Eye,
+  AirVent,
+  Refrigerator,
+  WashingMachine,
+  Tv,
+  Fan,
+  Lightbulb,
+  BedDouble,
+  Sofa,
+  Shirt,
+  Flame,
+  Cctv,
+  ShowerHead,
+  Bath,
+  CookingPot,
+  Utensils,
+  Lock,
+  Speaker,
+  Monitor,
+  Table,
+  Sparkles,
+  Car,
+  Droplet,
+  Zap,
+  ShieldCheck,
+  Wifi,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
@@ -71,6 +96,57 @@ const TABS = [
   { id: 'services', label: 'Dịch vụ', icon: Package },
 ];
 
+// Thiết bị gợi ý sẵn để chủ trọ tích nhanh khi tạo phòng (backend lưu theo tên)
+const SUGGESTED_DEVICES = [
+  'Máy lạnh',
+  'Tủ lạnh',
+  'Máy giặt',
+  'Tivi',
+  'Giường',
+  'Tủ quần áo',
+  'Bàn ghế',
+  'Bình nóng lạnh',
+  'Quạt',
+  'Bếp',
+];
+
+// Map tên thiết bị/dịch vụ → icon (đồng bộ với trang Thiết bị & Dịch vụ)
+const KEYWORD_ICONS = [
+  [['máy lạnh', 'điều hòa', 'điều hoà'], AirVent],
+  [['tủ lạnh'], Refrigerator],
+  [['máy giặt', 'giặt', 'ủi'], WashingMachine],
+  [['tivi', 'ti vi', ' tv'], Tv],
+  [['quạt'], Fan],
+  [['đèn'], Lightbulb],
+  [['giường'], BedDouble],
+  [['sofa', 'bàn ghế', 'ghế'], Sofa],
+  [['tủ quần áo', 'tủ áo', 'tủ đồ'], Shirt],
+  [['internet', 'mạng', 'wifi', 'modem', 'router'], Wifi],
+  [['camera'], Cctv],
+  [['nóng lạnh', 'bình nóng'], Flame],
+  [['vòi sen', 'sen tắm'], ShowerHead],
+  [['bồn tắm', 'bồn'], Bath],
+  [['bếp'], CookingPot],
+  [['nồi'], Utensils],
+  [['khóa', 'khoá'], Lock],
+  [['loa'], Speaker],
+  [['màn hình', 'máy tính', 'monitor'], Monitor],
+  [['bàn'], Table],
+  [['vệ sinh', 'dọn'], Sparkles],
+  [['giữ xe', 'gửi xe', 'bãi xe', 'đỗ xe'], Car],
+  [['nước uống', 'nước'], Droplet],
+  [['điện'], Zap],
+  [['bảo vệ', 'an ninh'], ShieldCheck],
+];
+
+const resolveItemIcon = (name) => {
+  const lower = (name || '').toLowerCase();
+  for (const [keywords, Icon] of KEYWORD_ICONS) {
+    if (keywords.some((kw) => lower.includes(kw))) return Icon;
+  }
+  return Package;
+};
+
 const emptyInfo = () => ({
   roomNumber: '',
   buildingId: 2,
@@ -86,6 +162,7 @@ const emptyInfo = () => ({
 const RoomManagementPanel = ({
   room,
   mode = 'edit',
+  defaultBuildingId = null,
   loading = false,
   onClose,
   onSaveRoom,
@@ -97,6 +174,9 @@ const RoomManagementPanel = ({
   const [info, setInfo] = useState(emptyInfo());
   const [roomImageFile, setRoomImageFile] = useState(null);
   const [roomImagePreview, setRoomImagePreview] = useState(null);
+  const [serviceCatalog, setServiceCatalog] = useState([]);
+  const [createDeviceSel, setCreateDeviceSel] = useState({});
+  const [createServiceSel, setCreateServiceSel] = useState({});
   const [buildings, setBuildings] = useState([]);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
@@ -130,19 +210,61 @@ const RoomManagementPanel = ({
         description: room.description || '',
       });
     } else if (isCreate) {
-      setInfo(emptyInfo());
+      setInfo({
+        ...emptyInfo(),
+        ...(defaultBuildingId != null ? { buildingId: Number(defaultBuildingId) } : {}),
+      });
       setActiveTab('info');
+      setCreateDeviceSel({});
+      setCreateServiceSel({});
     }
-  }, [room, isCreate]);
+  }, [room, isCreate, defaultBuildingId]);
 
   useEffect(() => {
-    if (isCreate && buildings.length > 0 && !buildings.some((b) => b.buildingId === info.buildingId)) {
+    if (!isCreate) return;
+    let active = true;
+    roomMgmtApi
+      .getServiceCatalog()
+      .then((data) => {
+        if (active) setServiceCatalog(Array.isArray(data) ? data : []);
+      })
+      .catch((e) => console.error(e));
+    return () => {
+      active = false;
+    };
+  }, [isCreate]);
+
+  const toggleCreateDevice = (name) => {
+    setCreateDeviceSel((prev) => {
+      const next = { ...prev };
+      if (next[name] != null) delete next[name];
+      else next[name] = 1;
+      return next;
+    });
+  };
+
+  const toggleCreateService = (serviceId) => {
+    setCreateServiceSel((prev) => {
+      const next = { ...prev };
+      if (next[serviceId] != null) delete next[serviceId];
+      else next[serviceId] = 1;
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (
+      isCreate &&
+      defaultBuildingId == null &&
+      buildings.length > 0 &&
+      !buildings.some((b) => b.buildingId === info.buildingId)
+    ) {
       setInfo((prev) => ({
         ...prev,
         buildingId: buildings[0].buildingId,
       }));
     }
-  }, [buildings, isCreate, info.buildingId]);
+  }, [buildings, isCreate, info.buildingId, defaultBuildingId]);
 
   const loadBuildings = useCallback(async () => {
     setBuildingsLoading(true);
@@ -337,7 +459,7 @@ const RoomManagementPanel = ({
 
   const handleSaveInfo = (e) => {
     e.preventDefault();
-    onSaveRoom?.({
+    const payload = {
       roomNumber: info.roomNumber,
       buildingId: info.buildingId ? Number(info.buildingId) : null,
       rentalPrice: Number(info.rentalPrice),
@@ -348,7 +470,21 @@ const RoomManagementPanel = ({
       maxPeople: info.maxPeople !== '' ? Number(info.maxPeople) : null,
       status: canEditRoomStatus ? info.status : (room?.status ?? info.status),
       description: info.description || null,
-    });
+    };
+
+    if (isCreate) {
+      payload.initialDevices = Object.entries(createDeviceSel).map(([deviceName, quantity]) => ({
+        deviceName,
+        quantity: Number(quantity) || 1,
+        status: 'Working',
+      }));
+      payload.initialServices = Object.entries(createServiceSel).map(([serviceId, quantity]) => ({
+        serviceId: Number(serviceId),
+        quantity: Number(quantity) || 1,
+      }));
+    }
+
+    onSaveRoom?.(payload);
   };
 
   const runAction = async (fn) => {
@@ -818,6 +954,131 @@ const RoomManagementPanel = ({
                         Chưa có hợp đồng cho phòng này
                       </p>
                     )}
+                  </section>
+                )}
+
+                {isCreate && (
+                  <section className="space-y-4 rounded-xl border border-hairline-cloud bg-surface-press/40 p-4">
+                    <div className="flex items-center gap-2">
+                      <Wrench size={18} className="text-accent-violet" />
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-accent-violet-mid">
+                        Thiết bị & dịch vụ ban đầu
+                      </h3>
+                    </div>
+                    <p className="text-xs text-muted">
+                      Tích chọn để thêm ngay khi tạo phòng. Có thể chỉnh số lượng và bổ sung sau ở các tab tương ứng.
+                    </p>
+
+                    {/* Thiết bị gợi ý */}
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-deep">Thiết bị</p>
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {SUGGESTED_DEVICES.map((name) => {
+                          const checked = createDeviceSel[name] != null;
+                          const DeviceIcon = resolveItemIcon(name);
+                          return (
+                            <div
+                              key={name}
+                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                                checked ? 'border-accent-violet bg-surface-light' : 'border-hairline-cloud bg-surface-light'
+                              }`}
+                            >
+                              <label className="flex flex-1 cursor-pointer items-center gap-2 select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleCreateDevice(name)}
+                                  className="h-4 w-4 rounded border-gray-300 text-primary"
+                                />
+                                <span
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                    checked ? 'bg-primary text-on-primary' : 'bg-surface-press text-gray-500'
+                                  }`}
+                                >
+                                  <DeviceIcon size={16} />
+                                </span>
+                                <span className="text-sm text-ink-deep">{name}</span>
+                              </label>
+                              {checked && (
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={createDeviceSel[name]}
+                                  onChange={(e) =>
+                                    setCreateDeviceSel((prev) => ({
+                                      ...prev,
+                                      [name]: Math.max(1, Number(e.target.value) || 1),
+                                    }))
+                                  }
+                                  className="text-input w-16 py-1 text-sm"
+                                  title="Số lượng"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Dịch vụ từ danh mục */}
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-deep">Dịch vụ</p>
+                      {serviceCatalog.length === 0 ? (
+                        <p className="text-xs text-muted">Chưa có dịch vụ trong danh mục. Tạo dịch vụ ở trang Dịch vụ.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {serviceCatalog.map((s) => {
+                            const checked = createServiceSel[s.serviceId] != null;
+                            const ServiceIcon = resolveItemIcon(s.serviceName);
+                            return (
+                              <div
+                                key={s.serviceId}
+                                className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                                  checked ? 'border-accent-violet bg-surface-light' : 'border-hairline-cloud bg-surface-light'
+                                }`}
+                              >
+                                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleCreateService(s.serviceId)}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                                  />
+                                  <span
+                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                      checked ? 'bg-primary text-on-primary' : 'bg-surface-press text-gray-500'
+                                    }`}
+                                  >
+                                    <ServiceIcon size={16} />
+                                  </span>
+                                  <span className="min-w-0 truncate text-sm text-ink-deep">
+                                    {s.serviceName}
+                                    <span className="text-xs text-muted">
+                                      {' '}— {formatCurrency(s.unitPrice)}{s.unit ? `/${s.unit}` : ''}
+                                    </span>
+                                  </span>
+                                </label>
+                                {checked && (
+                                  <input
+                                    type="number"
+                                    min={1}
+                                    value={createServiceSel[s.serviceId]}
+                                    onChange={(e) =>
+                                      setCreateServiceSel((prev) => ({
+                                        ...prev,
+                                        [s.serviceId]: Math.max(1, Number(e.target.value) || 1),
+                                      }))
+                                    }
+                                    className="text-input w-16 py-1 text-sm"
+                                    title="Số lượng"
+                                  />
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
                   </section>
                 )}
 
