@@ -76,6 +76,7 @@ export const normalizeRoomServiceFromApi = (item) => {
     unitPrice: Number(item.unitPrice) || 0,
     unit: item.unit ?? null,
     billingCycle: item.billingCycle ?? 'Monthly',
+    icon: item.icon ?? null,
   };
 };
 
@@ -89,6 +90,7 @@ export const normalizeDeviceFromApi = (device) => {
     quantity: Number(device.quantity) || 1,
     status: device.status ?? 'Working',
     imageUrl: resolveMediaUrl(device.imageUrl ?? device.ImageUrl ?? null),
+    icon: device.icon ?? null,
   };
 };
 

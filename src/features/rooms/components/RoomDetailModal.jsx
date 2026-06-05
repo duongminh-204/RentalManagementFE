@@ -8,7 +8,8 @@ import {
   Zap,
   Droplets,
   Banknote,
-  Package,
+  Wrench,
+  Sparkles,
   User,
   Loader2,
   ChevronLeft,
@@ -17,11 +18,19 @@ import {
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
+import { resolveItemIcon } from '../../devices/utils/itemIcons';
 import {
   formatCurrency,
   getRoomDisplayName,
   getDeviceStatusLabel,
 } from '../utils/roomHelpers';
+
+const formatServicePrice = (value, billingCycle = 'Monthly') => {
+  const num = Number(value);
+  if (!num) return 'Miễn phí';
+  const suffix = billingCycle === 'Yearly' ? '/năm' : '/tháng';
+  return `${formatCurrency(num)}${suffix}`;
+};
 
 const InfoRow = ({ icon: Icon, label, value, highlight }) => (
   <div className="flex items-start gap-3 rounded-lg border border-hairline-cloud bg-surface-light px-4 py-3">
@@ -107,7 +116,7 @@ const ImageGallery = ({ images }) => {
   );
 };
 
-const DevicesList = ({ devices }) => {
+const RoomDevicesTable = ({ devices }) => {
   const [previewUrl, setPreviewUrl] = useState(null);
 
   if (!devices?.length) {
@@ -123,41 +132,42 @@ const DevicesList = ({ devices }) => {
       <table className="w-full text-left text-sm">
         <thead>
           <tr className="border-b border-hairline-cloud bg-surface-press">
-            <th className="px-4 py-2.5 font-semibold text-ink-deep w-16">Ảnh</th>
+            <th className="w-16 px-4 py-2.5 font-semibold text-ink-deep">Icon</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">Thiết bị</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">SL</th>
             <th className="px-4 py-2.5 font-semibold text-ink-deep">Trạng thái</th>
-            <th className="hidden px-4 py-2.5 font-semibold text-ink-deep sm:table-cell">Ghi chú</th>
           </tr>
         </thead>
         <tbody>
-          {devices.map((device) => (
-            <tr
-              key={device.deviceId ?? device.deviceName}
-              className="border-b border-hairline-cloud last:border-0"
-            >
-              <td className="px-4 py-3">
-                {device.imageUrl ? (
-                  <img
-                    src={device.imageUrl}
-                    alt={device.deviceName}
-                    className="h-10 w-10 rounded-md border border-hairline-cloud object-cover cursor-pointer hover:opacity-80 transition"
-                    onClick={() => setPreviewUrl(device.imageUrl)}
-                  />
-                ) : (
-                  <div className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-press text-muted/65">
-                    <Package size={16} />
-                  </div>
-                )}
-              </td>
-              <td className="px-4 py-3 font-medium text-ink-deep">{device.deviceName}</td>
-              <td className="px-4 py-3 text-muted">{device.quantity}</td>
-              <td className="px-4 py-3">
-                <span className="pill-violet text-xs">{getDeviceStatusLabel(device.status)}</span>
-              </td>
-              <td className="hidden px-4 py-3 text-muted sm:table-cell">{device.note || '—'}</td>
-            </tr>
-          ))}
+          {devices.map((device) => {
+            const Icon = resolveItemIcon(device);
+            return (
+              <tr
+                key={device.deviceId ?? device.deviceName}
+                className="border-b border-hairline-cloud last:border-0"
+              >
+                <td className="px-4 py-3">
+                  {device.imageUrl ? (
+                    <img
+                      src={device.imageUrl}
+                      alt={device.deviceName}
+                      className="h-10 w-10 cursor-pointer rounded-md border border-hairline-cloud object-cover transition hover:opacity-80"
+                      onClick={() => setPreviewUrl(device.imageUrl)}
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 items-center justify-center rounded-md bg-surface-press text-accent-violet">
+                      <Icon size={18} aria-hidden />
+                    </div>
+                  )}
+                </td>
+                <td className="px-4 py-3 font-medium text-ink-deep">{device.deviceName}</td>
+                <td className="px-4 py-3 text-muted">{device.quantity}</td>
+                <td className="px-4 py-3">
+                  <span className="pill-violet text-xs">{getDeviceStatusLabel(device.status)}</span>
+                </td>
+              </tr>
+            );
+          })}
         </tbody>
       </table>
       <ImageModal
@@ -167,6 +177,43 @@ const DevicesList = ({ devices }) => {
         alt="Ảnh thiết bị"
       />
     </div>
+  );
+};
+
+const RoomServicesList = ({ services }) => {
+  if (!services?.length) {
+    return (
+      <p className="rounded-lg border border-dashed border-hairline-cloud px-4 py-6 text-center text-sm text-muted">
+        Chưa có dịch vụ trong phòng
+      </p>
+    );
+  }
+
+  return (
+    <ul className="space-y-2">
+      {services.map((service) => {
+        const Icon = resolveItemIcon(service);
+        return (
+          <li
+            key={service.roomServiceId ?? service.serviceId}
+            className="flex items-center gap-3 rounded-xl border border-hairline-cloud bg-surface-light px-4 py-3"
+          >
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-surface-press text-accent-violet">
+              <Icon size={18} aria-hidden />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-medium text-ink-deep">{service.serviceName}</p>
+              {service.unit && (
+                <p className="text-xs text-muted">Đơn vị: {service.unit}</p>
+              )}
+            </div>
+            <p className="shrink-0 text-sm font-semibold text-accent-violet">
+              {formatServicePrice(service.unitPrice, service.billingCycle)}
+            </p>
+          </li>
+        );
+      })}
+    </ul>
   );
 };
 
@@ -345,7 +392,7 @@ const RoomDetailModal = ({ room, isOpen, onClose, onEdit, loading = false }) => 
 
                   <div>
                     <div className="mb-3 flex items-center gap-2">
-                      <Package size={18} className="text-accent-violet" />
+                      <Wrench size={18} className="text-accent-violet" />
                       <h3 className="font-display text-lg font-semibold text-ink-deep">
                         Thiết bị trong phòng
                       </h3>
@@ -353,7 +400,20 @@ const RoomDetailModal = ({ room, isOpen, onClose, onEdit, loading = false }) => 
                         <span className="pill-violet">{room.devices.length}</span>
                       )}
                     </div>
-                    <DevicesList devices={room.devices} />
+                    <RoomDevicesTable devices={room.devices} />
+                  </div>
+
+                  <div>
+                    <div className="mb-3 flex items-center gap-2">
+                      <Sparkles size={18} className="text-accent-violet" />
+                      <h3 className="font-display text-lg font-semibold text-ink-deep">
+                        Dịch vụ trong phòng
+                      </h3>
+                      {room.roomServices?.length > 0 && (
+                        <span className="pill-violet">{room.roomServices.length}</span>
+                      )}
+                    </div>
+                    <RoomServicesList services={room.roomServices} />
                   </div>
                 </div>
               ) : null}

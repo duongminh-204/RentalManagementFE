@@ -15,34 +15,10 @@ import {
   Pencil,
   RefreshCw,
   Eye,
-  AirVent,
-  Refrigerator,
-  WashingMachine,
-  Tv,
-  Fan,
-  Lightbulb,
-  BedDouble,
-  Sofa,
-  Shirt,
-  Flame,
-  Cctv,
-  ShowerHead,
-  Bath,
-  CookingPot,
-  Utensils,
-  Lock,
-  Speaker,
-  Monitor,
-  Table,
-  Sparkles,
-  Car,
-  Droplet,
-  Zap,
-  ShieldCheck,
-  Wifi,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
+import { resolveItemIcon } from '../../devices/utils/itemIcons';
 import { formatCurrency, getRoomDisplayName, resolveMediaUrl } from '../utils/roomHelpers';
 import {
   openOrDownloadContractFile,
@@ -95,43 +71,6 @@ const TABS = [
   { id: 'devices', label: 'Thiết bị', icon: Wrench },
   { id: 'services', label: 'Dịch vụ', icon: Package },
 ];
-
-// Map tên thiết bị/dịch vụ → icon (đồng bộ với trang Thiết bị & Dịch vụ)
-const KEYWORD_ICONS = [
-  [['máy lạnh', 'điều hòa', 'điều hoà'], AirVent],
-  [['tủ lạnh'], Refrigerator],
-  [['máy giặt', 'giặt', 'ủi'], WashingMachine],
-  [['tivi', 'ti vi', ' tv'], Tv],
-  [['quạt'], Fan],
-  [['đèn'], Lightbulb],
-  [['giường'], BedDouble],
-  [['sofa', 'bàn ghế', 'ghế'], Sofa],
-  [['tủ quần áo', 'tủ áo', 'tủ đồ'], Shirt],
-  [['internet', 'mạng', 'wifi', 'modem', 'router'], Wifi],
-  [['camera'], Cctv],
-  [['nóng lạnh', 'bình nóng'], Flame],
-  [['vòi sen', 'sen tắm'], ShowerHead],
-  [['bồn tắm', 'bồn'], Bath],
-  [['bếp'], CookingPot],
-  [['nồi'], Utensils],
-  [['khóa', 'khoá'], Lock],
-  [['loa'], Speaker],
-  [['màn hình', 'máy tính', 'monitor'], Monitor],
-  [['bàn'], Table],
-  [['vệ sinh', 'dọn'], Sparkles],
-  [['giữ xe', 'gửi xe', 'bãi xe', 'đỗ xe'], Car],
-  [['nước uống', 'nước'], Droplet],
-  [['điện'], Zap],
-  [['bảo vệ', 'an ninh'], ShieldCheck],
-];
-
-const resolveItemIcon = (name) => {
-  const lower = (name || '').toLowerCase();
-  for (const [keywords, Icon] of KEYWORD_ICONS) {
-    if (keywords.some((kw) => lower.includes(kw))) return Icon;
-  }
-  return Package;
-};
 
 const emptyInfo = () => ({
   roomNumber: '',
@@ -973,7 +912,7 @@ const RoomManagementPanel = ({
                       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                         {deviceCatalog.map((d) => {
                           const checked = createDeviceSel[d.deviceCatalogId] != null;
-                          const DeviceIcon = resolveItemIcon(d.name);
+                          const DeviceIcon = resolveItemIcon(d);
                           return (
                             <div
                               key={d.deviceCatalogId}
@@ -1028,7 +967,7 @@ const RoomManagementPanel = ({
                         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                           {serviceCatalog.map((s) => {
                             const checked = createServiceSel[s.serviceId] != null;
-                            const ServiceIcon = resolveItemIcon(s.serviceName);
+                            const ServiceIcon = resolveItemIcon(s);
                             return (
                               <div
                                 key={s.serviceId}
@@ -1254,34 +1193,37 @@ const RoomManagementPanel = ({
             {activeTab === 'devices' && canManageExtras && (
               <div className="space-y-4">
                 <ul className="space-y-2">
-                  {(room.devices || []).map((d) => (
-                    <li
-                      key={d.deviceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
-                    >
-                      <div className="flex items-center gap-3 min-w-0 flex-1">
-                        {d.imageUrl ? (
-                          <img
-                            src={d.imageUrl}
-                            alt={d.deviceName}
-                            className="h-12 w-12 shrink-0 rounded-md border border-hairline-cloud object-cover cursor-pointer transition hover:opacity-80"
-                            onClick={() => setPreviewImage(d.imageUrl)}
-                            title="Click để xem ảnh lớn"
-                          />
-                        ) : (
-                          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-dashed border-hairline-cloud bg-surface-press text-muted">
-                            <ImageIcon size={16} />
+                  {(room.devices || []).map((d) => {
+                    const DeviceIcon = resolveItemIcon(d);
+                    return (
+                      <li
+                        key={d.deviceId}
+                        className="flex items-center justify-between rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2"
+                      >
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          {d.imageUrl ? (
+                            <img
+                              src={d.imageUrl}
+                              alt={d.deviceName}
+                              className="h-12 w-12 shrink-0 cursor-pointer rounded-lg border border-hairline-cloud object-cover transition hover:opacity-80"
+                              onClick={() => setPreviewImage(d.imageUrl)}
+                              title="Click để xem ảnh lớn"
+                            />
+                          ) : (
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-hairline-cloud bg-surface-press text-accent-violet">
+                              <DeviceIcon size={20} aria-hidden />
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-ink-deep">{d.deviceName}</p>
+                            <p className="truncate text-xs text-muted">
+                              SL: {d.quantity} · {d.status}
+                            </p>
                           </div>
-                        )}
-                        <div className="min-w-0 flex-1">
-                          <p className="font-medium text-ink-deep truncate">{d.deviceName}</p>
-                          <p className="text-xs text-muted truncate">
-                            SL: {d.quantity} · {d.status}
-                          </p>
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
                 {!room.devices?.length && (
                   <p className="text-center text-sm text-muted">Chưa có thiết bị</p>
@@ -1292,20 +1234,26 @@ const RoomManagementPanel = ({
             {activeTab === 'services' && canManageExtras && (
               <div className="space-y-4">
                 <ul className="space-y-2">
-                  {(room.roomServices || []).map((rs) => (
-                    <li
-                      key={rs.roomServiceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2 bg-surface-light"
-                    >
-                      <div>
-                        <p className="font-medium text-ink-deep">{rs.serviceName}</p>
-                        <p className="text-xs text-muted">
-                          {formatCurrency(rs.unitPrice)}
-                          {rs.unit ? `/${rs.unit}` : ''}
-                        </p>
-                      </div>
-                    </li>
-                  ))}
+                  {(room.roomServices || []).map((rs) => {
+                    const ServiceIcon = resolveItemIcon(rs);
+                    return (
+                      <li
+                        key={rs.roomServiceId}
+                        className="flex items-center gap-3 rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2"
+                      >
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-hairline-cloud bg-surface-press text-accent-violet">
+                          <ServiceIcon size={20} aria-hidden />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-ink-deep">{rs.serviceName}</p>
+                          <p className="text-xs text-muted">
+                            {formatCurrency(rs.unitPrice)}
+                            {rs.unit ? `/${rs.unit}` : ''}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
                 {!room.roomServices?.length && (
                   <p className="text-center text-sm text-muted">Chưa có dịch vụ nào được gán cho phòng này</p>

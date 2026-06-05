@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as buildingsApi from '../../buildings/api/buildingsApi';
 import * as roomMgmtApi from '../../rooms/api/roomManagementApi';
 import { getAllRooms, getRoomById } from '../../rooms/api/roomsApi';
-import { normalizeRoomFromApi } from '../../rooms/utils/roomHelpers';
+import { normalizeRoomFromApi, normalizeRoomsList } from '../../rooms/utils/roomHelpers';
+
+const normalizeBuilding = (building) => ({
+  buildingId: building.buildingId ?? building.id,
+  buildingName: building.buildingName ?? building.name ?? 'Tòa nhà',
+  address: building.address ?? null,
+});
+
+const sortRooms = (list) =>
+  [...list].sort((a, b) =>
+    String(a.roomNumber || a.roomName || '').localeCompare(
+      String(b.roomNumber || b.roomName || ''),
+      'vi',
+      { numeric: true }
+    )
+  );
 const mapDeviceStatusToApi = (status) => {
   if (status === 'maintenance') return 'Repair';
   if (status === 'broken') return 'Broken';
@@ -77,7 +93,8 @@ const buildItemsFromRoomDetails = (rooms, roomDetails) => {
         deviceId: d.deviceId,
         roomId: room.id,
         roomNumber: roomLabel,
-        catalogId: d.deviceCatalogId ?? d.deviceName,
+        catalogId: d.deviceCatalogId != null ? d.deviceCatalogId : d.deviceName,
+        deviceCatalogId: d.deviceCatalogId ?? null,
         name: d.deviceName,
         category: 'device',
         status: mapDeviceStatusFromApi(d.status),
@@ -106,6 +123,7 @@ const buildItemsFromRoomDetails = (rooms, roomDetails) => {
 };
 
 export const useDevices = () => {
+  const [buildings, setBuildings] = useState([]);
   const [rooms, setRooms] = useState([]);
   const [deviceCatalog, setDeviceCatalog] = useState([]);
   const [serviceCatalog, setServiceCatalog] = useState([]);
@@ -150,10 +168,15 @@ export const useDevices = () => {
     setLoading(true);
     setError(null);
     try {
-      const rawRooms = await getAllRooms();
-      const normalizedRooms = (Array.isArray(rawRooms) ? rawRooms : [])
-        .map(normalizeRoomFromApi)
-        .filter(Boolean);
+      const [rawRooms, rawBuildings] = await Promise.all([
+        getAllRooms(),
+        buildingsApi.getAllBuildings(),
+      ]);
+      const normalizedBuildings = (Array.isArray(rawBuildings) ? rawBuildings : [])
+        .map(normalizeBuilding)
+        .sort((a, b) => a.buildingName.localeCompare(b.buildingName, 'vi'));
+      const normalizedRooms = normalizeRoomsList(rawRooms);
+      setBuildings(normalizedBuildings);
       setRooms(normalizedRooms);
       await Promise.all([loadCatalogs(), loadAllRoomDetails(normalizedRooms)]);
       setSelectedRoomId((prev) => {
@@ -177,9 +200,12 @@ export const useDevices = () => {
   );
 
   const isAssigned = useCallback(
-    (roomId, catalogId) =>
+    (roomId, catalogId, category) =>
       items.some(
-        (it) => String(it.roomId) === String(roomId) && String(it.catalogId) === String(catalogId)
+        (it) =>
+          String(it.roomId) === String(roomId) &&
+          String(it.catalogId) === String(catalogId) &&
+          it.category === category
       ),
     [items]
   );
@@ -241,7 +267,8 @@ export const useDevices = () => {
       const existing = items.find(
         (it) =>
           String(it.roomId) === String(roomId) &&
-          String(it.catalogId) === String(catalogItem.id)
+          String(it.catalogId) === String(catalogItem.id) &&
+          it.category === catalogItem.category
       );
 
       await runMutation(async () => {
@@ -289,6 +316,10 @@ export const useDevices = () => {
       if (item.category !== 'device') return;
       await runMutation(async () => {
         await roomMgmtApi.updateDevice(item.roomId, item.deviceId, {
+          deviceCatalogId:
+            typeof item.catalogId === 'number' || /^\d+$/.test(String(item.catalogId))
+              ? Number(item.catalogId)
+              : undefined,
           deviceName: item.name,
           quantity: 1,
           status: mapDeviceStatusToApi(status),
@@ -309,13 +340,37 @@ export const useDevices = () => {
     [runMutation]
   );
 
-  const selectedRoom = useMemo(
-    () => rooms.find((r) => r.id === selectedRoomId) ?? null,
-    [rooms, selectedRoomId]
-  );
+  const roomsByBuilding = useMemo(() => {
+    const grouped = buildings.map((building) => ({
+      building,
+      rooms: sortRooms(
+        rooms.filter((r) => String(r.buildingId) === String(building.buildingId))
+      ),
+    }));
+
+    const knownBuildingIds = new Set(buildings.map((b) => String(b.buildingId)));
+    const orphanRooms = sortRooms(
+      rooms.filter((r) => r.buildingId != null && !knownBuildingIds.has(String(r.buildingId)))
+    );
+    const unassignedRooms = sortRooms(rooms.filter((r) => r.buildingId == null));
+
+    return { grouped, orphanRooms, unassignedRooms };
+  }, [buildings, rooms]);
+
+  const selectedRoom = useMemo(() => {
+    const room = rooms.find((r) => r.id === selectedRoomId);
+    if (!room) return null;
+    const building = buildings.find((b) => String(b.buildingId) === String(room.buildingId));
+    return {
+      ...room,
+      buildingName: building?.buildingName ?? null,
+    };
+  }, [rooms, selectedRoomId, buildings]);
 
   return {
+    buildings,
     rooms,
+    roomsByBuilding,
     selectedRoomId,
     setSelectedRoomId,
     selectedRoom,

@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
+  Building2,
   DoorClosed,
   Trash2,
   Upload,
@@ -11,95 +12,15 @@ import {
   Plus,
   X,
   Check,
-  // Icon thiết bị / dịch vụ
-  AirVent,
-  Refrigerator,
-  WashingMachine,
-  Tv,
-  Microwave,
-  Fan,
-  Lightbulb,
-  BedDouble,
-  Sofa,
-  Armchair,
-  Shirt,
-  Flame,
-  Cctv,
-  Camera,
-  Table,
-  Lock,
-  KeyRound,
-  Wifi,
-  Router,
-  Sparkles,
-  Car,
-  Droplet,
-  ShowerHead,
-  Bath,
-  Speaker,
-  Monitor,
-  Utensils,
-  Zap,
-  ShieldCheck,
-  Plug,
-  Snowflake,
-  CookingPot,
-  Package,
 } from 'lucide-react';
 import { useDevices } from '../hooks/useDevices';
-import { DEVICE_STATUS_OPTIONS, TYPE_ICON, getStatusConfig } from '../constants';
-
-const ICON_REGISTRY = {
-  AirVent, Refrigerator, WashingMachine, Tv, Microwave, Fan, Lightbulb,
-  BedDouble, Sofa, Armchair, Shirt, Flame, Cctv, Camera, Table, Lock, KeyRound,
-  Wifi, Router, Sparkles, Car, Droplet, ShowerHead, Bath, Speaker, Monitor,
-  Utensils, Zap, ShieldCheck, Plug, Snowflake, CookingPot, Package,
-};
-
-// Đoán icon theo từ khóa tên (cho mục mới do người dùng thêm)
-const KEYWORD_ICONS = [
-  [['máy lạnh', 'điều hòa', 'điều hoà'], AirVent],
-  [['tủ lạnh'], Refrigerator],
-  [['máy giặt', 'giặt', 'ủi'], WashingMachine],
-  [['tivi', 'ti vi', ' tv'], Tv],
-  [['vi sóng', 'lò vi'], Microwave],
-  [['quạt'], Fan],
-  [['đèn'], Lightbulb],
-  [['giường'], BedDouble],
-  [['sofa'], Sofa],
-  [['ghế'], Armchair],
-  [['tủ quần áo', 'tủ áo', 'tủ đồ'], Shirt],
-  [['internet', 'mạng', 'wifi', 'modem', 'router'], Wifi],
-  [['camera'], Cctv],
-  [['nóng lạnh', 'bình nóng'], Flame],
-  [['vòi sen', 'sen tắm'], ShowerHead],
-  [['bồn tắm', 'bồn'], Bath],
-  [['bếp'], CookingPot],
-  [['nồi'], Utensils],
-  [['khóa', 'khoá'], Lock],
-  [['loa'], Speaker],
-  [['màn hình', 'máy tính', 'monitor'], Monitor],
-  [['bàn'], Table],
-  [['vệ sinh', 'dọn'], Sparkles],
-  [['giữ xe', 'gửi xe', 'bãi xe', 'đỗ xe'], Car],
-  [['nước uống', 'nước'], Droplet],
-  [['điện'], Zap],
-  [['bảo vệ', 'an ninh'], ShieldCheck],
-];
+import { DEVICE_STATUS_OPTIONS, getStatusConfig } from '../constants';
+import { resolveItemIcon } from '../utils/itemIcons';
 
 const STATUS_ICONS = {
   active: { Icon: CheckCircle2, className: 'text-green-500' },
   maintenance: { Icon: Wrench, className: 'text-amber-500' },
   broken: { Icon: AlertCircle, className: 'text-red-500' },
-};
-
-const resolveIcon = (item) => {
-  if (item.icon && ICON_REGISTRY[item.icon]) return ICON_REGISTRY[item.icon];
-  const name = (item.name || '').toLowerCase();
-  for (const [keywords, Icon] of KEYWORD_ICONS) {
-    if (keywords.some((kw) => name.includes(kw))) return Icon;
-  }
-  return ICON_REGISTRY[TYPE_ICON[item.type]] || Package;
 };
 
 const formatPrice = (value, billingCycle = 'Monthly') => {
@@ -109,11 +30,156 @@ const formatPrice = (value, billingCycle = 'Monthly') => {
   return `${num.toLocaleString('vi-VN')}₫${suffix}`;
 };
 
+/** Tách ra ngoài để tránh remount mỗi lần gõ → mất focus ô nhập giá */
+const CatalogAddArea = ({
+  category,
+  active,
+  saving,
+  newName,
+  newPrice,
+  newBillingCycle,
+  onStart,
+  onCancel,
+  onConfirm,
+  onNameChange,
+  onPriceChange,
+  onBillingCycleChange,
+}) => {
+  if (!active) {
+    return (
+      <button
+        type="button"
+        onClick={onStart}
+        className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-3 text-sm font-medium text-gray-500 transition-colors hover:border-gray-500 hover:text-ink-deep"
+      >
+        <Plus size={16} />
+        Thêm {category === 'service' ? 'dịch vụ' : 'thiết bị'} mới
+      </button>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
+      <input
+        autoFocus
+        type="text"
+        value={newName}
+        onChange={onNameChange}
+        onKeyDown={(e) => e.key === 'Enter' && onConfirm()}
+        placeholder={category === 'service' ? 'Tên dịch vụ...' : 'Tên thiết bị...'}
+        className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+      />
+      {category === 'service' && (
+        <>
+          <input
+            type="number"
+            min="0"
+            value={newPrice}
+            onChange={onPriceChange}
+            placeholder="Giá (₫) - để trống nếu miễn phí"
+            className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+          />
+          <select
+            value={newBillingCycle}
+            onChange={onBillingCycleChange}
+            className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+          >
+            <option value="Monthly">Tính theo tháng</option>
+            <option value="Yearly">Tính theo năm</option>
+          </select>
+        </>
+      )}
+      <div className="mt-2 flex gap-2">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={saving}
+          className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
+        >
+          <Check size={15} />
+          {saving ? 'Đang lưu...' : 'Lưu'}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-surface-press"
+        >
+          Hủy
+        </button>
+      </div>
+    </div>
+  );
+};
+
+const RoomChip = ({ room, active, count, onSelect }) => {
+  const label = room.roomNumber || room.roomName || room.id;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(room.id)}
+      className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+        active
+          ? 'bg-primary text-on-primary'
+          : 'border border-hairline-cloud bg-white text-ink-deep hover:bg-surface-press'
+      }`}
+    >
+      Phòng {label}
+      <span
+        className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+          active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+        }`}
+      >
+        {count}
+      </span>
+    </button>
+  );
+};
+
+const BuildingRoomGroup = ({ buildingName, address, rooms, selectedRoomId, countByRoom, onSelectRoom }) => {
+  if (!rooms.length) {
+    return (
+      <div className="rounded-xl border border-dashed border-hairline-cloud bg-white p-4">
+        <p className="flex items-center gap-2 text-sm font-semibold text-ink-deep">
+          <Building2 size={16} className="text-accent-violet-mid" />
+          {buildingName}
+        </p>
+        <p className="mt-2 text-xs text-gray-400">Chưa có phòng trong tòa nhà này.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-xl border border-hairline-cloud bg-white p-4">
+      <div className="mb-3">
+        <p className="flex items-center gap-2 text-sm font-semibold text-ink-deep">
+          <Building2 size={16} className="text-accent-violet-mid" />
+          {buildingName}
+        </p>
+        {address && <p className="mt-0.5 pl-6 text-xs text-gray-400">{address}</p>}
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {rooms.map((room) => (
+          <RoomChip
+            key={room.id}
+            room={room}
+            active={selectedRoomId === room.id}
+            count={countByRoom(room.id)}
+            onSelect={onSelectRoom}
+          />
+        ))}
+      </div>
+    </div>
+  );
+};
+
 const DevicesList = () => {
   const {
+    buildings,
     rooms,
+    roomsByBuilding,
     selectedRoomId,
     setSelectedRoomId,
+    selectedRoom,
     deviceCatalog,
     serviceCatalog,
     items,
@@ -200,8 +266,8 @@ const DevicesList = () => {
 
   // ===== Ô chọn bên trái (lưới icon + nhãn) =====
   const CatalogCell = ({ item }) => {
-    const Icon = resolveIcon(item);
-    const checked = isAssigned(selectedRoomId, item.id);
+    const Icon = resolveItemIcon(item);
+    const checked = isAssigned(selectedRoomId, item.id, item.category);
     return (
       <div className="group/cell relative">
         <button
@@ -244,77 +310,10 @@ const DevicesList = () => {
     );
   };
 
-  // ===== Khu vực thêm mục mới =====
-  const AddArea = ({ category }) => {
-    const active = addingFor === category;
-    if (!active) {
-      return (
-        <button
-          type="button"
-          onClick={() => startAdding(category)}
-          className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-gray-300 p-3 text-sm font-medium text-gray-500 transition-colors hover:border-gray-500 hover:text-ink-deep"
-        >
-          <Plus size={16} />
-          Thêm {category === 'service' ? 'dịch vụ' : 'thiết bị'} mới
-        </button>
-      );
-    }
-    return (
-      <div className="rounded-xl border border-primary/40 bg-primary/5 p-3">
-        <input
-          autoFocus
-          type="text"
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && confirmAdding()}
-          placeholder={category === 'service' ? 'Tên dịch vụ...' : 'Tên thiết bị...'}
-          className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-        />
-        {category === 'service' && (
-          <>
-            <input
-              type="number"
-              min="0"
-              value={newPrice}
-              onChange={(e) => setNewPrice(e.target.value)}
-              placeholder="Giá (₫) - để trống nếu miễn phí"
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-            />
-            <select
-              value={newBillingCycle}
-              onChange={(e) => setNewBillingCycle(e.target.value)}
-              className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-            >
-              <option value="Monthly">Tính theo tháng</option>
-              <option value="Yearly">Tính theo năm</option>
-            </select>
-          </>
-        )}
-        <div className="mt-2 flex gap-2">
-          <button
-            type="button"
-            onClick={confirmAdding}
-            disabled={saving}
-            className="inline-flex items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-sm font-semibold text-on-primary transition-opacity hover:opacity-90 disabled:opacity-60"
-          >
-            <Check size={15} />
-            {saving ? 'Đang lưu...' : 'Lưu'}
-          </button>
-          <button
-            type="button"
-            onClick={cancelAdding}
-            className="rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-surface-press"
-          >
-            Hủy
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   // ===== Item bên phải (đã gán cho phòng) =====
   const AssignedRow = ({ item }) => {
-    const Icon = resolveIcon(item);
+    const Icon = resolveItemIcon(item);
+    const isDevice = item.category === 'device';
     const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.active;
     const StatusIcon = statusIcon.Icon;
     return (
@@ -325,47 +324,60 @@ const DevicesList = () => {
         exit={{ opacity: 0, scale: 0.97 }}
         className="flex items-center gap-3 rounded-xl border border-hairline-cloud p-3"
       >
-        {/* Ảnh / icon — bấm để upload */}
-        <label
-          title="Tải ảnh lên"
-          className="group/img relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-hairline-cloud bg-surface-light text-ink-deep"
-        >
-          {item.image ? (
-            <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
-          ) : (
+        {/* Ảnh / icon — chỉ thiết bị mới upload ảnh */}
+        {isDevice ? (
+          <label
+            title="Tải ảnh lên"
+            className="group/img relative flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-lg border border-hairline-cloud bg-surface-light text-ink-deep"
+          >
+            {item.image ? (
+              <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+            ) : (
+              <Icon size={20} />
+            )}
+            <span className="absolute inset-0 flex items-center justify-center bg-ink-deep/50 text-on-primary opacity-0 transition-opacity group-hover/img:opacity-100">
+              <Upload size={16} />
+            </span>
+            <input type="file" accept="image/*" onChange={(e) => handleImage(item, e)} className="hidden" />
+          </label>
+        ) : (
+          <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-hairline-cloud bg-surface-light text-ink-deep">
             <Icon size={20} />
-          )}
-          <span className="absolute inset-0 flex items-center justify-center bg-ink-deep/50 text-on-primary opacity-0 transition-opacity group-hover/img:opacity-100">
-            <Upload size={16} />
           </span>
-          <input type="file" accept="image/*" onChange={(e) => handleImage(item, e)} className="hidden" />
-        </label>
+        )}
 
         {/* Tên + meta */}
         <div className="min-w-0 flex-1">
           <p className="truncate font-medium text-ink-deep">{item.name}</p>
           <p className="truncate text-xs text-gray-400">
-            {item.category === 'service'
-              ? formatPrice(item.price, item.billingCycle)
-              : 'Thiết bị'}
-            {' · '}
-            <span className={statusIcon.className}>{getStatusConfig(item.status).label}</span>
+            {isDevice ? (
+              <>
+                Thiết bị ·{' '}
+                <span className={statusIcon.className}>{getStatusConfig(item.status).label}</span>
+              </>
+            ) : (
+              formatPrice(item.price, item.billingCycle)
+            )}
           </p>
         </div>
 
-        {/* Trạng thái */}
-        <StatusIcon size={18} className={`shrink-0 ${statusIcon.className}`} />
-        <select
-          value={item.status}
-          onChange={(e) => changeStatus(item, e.target.value)}
-          className="shrink-0 rounded-lg border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
-        >
-          {DEVICE_STATUS_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        {/* Trạng thái — chỉ thiết bị (bảng Device có Status) */}
+        {isDevice && (
+          <>
+            <StatusIcon size={18} className={`shrink-0 ${statusIcon.className}`} />
+            <select
+              value={item.status}
+              onChange={(e) => changeStatus(item, e.target.value)}
+              className="shrink-0 rounded-lg border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+            >
+              {DEVICE_STATUS_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         {/* Gỡ khỏi phòng */}
         <button
@@ -412,7 +424,7 @@ const DevicesList = () => {
               Quản lý thiết bị &amp; dịch vụ
             </h1>
             <p className="mt-1 text-gray-500">
-              Chọn phòng, tích vào danh sách bên trái để thêm thiết bị / dịch vụ cho phòng.
+              Chọn tòa nhà và phòng, tích thiết bị / dịch vụ bên trái — dữ liệu lưu vào hệ thống theo từng phòng.
             </p>
             {error && (
               <p className="mt-2 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -421,45 +433,62 @@ const DevicesList = () => {
             )}
           </div>
 
-          {/* Box danh sách phòng */}
+          {/* Phòng theo tòa nhà */}
           <div className="mt-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">
-            <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
+            <p className="mb-4 flex items-center gap-2 text-sm font-semibold text-ink-deep">
               <DoorClosed size={18} className="text-accent-violet-mid" />
-              Phòng trọ
+              Phòng theo tòa nhà
             </p>
-            <div className="flex flex-wrap gap-2">
-              {loading && rooms.length === 0 ? (
-                <p className="text-sm text-gray-400">Đang tải danh sách phòng...</p>
-              ) : rooms.length === 0 ? (
-                <p className="text-sm text-gray-400">Chưa có phòng nào. Hãy tạo phòng trước.</p>
-              ) : (
-              rooms.map((room) => {
-                const active = selectedRoomId === room.id;
-                const count = countByRoom(room.id);
-                const label = room.roomNumber || room.roomName || room.id;
-                return (
-                  <button
-                    key={room.id}
-                    type="button"
-                    onClick={() => setSelectedRoomId(room.id)}
-                    className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                      active
-                        ? 'bg-primary text-on-primary'
-                        : 'border border-hairline-cloud bg-white text-ink-deep hover:bg-surface-press'
-                    }`}
-                  >
-                    Phòng {label}
-                    <span
-                      className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
-                        active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                );
-              }))}
-            </div>
+
+            {loading && rooms.length === 0 ? (
+              <p className="text-sm text-gray-400">Đang tải danh sách phòng...</p>
+            ) : rooms.length === 0 ? (
+              <p className="text-sm text-gray-400">Chưa có phòng nào. Hãy tạo tòa nhà và phòng trước.</p>
+            ) : (
+              <div className="space-y-4">
+                {roomsByBuilding.grouped.map(({ building, rooms: buildingRooms }) => (
+                  <BuildingRoomGroup
+                    key={building.buildingId}
+                    buildingName={building.buildingName}
+                    address={building.address}
+                    rooms={buildingRooms}
+                    selectedRoomId={selectedRoomId}
+                    countByRoom={countByRoom}
+                    onSelectRoom={setSelectedRoomId}
+                  />
+                ))}
+
+                {roomsByBuilding.orphanRooms.length > 0 && (
+                  <BuildingRoomGroup
+                    buildingName="Phòng chưa gắn tòa nhà (dữ liệu cũ)"
+                    rooms={roomsByBuilding.orphanRooms}
+                    selectedRoomId={selectedRoomId}
+                    countByRoom={countByRoom}
+                    onSelectRoom={setSelectedRoomId}
+                  />
+                )}
+
+                {roomsByBuilding.unassignedRooms.length > 0 && (
+                  <BuildingRoomGroup
+                    buildingName="Chưa phân tòa nhà"
+                    rooms={roomsByBuilding.unassignedRooms}
+                    selectedRoomId={selectedRoomId}
+                    countByRoom={countByRoom}
+                    onSelectRoom={setSelectedRoomId}
+                  />
+                )}
+
+                {buildings.length === 0 && rooms.length > 0 && (
+                  <BuildingRoomGroup
+                    buildingName="Tất cả phòng"
+                    rooms={rooms}
+                    selectedRoomId={selectedRoomId}
+                    countByRoom={countByRoom}
+                    onSelectRoom={setSelectedRoomId}
+                  />
+                )}
+              </div>
+            )}
           </div>
 
           <hr className="my-6 border-t border-gray-200" />
@@ -481,7 +510,20 @@ const DevicesList = () => {
                 ))}
               </div>
               <div className="mb-6">
-                <AddArea category="device" />
+                <CatalogAddArea
+                  category="device"
+                  active={addingFor === 'device'}
+                  saving={saving}
+                  newName={newName}
+                  newPrice={newPrice}
+                  newBillingCycle={newBillingCycle}
+                  onStart={() => startAdding('device')}
+                  onCancel={cancelAdding}
+                  onConfirm={confirmAdding}
+                  onNameChange={(e) => setNewName(e.target.value)}
+                  onPriceChange={(e) => setNewPrice(e.target.value)}
+                  onBillingCycleChange={(e) => setNewBillingCycle(e.target.value)}
+                />
               </div>
 
               <h4 className="mb-3 text-sm font-semibold uppercase tracking-wide text-gray-500">
@@ -492,17 +534,33 @@ const DevicesList = () => {
                   <CatalogCell key={item.id} item={item} />
                 ))}
               </div>
-              <AddArea category="service" />
+              <CatalogAddArea
+                category="service"
+                active={addingFor === 'service'}
+                saving={saving}
+                newName={newName}
+                newPrice={newPrice}
+                newBillingCycle={newBillingCycle}
+                onStart={() => startAdding('service')}
+                onCancel={cancelAdding}
+                onConfirm={confirmAdding}
+                onNameChange={(e) => setNewName(e.target.value)}
+                onPriceChange={(e) => setNewPrice(e.target.value)}
+                onBillingCycleChange={(e) => setNewBillingCycle(e.target.value)}
+              />
             </div>
 
             {/* Cột phải */}
             <div className="rounded-xl border border-hairline-cloud p-5">
               <div className="mb-4 flex items-center justify-between">
-                <p className="text-base font-bold text-ink-deep">
-                  Phòng {rooms.find((r) => r.id === selectedRoomId)?.roomNumber ||
-                    rooms.find((r) => r.id === selectedRoomId)?.roomName ||
-                    '—'}
-                </p>
+                <div>
+                  <p className="text-base font-bold text-ink-deep">
+                    Phòng {selectedRoom?.roomNumber || selectedRoom?.roomName || '—'}
+                  </p>
+                  {selectedRoom?.buildingName && (
+                    <p className="text-xs text-gray-400">{selectedRoom.buildingName}</p>
+                  )}
+                </div>
                 <span className="text-sm text-gray-400">
                   {roomDevices.length} thiết bị · {roomServices.length} dịch vụ
                 </span>
