@@ -68,7 +68,7 @@ export const denormalizeTenantForApi = (form) => ({
   phoneNumber: form.phoneNumber?.trim() || null,
   email: form.email?.trim() || null,
   cccd: form.cccd?.replace(/\s/g, '') || null,
-  address: form.address?.trim() || null,
+  address: form.address?.trim() || composeTenantAddress(form) || null,
   dateOfBirth: form.dateOfBirth || null,
   gender: form.gender || null,
   workplace: form.workplace?.trim() || null,
@@ -169,4 +169,54 @@ export const getDefaultAvatar = (fullName = '') => {
   if (!fullName) return null;
   const initial = fullName.trim().charAt(0).toUpperCase();
   return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=6B46C1&color=fff&size=128`;
+};
+
+export const composeTenantAddress = ({
+  streetDetail = '',
+  ward = '',
+  district = '',
+  province = '',
+  address = '',
+} = {}) => {
+  const composed = [streetDetail, ward, district, province].filter(Boolean).join(', ');
+  return composed || address?.trim() || '';
+};
+
+export const parseTenantAddressParts = (address = '') => {
+  if (!address?.trim()) {
+    return { streetDetail: '', ward: '', district: '', province: '', address: '' };
+  }
+
+  const parts = address
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (parts.length >= 4) {
+    return {
+      streetDetail: parts.slice(0, -3).join(', '),
+      ward: parts[parts.length - 3],
+      district: parts[parts.length - 2],
+      province: parts[parts.length - 1],
+      address,
+    };
+  }
+
+  if (parts.length === 3) {
+    return {
+      streetDetail: '',
+      ward: parts[0],
+      district: parts[1],
+      province: parts[2],
+      address,
+    };
+  }
+
+  return {
+    streetDetail: address,
+    ward: '',
+    district: '',
+    province: '',
+    address,
+  };
 };

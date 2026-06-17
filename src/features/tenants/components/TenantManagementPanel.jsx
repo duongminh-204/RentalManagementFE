@@ -26,11 +26,13 @@ import {
   getTenantStatusLabel,
   getDefaultAvatar,
   normalizeHistoryFromApi,
+  parseTenantAddressParts,
   resolveMediaUrl,
   toInputDate,
   validateCCCD,
   validatePhoneNumber,
 } from '../utils/tenantHelpers';
+import TenantAddressPicker from './TenantAddressPicker';
 import DateInput from '../../../components/common/DateInput';
 import { getAllRooms } from '../../rooms/api/roomsApi';
 import { normalizeRoomsList, groupRoomsByBuilding } from '../../rooms/utils/roomHelpers';
@@ -50,6 +52,12 @@ const emptyForm = () => ({
   email: '',
   cccd: '',
   address: '',
+  province: '',
+  district: '',
+  ward: '',
+  streetDetail: '',
+  latitude: null,
+  longitude: null,
   dateOfBirth: '',
   gender: '',
   workplace: '',
@@ -110,12 +118,19 @@ const TenantManagementPanel = ({
 
   useEffect(() => {
     if (tenant && !isCreate) {
+      const addressParts = parseTenantAddressParts(tenant.address || '');
       setForm({
         fullName: tenant.fullName || '',
         phoneNumber: tenant.phoneNumber || '',
         email: tenant.email || '',
         cccd: tenant.cccd || '',
         address: tenant.address || '',
+        province: addressParts.province,
+        district: addressParts.district,
+        ward: addressParts.ward,
+        streetDetail: addressParts.streetDetail,
+        latitude: tenant.latitude ?? null,
+        longitude: tenant.longitude ?? null,
         dateOfBirth: toInputDate(tenant.dateOfBirth),
         gender: tenant.gender || '',
         workplace: tenant.workplace || '',
@@ -167,6 +182,19 @@ const TenantManagementPanel = ({
     if (validationErrors[name]) {
       setValidationErrors((p) => ({ ...p, [name]: '' }));
     }
+  };
+
+  const handleAddressChange = (addressData) => {
+    setForm((prev) => ({
+      ...prev,
+      address: addressData.address,
+      province: addressData.province,
+      district: addressData.district,
+      ward: addressData.ward,
+      streetDetail: addressData.streetDetail,
+      latitude: addressData.latitude,
+      longitude: addressData.longitude,
+    }));
   };
 
   const validate = () => {
@@ -469,12 +497,18 @@ const TenantManagementPanel = ({
                   )}
                 </div>
 
-                <div>
-                  <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
-                    <MapPin size={12} /> Địa chỉ
-                  </label>
-                  <input name="address" value={form.address} onChange={handleChange} className="text-input" />
-                </div>
+                <TenantAddressPicker
+                  value={{
+                    address: form.address,
+                    province: form.province,
+                    district: form.district,
+                    ward: form.ward,
+                    streetDetail: form.streetDetail,
+                    latitude: form.latitude,
+                    longitude: form.longitude,
+                  }}
+                  onChange={handleAddressChange}
+                />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>

@@ -20,7 +20,53 @@ const mapPhotonFeature = (feature) => ({
   name: formatPhotonAddress(feature.properties) || 'Địa điểm không tên',
   lat: feature.geometry.coordinates[1],
   lng: feature.geometry.coordinates[0],
+  province: feature.properties.state || feature.properties.city || '',
+  district: feature.properties.district || '',
+  ward: feature.properties.locality || '',
+  streetDetail:
+    [feature.properties.housenumber, feature.properties.street].filter(Boolean).join(' ') ||
+    feature.properties.name ||
+    '',
 });
+
+export async function searchAddressesStructured(query, { limit = 5 } = {}) {
+  const results = await searchAddresses(query, { limit });
+  return results.map((item) => ({
+    ...item,
+    province: item.province || '',
+    district: item.district || '',
+    ward: item.ward || '',
+    streetDetail: item.streetDetail || '',
+  }));
+}
+
+export async function reverseGeocodeStructured(lat, lng) {
+  const photonUrl = `https://photon.komoot.io/reverse?lon=${lng}&lat=${lat}`;
+
+  try {
+    const response = await fetch(photonUrl);
+    if (response.ok) {
+      const data = await response.json();
+      const feature = data.features?.[0];
+      if (feature) {
+        return mapPhotonFeature(feature);
+      }
+    }
+  } catch (error) {
+    console.warn('Photon reverse failed, trying Nominatim fallback:', error);
+  }
+
+  const name = await reverseGeocode(lat, lng);
+  return {
+    name,
+    lat,
+    lng,
+    province: '',
+    district: '',
+    ward: '',
+    streetDetail: name,
+  };
+}
 
 export async function searchAddresses(query, { limit = 5 } = {}) {
   const trimmed = query?.trim();
@@ -71,6 +117,10 @@ export async function searchAddresses(query, { limit = 5 } = {}) {
     name: item.display_name,
     lat: parseFloat(item.lat),
     lng: parseFloat(item.lon),
+    province: '',
+    district: '',
+    ward: '',
+    streetDetail: item.display_name,
   }));
 }
 
