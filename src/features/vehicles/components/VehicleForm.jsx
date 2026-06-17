@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   validateLicensePlate,
   VEHICLE_TYPES,
   VEHICLE_BRANDS,
   VEHICLE_COLORS,
 } from '../utils/vehicleHelpers';
+import DateInput from '../../../components/common/DateInput';
+import { toApiDate } from '../../../utils/dateHelpers';
 
 const VehicleForm = ({
   vehicle = null,
@@ -32,6 +35,7 @@ const VehicleForm = ({
   const [vehicleImage, setVehicleImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(vehicle?.imageUrl || null);
   const [validationErrors, setValidationErrors] = useState({});
+  const [showImageModal, setShowImageModal] = useState(false);
 
   useEffect(() => {
     if (vehicle) {
@@ -40,9 +44,7 @@ const VehicleForm = ({
         type: vehicle.type || 'motorcycle',
         brand: vehicle.brand || '',
         color: vehicle.color || '',
-        registrationDate: vehicle.registrationDate
-          ? new Date(vehicle.registrationDate).toISOString().split('T')[0]
-          : '',
+        registrationDate: toApiDate(vehicle.registrationDate),
         parkingFee: vehicle.parkingFee || '',
         tenantId: vehicle.tenantId || '',
         roomId: vehicle.roomId || '',
@@ -145,6 +147,8 @@ const VehicleForm = ({
     if (validateForm()) {
       onSubmit({
         ...formData,
+        tenantId: formData.tenantId ? parseInt(formData.tenantId, 10) : null,
+        roomId: formData.roomId ? parseInt(formData.roomId, 10) : null,
         vehicleImage,
       });
     }
@@ -291,8 +295,7 @@ const VehicleForm = ({
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Ngày đăng ký *
               </label>
-              <input
-                type="date"
+              <DateInput
                 name="registrationDate"
                 value={formData.registrationDate}
                 onChange={handleChange}
@@ -436,7 +439,8 @@ const VehicleForm = ({
                   <img
                     src={imagePreview}
                     alt="Vehicle Preview"
-                    className="w-full h-32 object-cover rounded-lg border border-gray-300"
+                    className="w-full h-32 object-contain rounded-lg border border-gray-300 cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => setShowImageModal(true)}
                   />
                 </div>
               )}
@@ -463,6 +467,12 @@ const VehicleForm = ({
           </div>
         </form>
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={imagePreview}
+        alt="Vehicle Preview"
+      />
     </div>
   );
 };

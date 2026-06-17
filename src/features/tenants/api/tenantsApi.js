@@ -90,14 +90,15 @@ export const searchTenants = async (query) => {
 
 export const uploadAvatarImage = async (tenantId, file) => {
   const formData = new FormData();
-  formData.append('file', file);       
+  formData.append('file', file);
+  const response = await api.post(`/tenants/${tenantId}/upload-avatar`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
 
-  const response = await axios.post(
-    `/api/tenants/${tenantId}/avatar`,
-    formData,
-    {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    }
-  );
+/** Xóa ảnh CCCD (không xóa khách thuê) */
+export const deleteIdCardImage = async (tenantId) => {
+  const response = await api.delete(`/tenants/${tenantId}/id-card`);
   return response.data;
 };

@@ -648,6 +648,19 @@
     box-shadow: 0 10px 25px rgba(31, 22, 51, 0.05);
   }
 
+  .qr-bank-field,
+  .qr-bank-field * {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .qr-bank-field input:focus,
+  .qr-bank-field input:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
   .dashboard-mini-card {
     padding: 16px;
     border-radius: 18px;

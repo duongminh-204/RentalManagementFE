@@ -14,10 +14,19 @@ import {
   Download,
   Pencil,
   RefreshCw,
+  Eye,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
-import { formatCurrency, getRoomDisplayName } from '../utils/roomHelpers';
+import ImageModal from '../../../components/common/ImageModal';
+import { formatCurrency, getRoomDisplayName, resolveMediaUrl } from '../utils/roomHelpers';
+import {
+  openOrDownloadContractFile,
+  isImageUrl,
+  isPdfUrl,
+} from '../../contracts/utils/contractFileHelpers';
 import * as roomMgmtApi from '../api/roomManagementApi';
+import * as buildingApi from '../../buildings/api/buildingsApi';
+import BuildingManager from '../../buildings/components/BuildingManager';
 import {
   getContracts,
   getContractsByRoomId,
@@ -25,7 +34,6 @@ import {
   updateContract,
   deleteContract,
   uploadContractFile,
-  downloadContractFile,
   renewContract,
 } from '../../contracts/api/contractsApi';
 import {
@@ -36,6 +44,9 @@ import {
   formatDate as formatContractDate,
   calculateDaysUntilExpiry,
   calculateContractDuration,
+  isContractEffective,
+  prepareContractPayload,
+  resolveContractStatus,
 } from '../../contracts/utils/contractHelpers';
 import { getTenants } from '../../tenants/api/tenantsApi';
 import { normalizeTenantsList } from '../../tenants/utils/tenantHelpers';
@@ -84,18 +95,21 @@ const RoomManagementPanel = ({
 }) => {
   const [activeTab, setActiveTab] = useState('info');
   const [info, setInfo] = useState(emptyInfo());
-  const [imageUrl, setImageUrl] = useState('');
+  const [roomImageFile, setRoomImageFile] = useState(null);
+  const [roomImagePreview, setRoomImagePreview] = useState(null);
   const [serviceCatalog, setServiceCatalog] = useState([]);
-  const [tenantCandidates, setTenantCandidates] = useState([]);
   const [selectedServiceId, setSelectedServiceId] = useState('');
   const [serviceQty, setServiceQty] = useState(1);
-  const [selectedTenantId, setSelectedTenantId] = useState('');
   const [deviceForm, setDeviceForm] = useState({
     deviceName: '',
     quantity: 1,
     status: 'Working',
     note: '',
   });
+  const [buildings, setBuildings] = useState([]);
+  const [buildingsLoading, setBuildingsLoading] = useState(false);
+  const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
+  const [buildingError, setBuildingError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [localError, setLocalError] = useState(null);
   const [roomContracts, setRoomContracts] = useState([]);
@@ -105,6 +119,7 @@ const RoomManagementPanel = ({
   const [editingContract, setEditingContract] = useState(null);
   const [contractFormLoading, setContractFormLoading] = useState(false);
   const [contractFormError, setContractFormError] = useState(null);
+  const [previewImage, setPreviewImage] = useState(null);
 
   const roomId = room?.id ?? room?.roomId;
   const isCreate = mode === 'create';
@@ -129,22 +144,45 @@ const RoomManagementPanel = ({
     }
   }, [room, isCreate]);
 
+  useEffect(() => {
+    if (isCreate && buildings.length > 0 && !buildings.some((b) => b.buildingId === info.buildingId)) {
+      setInfo((prev) => ({
+        ...prev,
+        buildingId: buildings[0].buildingId,
+      }));
+    }
+  }, [buildings, isCreate, info.buildingId]);
+
   const loadCatalogs = useCallback(async () => {
     try {
-      const [services, tenants] = await Promise.all([
-        roomMgmtApi.getServiceCatalog(),
-        roomMgmtApi.getTenantCandidates(),
-      ]);
+      const services = await roomMgmtApi.getServiceCatalog();
       setServiceCatalog(Array.isArray(services) ? services : []);
-      setTenantCandidates(Array.isArray(tenants) ? tenants : []);
     } catch (e) {
       console.error(e);
+    }
+  }, []);
+
+  const loadBuildings = useCallback(async () => {
+    setBuildingsLoading(true);
+    setBuildingError(null);
+    try {
+      const data = await buildingApi.getAllBuildings();
+      setBuildings(Array.isArray(data) ? data : []);
+    } catch (e) {
+      console.error(e);
+      setBuildingError(e.response?.data?.message || 'Không thể tải danh sách tòa nhà');
+    } finally {
+      setBuildingsLoading(false);
     }
   }, []);
 
   useEffect(() => {
     if (canManageExtras) loadCatalogs();
   }, [canManageExtras, loadCatalogs]);
+
+  useEffect(() => {
+    loadBuildings();
+  }, [loadBuildings]);
 
   const loadRoomContracts = useCallback(async () => {
     if (!roomId) {
@@ -192,27 +230,53 @@ const RoomManagementPanel = ({
 
   const activeContract = getActiveContractForRoom(roomContracts);
 
+  const hasEffectiveContract = useMemo(
+    () => roomContracts.some((c) => isContractEffective(c)),
+    [roomContracts]
+  );
+
+  const hasTenantsOnRoom = useMemo(() => {
+    const activeOnRoom = roomContracts.filter((c) => {
+      const s = resolveContractStatus(c);
+      return s === 'active' || s === 'expiring_soon';
+    });
+    if (activeOnRoom.length) return true;
+    return (room?.users?.length ?? 0) > 0;
+  }, [roomContracts, room?.users]);
+
+  const canEditRoomStatus = !hasTenantsOnRoom && !hasEffectiveContract;
+
   const roomTenants = useMemo(() => {
-    const activeOnRoom = roomContracts.filter(
-      (c) => c.status === 'active' || c.status === 'expiring_soon'
-    );
+    const activeOnRoom = roomContracts.filter((c) => {
+      const s = resolveContractStatus(c);
+      return s === 'active' || s === 'expiring_soon';
+    });
     if (activeOnRoom.length) {
       return activeOnRoom.map((c) => {
         const tenant = tenantOptions.find((t) => String(t.id) === String(c.tenantId));
         const fromRoom = (room?.users || []).find(
           (u) => String(u.userId) === String(c.tenantId)
         );
+        const fileUrl = resolveMediaUrl(c.fileUrl);
+        const avatar = resolveMediaUrl(
+          tenant?.avatar ?? fromRoom?.avatar ?? tenant?.idCardImage
+        );
         return {
           contractId: c.id,
+          contract: c,
           userId: c.tenantId,
           fullName: tenant?.fullName ?? fromRoom?.fullName ?? 'Khách thuê',
           phone: tenant?.phoneNumber ?? fromRoom?.phone,
           email: tenant?.email ?? fromRoom?.email,
-          avatar: fromRoom?.avatar ?? tenant?.avatar,
+          avatar,
+          fileUrl,
+          contractIsImage: fileUrl && isImageUrl(fileUrl),
+          contractIsPdf: fileUrl && isPdfUrl(fileUrl),
+          contractStatus: resolveContractStatus(c),
         };
       });
     }
-    return room?.users ?? [];
+    return [];
   }, [roomContracts, room?.users, tenantOptions]);
 
   const panelRoomOption = room
@@ -232,7 +296,10 @@ const RoomManagementPanel = ({
     setContractFormError(null);
     try {
       const { contractFile, ...contractData } = formData;
-      const payload = { ...contractData, roomId: roomId ?? contractData.roomId };
+      const payload = prepareContractPayload({
+        ...contractData,
+        roomId: roomId ?? contractData.roomId,
+      });
       if (editingContract?.id) {
         await updateContract(editingContract.id, payload);
         if (contractFile && typeof contractFile !== 'string') {
@@ -267,17 +334,9 @@ const RoomManagementPanel = ({
   const handleContractDownload = async (contract) => {
     try {
       setLocalError(null);
-      const blob = await downloadContractFile(contract.id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Hop_dong_${contract.contractNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      await openOrDownloadContractFile(contract);
     } catch (err) {
-      setLocalError(err.response?.data?.message || 'Lỗi khi tải file hợp đồng');
+      setLocalError(err.message || err.response?.data?.message || 'Lỗi khi xem/tải file hợp đồng');
     }
   };
 
@@ -302,14 +361,14 @@ const RoomManagementPanel = ({
     e.preventDefault();
     onSaveRoom?.({
       roomNumber: info.roomNumber,
-      buildingId: Number(info.buildingId),
+      buildingId: info.buildingId ? Number(info.buildingId) : null,
       rentalPrice: Number(info.rentalPrice),
       electricityPrice: Number(info.electricPrice),
       electricPrice: Number(info.electricPrice),
       waterPrice: Number(info.waterPrice),
       area: info.area !== '' ? Number(info.area) : null,
       maxPeople: info.maxPeople !== '' ? Number(info.maxPeople) : null,
-      status: info.status,
+      status: canEditRoomStatus ? info.status : (room?.status ?? info.status),
       description: info.description || null,
     });
   };
@@ -327,11 +386,35 @@ const RoomManagementPanel = ({
     }
   };
 
-  const handleAddImage = () =>
+  const handleRoomImageSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const okType = ['image/png', 'image/jpeg', 'image/jpg'].includes(file.type);
+    const okExt = /\.(png|jpe?g)$/i.test(file.name);
+    if (!okType && !okExt) {
+      setLocalError('Chỉ chấp nhận ảnh PNG hoặc JPG');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setLocalError('Ảnh tối đa 5MB');
+      return;
+    }
+    setRoomImageFile(file);
+    setRoomImagePreview(URL.createObjectURL(file));
+    setLocalError(null);
+  };
+
+  const handleAddImage = () => {
+    if (!roomImageFile) {
+      setLocalError('Vui lòng chọn ảnh PNG hoặc JPG');
+      return;
+    }
     runAction(async () => {
-      await roomMgmtApi.addRoomImage(roomId, imageUrl.trim());
-      setImageUrl('');
+      await roomMgmtApi.uploadRoomImage(roomId, roomImageFile);
+      setRoomImageFile(null);
+      setRoomImagePreview(null);
     });
+  };
 
   const handleAddDevice = () =>
     runAction(async () => {
@@ -347,20 +430,6 @@ const RoomManagementPanel = ({
       });
       setSelectedServiceId('');
     });
-
-  const handleOpenAssignContract = () => {
-    if (!selectedTenantId) {
-      setLocalError('Vui lòng chọn khách thuê trước khi tạo hợp đồng.');
-      return;
-    }
-    setEditingContract({
-      tenantId: Number(selectedTenantId),
-      roomId,
-      status: 'active',
-    });
-    setContractFormError(null);
-    setShowContractForm(true);
-  };
 
   const handleRemoveRoomTenant = async (contractId) => {
     if (
@@ -389,7 +458,7 @@ const RoomManagementPanel = ({
   }
 
   return (
-    <aside className="flex h-full max-h-[calc(100vh-10rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] lg:min-h-[600px] xl:min-h-[640px]">
+    <aside className="relative flex h-full max-h-[calc(100vh-10rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] lg:min-h-[600px] xl:min-h-[640px]">
       <div className="border-b border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
         <div className="flex items-start justify-between gap-3">
           <div>
@@ -458,32 +527,62 @@ const RoomManagementPanel = ({
             )}
 
             {activeTab === 'info' && (
-              <form onSubmit={handleSaveInfo} className="space-y-4">
-                <div>
-                  <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
-                    Tên / số phòng *
-                  </label>
-                  <input
-                    name="roomNumber"
-                    value={info.roomNumber}
-                    onChange={handleInfoChange}
-                    className="text-input"
-                    required
-                  />
-                </div>
+              <>
+                <form onSubmit={handleSaveInfo} className="space-y-4">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
+                      Tên / số phòng *
+                    </label>
+                    <input
+                      name="roomNumber"
+                      value={info.roomNumber}
+                      onChange={handleInfoChange}
+                      className="text-input"
+                      required
+                    />
+                  </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
                       Tòa nhà
                     </label>
-                    <input
-                      type="number"
-                      name="buildingId"
-                      value={info.buildingId}
-                      onChange={handleInfoChange}
-                      className="text-input"
-                      min={1}
-                    />
+                    <div className="flex gap-2">
+                      {buildings.length > 0 ? (
+                        <select
+                          name="buildingId"
+                          value={info.buildingId ?? ''}
+                          onChange={handleInfoChange}
+                          className="text-input flex-1"
+                        >
+                          <option value="">Chọn tòa nhà</option>
+                          {buildings.map((building) => (
+                            <option key={building.buildingId} value={building.buildingId}>
+                              {building.buildingName}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          name="buildingId"
+                          value={info.buildingId}
+                          onChange={handleInfoChange}
+                          className="text-input flex-1"
+                          min={1}
+                          placeholder="ID tòa nhà"
+                        />
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => setBuildingManagerOpen((prev) => !prev)}
+                        className="rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2 text-xs font-semibold text-ink-deep transition hover:bg-surface-press"
+                      >
+                        {buildingManagerOpen ? 'Ẩn' : 'Quản lý'}
+                      </button>
+                    </div>
+                    {buildingError && (
+                      <p className="mt-1 text-xs text-accent-pink">{buildingError}</p>
+                    )}
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
@@ -493,12 +592,23 @@ const RoomManagementPanel = ({
                       name="status"
                       value={info.status}
                       onChange={handleInfoChange}
-                      className="text-input"
+                      className="text-input disabled:cursor-not-allowed disabled:opacity-60"
+                      disabled={!canEditRoomStatus}
+                      title={
+                        !canEditRoomStatus
+                          ? 'Không thể đổi trạng thái khi phòng còn người thuê hoặc hợp đồng còn hiệu lực'
+                          : undefined
+                      }
                     >
                       <option value="vacant">Trống</option>
                       <option value="occupied">Đang thuê</option>
                       <option value="maintenance">Bảo trì</option>
                     </select>
+                    {!canEditRoomStatus && (
+                      <p className="mt-1 text-xs text-muted">
+                        Trạng thái bị khóa: phòng đang có người thuê hoặc hợp đồng còn hiệu lực.
+                      </p>
+                    )}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
@@ -684,8 +794,9 @@ const RoomManagementPanel = ({
                               Tải file
                             </button>
                           )}
-                          {(activeContract.status === 'expiring_soon' ||
-                            activeContract.status === 'expired') && (
+                          {(['expiring_soon', 'expired'].includes(
+                            resolveContractStatus(activeContract)
+                          )) && (
                               <button
                                 type="button"
                                 onClick={() => handleContractRenew(activeContract)}
@@ -752,37 +863,66 @@ const RoomManagementPanel = ({
                   {saveLoading ? 'Đang lưu…' : isCreate ? 'Tạo phòng' : 'Lưu thông tin'}
                 </button>
               </form>
-            )}
+
+              {buildingManagerOpen && (
+                <div className="mt-6">
+                  <BuildingManager
+                    buildings={buildings}
+                    loading={buildingsLoading}
+                    selectedBuildingId={info.buildingId}
+                    onSelectBuilding={(buildingId) =>
+                      setInfo((prev) => ({ ...prev, buildingId }))
+                    }
+                    onBuildingsUpdated={loadBuildings}
+                  />
+                </div>
+              )}
+            </>
+          )}
 
             {activeTab === 'images' && canManageExtras && (
               <div className="space-y-4">
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Dán URL ảnh phòng…"
-                    className="text-input flex-1"
-                  />
+                <div className="space-y-3 rounded-xl border border-hairline-cloud bg-surface-press/40 p-3">
+                  <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-hairline-cloud p-6 transition hover:border-accent-violet">
+                    <ImageIcon className="text-accent-violet-mid" size={28} />
+                    <span className="text-sm font-medium text-ink-deep">Chọn ảnh phòng</span>
+                    <span className="text-xs text-muted">PNG, JPG — tối đa 5MB</span>
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                      onChange={handleRoomImageSelect}
+                      className="hidden"
+                    />
+                  </label>
+                  {roomImagePreview && (
+                    <img
+                      src={roomImagePreview}
+                      alt="Xem trước"
+                      className="mx-auto max-h-32 rounded-lg border border-hairline-cloud object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                      onClick={() => setPreviewImage(roomImagePreview)}
+                    />
+                  )}
                   <button
                     type="button"
                     onClick={handleAddImage}
-                    disabled={busy || !imageUrl.trim()}
-                    className="btn-primary shrink-0"
+                    disabled={busy || !roomImageFile}
+                    className="btn-primary w-full"
                   >
                     <Plus size={18} />
+                    {busy ? 'Đang tải lên…' : 'Tải ảnh lên'}
                   </button>
                 </div>
-             <div className="stagger-layout grid grid-cols-2 gap-3">
+                <div className="stagger-layout grid grid-cols-2 gap-3">
                   {(room.roomImages || []).map((img) => (
                     <div
                       key={img.id ?? img.url}
                       className="group relative overflow-hidden rounded-xl border border-hairline-cloud"
                     >
                       <img
-                        src={img.url}
+                        src={resolveMediaUrl(img.url)}
                         alt=""
-                        className="h-28 w-full object-cover"
+                        className="h-28 w-full object-contain cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => setPreviewImage(resolveMediaUrl(img.url))}
                       />
                       <button
                         type="button"
@@ -805,67 +945,91 @@ const RoomManagementPanel = ({
             {activeTab === 'tenants' && canManageExtras && (
               <div className="space-y-4">
                 <p className="text-xs text-muted">
-                  Gán khách vào phòng bằng cách tạo hợp đồng (tab Thông tin hoặc nút bên dưới). Danh sách
-                  chỉ hiển thị khách có hợp đồng đang hiệu lực với phòng này.
+                  Khách thuê có hợp đồng còn hiệu lực tại phòng này
                 </p>
-                <div className="flex gap-2">
-                  <select
-                    value={selectedTenantId}
-                    onChange={(e) => setSelectedTenantId(e.target.value)}
-                    className="text-input flex-1"
-                  >
-                    <option value="">Chọn khách thuê…</option>
-                    {tenantCandidates.map((t) => {
-                      const id = t.tenantId ?? t.TenantId ?? t.userId;
-                      return (
-                        <option key={id} value={id}>
-                          {t.fullName}
-                          {t.phoneNumber ? ` — ${t.phoneNumber}` : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <button
-                    type="button"
-                    onClick={handleOpenAssignContract}
-                    disabled={busy || !selectedTenantId}
-                    className="btn-primary shrink-0"
-                    title="Tạo hợp đồng gán khách vào phòng"
-                  >
-                    <FileText size={18} />
-                  </button>
-                </div>
-                <ul className="space-y-2">
+                <ul className="space-y-3">
                   {roomTenants.map((u) => (
                     <li
                       key={u.contractId ?? u.userId}
-                      className="flex items-center gap-3 rounded-xl border border-hairline-violet bg-ink-deep p-3 text-on-primary"
+                      className="rounded-xl border border-hairline-violet bg-ink-deep p-3 text-on-primary"
                     >
-                      {u.avatar ? (
-                        <img
-                          src={u.avatar}
-                          alt=""
-                          className="h-10 w-10 rounded-full border border-accent-lime object-cover"
-                        />
-                      ) : (
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-accent-violet-deep text-sm font-bold">
-                          {u.fullName?.[0]}
-                        </div>
-                      )}
-                      <div className="min-w-0 flex-1">
-                        <p className="font-medium">{u.fullName}</p>
-                        <p className="text-xs text-on-dark-muted">{u.phone || u.email}</p>
-                      </div>
-                      {u.contractId && (
+                      <div className="flex gap-3">
                         <button
                           type="button"
-                          onClick={() => handleRemoveRoomTenant(u.contractId)}
-                          disabled={busy}
-                          className="rounded-md p-2 text-accent-pink hover:bg-on-dark-faint"
-                          aria-label="Hủy hợp đồng"
-                          title="Hủy hợp đồng với phòng này"
+                          onClick={() => u.avatar && setPreviewImage(u.avatar)}
+                          className="shrink-0 rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime"
+                          title="Xem ảnh khách thuê"
+                          disabled={!u.avatar}
                         >
-                          <Trash2 size={16} />
+                          {u.avatar ? (
+                            <img
+                              src={u.avatar}
+                              alt={u.fullName}
+                              className="h-14 w-14 rounded-full border-2 border-accent-lime object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-accent-violet-deep text-lg font-bold">
+                              {u.fullName?.[0]}
+                            </div>
+                          )}
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-semibold">{u.fullName}</p>
+                          <p className="text-xs text-on-dark-muted">{u.phone || u.email || '—'}</p>
+                          {u.contract && (
+                            <p className="mt-1 text-xs text-on-dark-muted">
+                              {formatContractDate(u.contract.startDate)} →{' '}
+                              {formatContractDate(u.contract.endDate)}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex shrink-0 flex-col gap-1">
+                          {u.fileUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => handleContractDownload(u.contract)}
+                              className="flex items-center gap-1 rounded-lg border border-hairline-violet px-2 py-1 text-[10px] font-medium hover:bg-on-dark-faint"
+                              title="Xem hợp đồng"
+                            >
+                              <Eye size={12} />
+                              HĐ
+                            </button>
+                          ) : (
+                            <span className="text-[10px] text-on-dark-muted">Chưa có file</span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveRoomTenant(u.contractId)}
+                            disabled={busy}
+                            className="rounded-md p-1.5 text-accent-pink hover:bg-on-dark-faint"
+                            aria-label="Hủy hợp đồng"
+                            title="Hủy hợp đồng"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </div>
+                      {u.fileUrl && u.contractIsImage && (
+                        <button
+                          type="button"
+                          onClick={() => setPreviewImage(u.fileUrl)}
+                          className="mt-3 block w-full overflow-hidden rounded-lg border border-hairline-violet focus:outline-none focus-visible:ring-2 focus-visible:ring-accent-lime"
+                        >
+                          <img
+                            src={u.fileUrl}
+                            alt="Hợp đồng"
+                            className="max-h-36 w-full object-contain object-top"
+                          />
+                        </button>
+                      )}
+                      {u.fileUrl && u.contractIsPdf && (
+                        <button
+                          type="button"
+                          onClick={() => handleContractDownload(u.contract)}
+                          className="mt-3 flex w-full items-center gap-2 rounded-lg border border-dashed border-hairline-violet bg-on-dark-faint/50 px-3 py-2 text-left text-xs hover:bg-on-dark-faint"
+                        >
+                          <FileText size={18} className="shrink-0 text-accent-lime" />
+                          <span className="min-w-0 truncate">Xem file PDF hợp đồng</span>
                         </button>
                       )}
                     </li>
@@ -1018,21 +1182,30 @@ const RoomManagementPanel = ({
       </div>
 
       {showContractForm && canManageExtras && (
-        <ContractForm
-          contract={editingContract}
-          tenants={tenantOptions}
-          rooms={panelRoomOption}
-          fixedRoomId={roomId}
-          onSubmit={handleContractSubmit}
-          onCancel={() => {
-            setShowContractForm(false);
-            setEditingContract(null);
-            setContractFormError(null);
-          }}
-          loading={contractFormLoading}
-          error={contractFormError}
-        />
+        <div className="absolute inset-0 z-20 flex flex-col overflow-hidden bg-surface-light">
+          <ContractForm
+            embedded
+            contract={editingContract}
+            tenants={tenantOptions}
+            rooms={panelRoomOption}
+            fixedRoomId={roomId}
+            onSubmit={handleContractSubmit}
+            onCancel={() => {
+              setShowContractForm(false);
+              setEditingContract(null);
+              setContractFormError(null);
+            }}
+            loading={contractFormLoading}
+            error={contractFormError}
+          />
+        </div>
       )}
+
+      <ImageModal
+        isOpen={!!previewImage}
+        onClose={() => setPreviewImage(null)}
+        src={previewImage}
+      />
     </aside>
   );
 };

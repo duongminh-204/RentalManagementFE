@@ -16,6 +16,7 @@ import {
   StickyNote,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   formatCurrency,
   getRoomDisplayName,
@@ -42,6 +43,7 @@ const InfoRow = ({ icon: Icon, label, value, highlight }) => (
 
 const ImageGallery = ({ images }) => {
   const [index, setIndex] = useState(0);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   if (!images?.length) {
     return (
@@ -59,7 +61,14 @@ const ImageGallery = ({ images }) => {
       <img
         src={current.url}
         alt={current.caption || `Ảnh phòng ${index + 1}`}
-        className="h-52 w-full object-cover"
+        className="h-52 w-full object-contain cursor-pointer transition hover:opacity-90"
+        onClick={() => setShowImageModal(true)}
+      />
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={current.url}
+        alt={current.caption || `Ảnh phòng ${index + 1}`}
       />
       {hasMultiple && (
         <>

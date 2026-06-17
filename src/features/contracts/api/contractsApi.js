@@ -81,9 +81,13 @@ export const downloadContractFile = async (contractId) => {
   try {
     const response = await api.get(`/contracts/${contractId}/download-file`, {
       responseType: 'blob',
+      validateStatus: (status) => status >= 200 && status < 300,
     });
     return response.data;
   } catch (error) {
+    if (error.response?.data instanceof Blob) {
+      throw error;
+    }
     throw error;
   }
 };

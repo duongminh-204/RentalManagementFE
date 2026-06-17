@@ -1,7 +1,12 @@
 import axios from 'axios';
 
+const apiOrigin = import.meta.env.VITE_API_ORIGIN || 'http://localhost:8090';
+const apiBaseUrl =
+  import.meta.env.VITE_API_BASE_URL ||
+  `${apiOrigin.replace(/\/+$/, '')}/api`;
+
 const instance = axios.create({
-    baseURL: 'http://localhost:5193/api',
+    baseURL: apiBaseUrl,
     timeout: 15000,
     headers: {
         'Content-Type': 'application/json',

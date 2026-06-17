@@ -4,7 +4,7 @@ import { Plus, Search, Filter, Download, AlertTriangle, Loader } from 'lucide-re
 import ContractCard from './ContractCard';
 import ContractForm from './ContractForm';
 import { useContracts } from '../hooks/useContracts';
-import { getContractStatus } from '../utils/contractHelpers';
+import { getContractStatus, prepareContractPayload } from '../utils/contractHelpers';
 
 const ContractsList = ({ tenants = [], rooms = [] }) => {
   const {
@@ -50,7 +50,7 @@ const ContractsList = ({ tenants = [], rooms = [] }) => {
       setFormError(null);
       
       const { contractFile, ...contractData } = formData;
-      const newContract = await addContract(contractData);
+      const newContract = await addContract(prepareContractPayload(contractData));
       
       // Upload file if provided
       if (contractFile) {
@@ -72,7 +72,7 @@ const ContractsList = ({ tenants = [], rooms = [] }) => {
       setFormError(null);
       
       const { contractFile, ...contractData } = formData;
-      await editContract(editingContract.id, contractData);
+      await editContract(editingContract.id, prepareContractPayload(contractData));
       
       // Upload file if provided and it's a new file
       if (contractFile && typeof contractFile !== 'string') {
@@ -103,11 +103,11 @@ const ContractsList = ({ tenants = [], rooms = [] }) => {
     }
   };
 
-  const handleDownload = async (contractId, contractNumber) => {
+  const handleDownload = async (contract) => {
     try {
-      await downloadFile(contractId, contractNumber);
+      await downloadFile(contract);
     } catch (err) {
-      setFormError(err.response?.data?.message || 'Lỗi khi tải file hợp đồng');
+      setFormError(err.message || err.response?.data?.message || 'Lỗi khi xem/tải file hợp đồng');
     }
   };
 

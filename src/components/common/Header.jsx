@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getStoredRole, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+import { getRoleLabel, getStoredRole, getStoredUser, isAdminRole } from '../../hooks/useAuth';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -24,6 +24,7 @@ const Header = () => {
   const role = getStoredRole();
   const user = getStoredUser();
   const isAdmin = isAdminRole(role);
+  const roleLabel = getRoleLabel(role);
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
 
   const menuItems = isAdmin
@@ -106,7 +107,7 @@ const Header = () => {
                     <div className="border-b border-hairline-cloud px-4 py-3">
                       <p className="text-sm font-semibold text-ink-deep">{displayName}</p>
                       <p className="text-xs font-medium uppercase tracking-wide text-accent-violet-mid">
-                        {role || 'Chưa có quyền'}
+                        {roleLabel}
                       </p>
                     </div>
                     <button

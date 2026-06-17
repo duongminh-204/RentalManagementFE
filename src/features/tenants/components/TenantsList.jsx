@@ -23,6 +23,8 @@ const TenantsList = () => {
     editTenant,
     removeTenant,
     uploadIDCard,
+    uploadAvatar,
+    removeIdCardImage,
   } = useTenants();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -97,7 +99,7 @@ const TenantsList = () => {
     setSaveError(null);
   };
 
-  const handleSave = async (formData, idCardFile) => {
+  const handleSave = async (formData, idCardFile, avatarFile) => {
     try {
       setSaveLoading(true);
       setSaveError(null);
@@ -106,12 +108,18 @@ const TenantsList = () => {
         if (idCardFile && created?.id) {
           await uploadIDCard(created.id, idCardFile);
         }
+        if (avatarFile && created?.id) {
+          await uploadAvatar(created.id, avatarFile);
+        }
         setPanelMode('edit');
         await loadTenantDetail(created.id, created);
       } else {
         const updated = await editTenant(selectedTenant.id, formData);
         if (idCardFile) {
           await uploadIDCard(selectedTenant.id, idCardFile);
+        }
+        if (avatarFile) {
+          await uploadAvatar(selectedTenant.id, avatarFile);
         }
         await loadTenantDetail(selectedTenant.id, updated);
       }
@@ -138,6 +146,24 @@ const TenantsList = () => {
     await uploadIDCard(tenantId, file);
     await loadTenantDetail(tenantId, selectedTenant);
     await fetchTenants();
+  };
+
+  const handleUploadAvatar = async (tenantId, file) => {
+    await uploadAvatar(tenantId, file);
+    await loadTenantDetail(tenantId, selectedTenant);
+    await fetchTenants();
+  };
+
+  const handleDeleteIdCard = async (tenantId) => {
+    if (!window.confirm('Xóa ảnh CCCD của khách này? Khách thuê vẫn được giữ trong hệ thống.')) return;
+    try {
+      setSaveError(null);
+      await removeIdCardImage(tenantId);
+      await loadTenantDetail(tenantId, selectedTenant);
+      await fetchTenants();
+    } catch (err) {
+      setSaveError(err.response?.data?.message || 'Lỗi khi xóa ảnh CCCD');
+    }
   };
 
   if (loading && tenants.length === 0) {
@@ -231,6 +257,8 @@ const TenantsList = () => {
             onSave={panelMode ? handleSave : undefined}
             onDelete={handleDelete}
             onUploadIdCard={handleUploadIdCard}
+            onUploadAvatar={handleUploadAvatar}
+            onDeleteIdCard={handleDeleteIdCard}
             onRefresh={() => selectedTenant && loadTenantDetail(selectedTenant.id, selectedTenant)}
             saveLoading={saveLoading}
             saveError={saveError}

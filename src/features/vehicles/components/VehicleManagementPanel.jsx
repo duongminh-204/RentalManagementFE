@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import ImageModal from '../../../components/common/ImageModal';
 import {
   X,
   Car,
@@ -29,6 +30,8 @@ import {
   getVehicleTypeLabel,
 } from '../utils/vehicleHelpers';
 import { resolveMediaUrl } from '../../rooms/utils/roomHelpers';
+import DateInput from '../../../components/common/DateInput';
+import { toApiDate } from '../../../utils/dateHelpers';
 
 const TABS = [
   { id: 'info', label: 'Thông tin', icon: Car },
@@ -48,15 +51,6 @@ const emptyForm = () => ({
   notes: '',
   status: 'active',
 });
-
-const toInputDate = (date) => {
-  if (!date) return '';
-  try {
-    return new Date(date).toISOString().split('T')[0];
-  } catch {
-    return '';
-  }
-};
 
 const VehicleManagementPanel = ({
   vehicle,
@@ -78,6 +72,8 @@ const VehicleManagementPanel = ({
   const [uploading, setUploading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [localError, setLocalError] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImageSrc, setModalImageSrc] = useState('');
 
   const isCreate = mode === 'create';
   const vehicleId = vehicle?.id;
@@ -89,7 +85,7 @@ const VehicleManagementPanel = ({
         type: vehicle.type || 'motorcycle',
         brand: vehicle.brand || '',
         color: vehicle.color || '',
-        registrationDate: toInputDate(vehicle.registrationDate),
+        registrationDate: toApiDate(vehicle.registrationDate),
         parkingFee: vehicle.parkingFee ?? '',
         tenantId: vehicle.tenantId ? String(vehicle.tenantId) : '',
         roomId: vehicle.roomId ? String(vehicle.roomId) : '',
@@ -134,19 +130,33 @@ const VehicleManagementPanel = ({
       if (!form.roomId) errors.roomId = 'Chọn phòng';
     }
     setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+    return errors;
   };
 
   const handleSave = (e) => {
     e.preventDefault();
-    if (!validate()) return;
+    const errors = validate();
+    if (Object.keys(errors).length > 0) {
+      const infoErrors = ['licensePlate', 'brand', 'color', 'registrationDate', 'parkingFee'];
+      const linkErrors = ['tenantId', 'roomId'];
+      
+      const hasInfoError = infoErrors.some(field => errors[field]);
+      const hasLinkError = linkErrors.some(field => errors[field]);
+
+      if (hasInfoError && activeTab !== 'info') {
+        setActiveTab('info');
+      } else if (!hasInfoError && hasLinkError && activeTab !== 'link') {
+        setActiveTab('link');
+      }
+      return;
+    }
     onSave?.(
       {
         ...form,
         licensePlate: form.licensePlate.trim().toUpperCase(),
         parkingFee: Number(form.parkingFee),
-        tenantId: form.tenantId || null,
-        roomId: form.roomId || null,
+        tenantId: form.tenantId ? parseInt(form.tenantId, 10) : null,
+        roomId: form.roomId ? parseInt(form.roomId, 10) : null,
       },
       imageFile
     );
@@ -205,9 +215,19 @@ const VehicleManagementPanel = ({
       <div className="border-b border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-4">
-            <div className="relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-hairline-violet bg-on-dark-faint">
+            <div
+              onClick={() => {
+                if (displayImage) {
+                  setModalImageSrc(displayImage);
+                  setShowImageModal(true);
+                }
+              }}
+              className={`relative flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-hairline-violet bg-on-dark-faint ${
+                displayImage ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+              }`}
+            >
               {displayImage ? (
-                <img src={displayImage} alt="" className="h-full w-full object-cover" />
+                <img src={displayImage} alt="" className="h-full w-full object-contain" />
               ) : (
                 <Car size={28} className="text-accent-lime" />
               )}
@@ -391,8 +411,7 @@ const VehicleManagementPanel = ({
                         <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
                           <Calendar size={12} /> Ngày đăng ký *
                         </label>
-                        <input
-                          type="date"
+                        <DateInput
                           name="registrationDate"
                           value={form.registrationDate}
                           onChange={handleChange}
@@ -516,7 +535,11 @@ const VehicleManagementPanel = ({
                   <img
                     src={displayImage}
                     alt="Xe"
-                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-cover"
+                    className="w-full max-h-64 rounded-xl border border-hairline-cloud object-contain cursor-pointer hover:opacity-95 transition-opacity"
+                    onClick={() => {
+                      setModalImageSrc(displayImage);
+                      setShowImageModal(true);
+                    }}
                   />
                 )}
 
@@ -543,6 +566,12 @@ const VehicleManagementPanel = ({
           </>
         )}
       </div>
+      <ImageModal
+        isOpen={showImageModal}
+        onClose={() => setShowImageModal(false)}
+        src={modalImageSrc}
+        alt="Vehicle Photo"
+      />
     </aside>
   );
 };

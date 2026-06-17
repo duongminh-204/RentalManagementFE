@@ -5,9 +5,7 @@ export const normalizeContractFromApi = (raw) => {
     raw.isTerminated ?? raw.IsTerminated ?? raw.status === 'terminated';
   const startDate = raw.startDate ?? raw.StartDate;
   const endDate = raw.endDate ?? raw.EndDate;
-  const status =
-    raw.status ??
-    getContractStatus(startDate, endDate, isTerminated);
+  const status = getContractStatus(startDate, endDate, isTerminated);
 
   return {
     id,
@@ -35,16 +33,41 @@ export const filterContractsByRoomId = (contracts, roomId) => {
   return contracts.filter((c) => String(c.roomId) === String(roomId));
 };
 
+export const resolveContractStatus = (contract) => {
+  if (!contract) return null;
+  const isTerminated =
+    contract.isTerminated ?? contract.status === 'terminated';
+  return getContractStatus(contract.startDate, contract.endDate, isTerminated);
+};
+
+/** Hợp đồng còn hiệu lực (đang trong thời hạn thuê) */
+export const isContractEffective = (contract) => {
+  const status = resolveContractStatus(contract);
+  return status === 'active' || status === 'expiring_soon';
+};
+
+export const withResolvedContractStatus = (contract) => {
+  if (!contract) return contract;
+  return { ...contract, status: resolveContractStatus(contract) };
+};
+
 export const getActiveContractForRoom = (contracts) => {
   if (!contracts?.length) return null;
+  const resolved = contracts.map(withResolvedContractStatus);
   const priority = ['active', 'expiring_soon', 'pending'];
   for (const key of priority) {
-    const found = contracts.find((c) => c.status === key);
+    const found = resolved.find((c) => c.status === key);
     if (found) return found;
   }
-  return [...contracts].sort(
+  return [...resolved].sort(
     (a, b) => new Date(b.endDate || 0) - new Date(a.endDate || 0)
   )[0];
+};
+
+/** Loại trạng thái thủ công — hệ thống tự tính theo ngày */
+export const prepareContractPayload = (data) => {
+  const { status: _status, ...rest } = data ?? {};
+  return rest;
 };
 
 // Get contract status label
@@ -85,13 +108,25 @@ export const calculateDaysUntilExpiry = (expiryDate) => {
   return diffDays;
 };
 
-// Get contract status based on dates
-export const getContractStatus = (startDate, expiryDate, isTerminated = false) => {
+// Get contract status based on dates vs today
+export const getContractStatus = (startDate, endDate, isTerminated = false) => {
   if (isTerminated) return 'terminated';
-  
-  const daysUntilExpiry = calculateDaysUntilExpiry(expiryDate);
-  
-  if (daysUntilExpiry < 0) return 'expired';
+  if (!startDate || !endDate) return 'pending';
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const start = new Date(startDate);
+  start.setHours(0, 0, 0, 0);
+
+  const end = new Date(endDate);
+  end.setHours(0, 0, 0, 0);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return 'pending';
+  if (today < start) return 'pending';
+  if (today > end) return 'expired';
+
+  const daysUntilExpiry = calculateDaysUntilExpiry(endDate);
   if (daysUntilExpiry <= 30) return 'expiring_soon';
   return 'active';
 };
@@ -118,14 +153,16 @@ export const formatContractNumber = (number) => {
   return `HD/${number}`;
 };
 
-// Format date
+// Format date (dd/MM/yyyy)
 export const formatDate = (date) => {
   if (!date) return '';
+  const d = new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
   return new Intl.DateTimeFormat('vi-VN', {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
-  }).format(new Date(date));
+  }).format(d);
 };
 
 // Format currency

@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, UserPlus } from 'lucide-react';
+import { Building2, Eye, EyeOff, User, UserPlus } from 'lucide-react';
 import { useRegister } from '../hooks/useRegister';
+
+const roleOptions = [
+    { value: 'Owner', label: 'Chủ trọ', icon: Building2 },
+    { value: 'Tenant', label: 'Người thuê trọ', icon: User },
+];
 
 export default function RegisterForm() {
     const [showPassword, setShowPassword] = useState(false);
@@ -11,6 +16,7 @@ export default function RegisterForm() {
         fullName: '',
         email: '',
         phone: '',
+        role: 'Owner',
         password: '',
         confirmPassword: ''
     });
@@ -25,7 +31,8 @@ export default function RegisterForm() {
         register({
             fullName: formData.fullName,
             email: formData.email,
-            phone: formData.phone,
+            phoneNumber: formData.phone,
+            role: formData.role,
             password: formData.password
         });
     };
@@ -59,6 +66,33 @@ export default function RegisterForm() {
                         placeholder="Nhập họ và tên"
                         required
                     />
+                </div>
+
+                <div>
+                    <label className="mb-2 block text-left text-sm font-medium text-ink-deep">Vai trò</label>
+                    <div className="grid grid-cols-2 gap-2 rounded-lg border border-hairline-cloud bg-surface-press p-1">
+                        {roleOptions.map((option) => {
+                            const Icon = option.icon;
+                            const isSelected = formData.role === option.value;
+
+                            return (
+                                <button
+                                    key={option.value}
+                                    type="button"
+                                    onClick={() => setFormData({ ...formData, role: option.value })}
+                                    className={`flex min-h-11 items-center justify-center gap-2 rounded-md px-3 text-sm font-semibold transition-colors ${
+                                        isSelected
+                                            ? 'bg-surface-light text-ink-deep shadow-sm'
+                                            : 'text-muted hover:text-ink-deep'
+                                    }`}
+                                    aria-pressed={isSelected}
+                                >
+                                    <Icon size={18} />
+                                    {option.label}
+                                </button>
+                            );
+                        })}
+                    </div>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">

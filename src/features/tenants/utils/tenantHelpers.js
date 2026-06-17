@@ -1,4 +1,7 @@
-const API_ORIGIN = 'http://localhost:5193';
+const API_ORIGIN =
+  import.meta.env.VITE_API_ORIGIN ||
+  (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api').replace(/\/api\/?$/, '') ||
+  'http://localhost:8090';
 
 export const resolveMediaUrl = (url) => {
   if (!url) return null;
@@ -21,6 +24,10 @@ export const normalizeTenantFromApi = (raw) => {
     idCardImage: resolveMediaUrl(raw.idCardImage ?? raw.IdCardImage ?? raw.cccdImage),
     avatar: resolveAvatarUrl(raw.avatar ?? raw.Avatar),
     address: raw.address ?? raw.Address ?? '',
+    dateOfBirth: raw.dateOfBirth ?? raw.DateOfBirth ?? '',
+    gender: raw.gender ?? raw.Gender ?? '',
+    workplace: raw.workplace ?? raw.Workplace ?? '',
+    occupation: raw.occupation ?? raw.Occupation ?? '',
     isActive: raw.isActive ?? raw.IsActive ?? true,
     status: raw.status ?? 'inactive',
     roomId: raw.roomId ?? raw.RoomId ?? null,
@@ -58,6 +65,10 @@ export const denormalizeTenantForApi = (form) => ({
   email: form.email?.trim() || null,
   cccd: form.cccd?.replace(/\s/g, '') || null,
   address: form.address?.trim() || null,
+  dateOfBirth: form.dateOfBirth || null,
+  gender: form.gender || null,
+  workplace: form.workplace?.trim() || null,
+  occupation: form.occupation?.trim() || null,
   roomId: form.roomId ? Number(form.roomId) : null,
   moveInDate: form.moveInDate || null,
   moveOutDate: form.moveOutDate || null,

@@ -2,12 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Header from '../components/common/Header';
 import Footer from '../components/common/Footer';
-import { getStoredRole } from '../hooks/useAuth';
-
-const roleHomePaths = {
-  Admin: '/admin/excel-template',
-  Owner: '/dashboard',
-};
+import { getStoredRole, getRoleHomePath } from '../hooks/useAuth';
 
 export const PrivateRoute = ({ children, allowedRoles }) => {
   const [isChecking, setIsChecking] = useState(true);
@@ -50,8 +45,11 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles?.length && !allowedRoles.includes(role)) {
-    const fallbackPath = roleHomePaths[role];
+  const normalizedRole = role?.trim().toLowerCase();
+  const normalizedAllowedRoles = allowedRoles?.map((allowedRole) => String(allowedRole).trim().toLowerCase()) || [];
+
+  if (normalizedAllowedRoles.length && !normalizedAllowedRoles.includes(normalizedRole)) {
+    const fallbackPath = getRoleHomePath(role);
 
     if (!fallbackPath) {
       localStorage.removeItem('token');

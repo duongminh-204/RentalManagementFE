@@ -6,11 +6,12 @@ import {
   updateContract,
   deleteContract,
   uploadContractFile,
-  downloadContractFile,
   getExpiringContracts,
   renewContract,
   terminateContract,
 } from '../api/contractsApi';
+import { normalizeContractsList } from '../utils/contractHelpers';
+import { openOrDownloadContractFile } from '../utils/contractFileHelpers';
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState([]);
@@ -24,7 +25,7 @@ export const useContracts = () => {
       setLoading(true);
       setError(null);
       const data = await getContracts(params);
-      setContracts(data);
+      setContracts(normalizeContractsList(data));
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi tải dữ liệu hợp đồng');
       console.error('Error fetching contracts:', err);
@@ -101,20 +102,16 @@ export const useContracts = () => {
   }, []);
 
   // Download contract file
-  const downloadFile = useCallback(async (contractId, contractNumber) => {
+  const downloadFile = useCallback(async (contract) => {
     try {
       setError(null);
-      const blob = await downloadContractFile(contractId);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `Hop_dong_${contractNumber}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      const target =
+        typeof contract === 'object'
+          ? contract
+          : { id: contract };
+      await openOrDownloadContractFile(target);
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi download file hợp đồng');
+      setError(err.message || err.response?.data?.message || 'Lỗi khi xem/tải file hợp đồng');
       throw err;
     }
   }, []);
@@ -124,7 +121,7 @@ export const useContracts = () => {
     try {
       setError(null);
       const data = await getExpiringContracts(days);
-      setExpiringContracts(data);
+      setExpiringContracts(normalizeContractsList(data));
       return data;
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi tải hợp đồng sắp hết hạn');
