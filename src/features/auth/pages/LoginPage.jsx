@@ -6,6 +6,7 @@ import { useAuth, getRoleHomePath } from '../../../hooks/useAuth';
 
 export default function LoginPage() {
   const { isAuthenticated, role } = useAuth();
+  const hasGoogleLogin = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   if (isAuthenticated) {
     return <Navigate to={getRoleHomePath(role)} replace />;
@@ -17,12 +18,16 @@ export default function LoginPage() {
         <AuthIllustration title="Quản lý nhà trọ" highlight="Quản lý nhà trọ" icon="🏠" />
         <div className="flex flex-col items-center gap-4">
           <LoginForm />
-          <div className="flex w-full items-center gap-3">
-            <span className="h-px flex-1 bg-hairline-cloud" />
-            <span className="text-xs font-medium uppercase tracking-wide text-muted">Hoặc</span>
-            <span className="h-px flex-1 bg-hairline-cloud" />
-          </div>
-          <GoogleLoginButton />
+          {hasGoogleLogin && (
+            <>
+              <div className="flex w-full items-center gap-3">
+                <span className="h-px flex-1 bg-hairline-cloud" />
+                <span className="text-xs font-medium uppercase tracking-wide text-muted">Hoặc</span>
+                <span className="h-px flex-1 bg-hairline-cloud" />
+              </div>
+              <GoogleLoginButton />
+            </>
+          )}
         </div>
       </div>
     </div>

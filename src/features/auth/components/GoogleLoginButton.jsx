@@ -5,7 +5,6 @@ import { getRoleHomePath } from '../../../hooks/useAuth';
 
 const GSI_SRC = 'https://accounts.google.com/gsi/client';
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
-console.log("GOOGLE_CLIENT_ID =", GOOGLE_CLIENT_ID);
 
 // Tải script Google Identity Services một lần (không thêm dependency npm)
 const loadGsiScript = () =>
@@ -41,9 +40,7 @@ const normalizeAuthResponse = (res) => {
 export default function GoogleLoginButton() {
   const navigate = useNavigate();
   const buttonRef = useRef(null);
-  const [error, setError] = useState(
-    GOOGLE_CLIENT_ID ? '' : 'Chưa cấu hình VITE_GOOGLE_CLIENT_ID.'
-  );
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!GOOGLE_CLIENT_ID) return;
@@ -98,6 +95,10 @@ export default function GoogleLoginButton() {
       cancelled = true;
     };
   }, [navigate]);
+
+  if (!GOOGLE_CLIENT_ID) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col items-center gap-2">
