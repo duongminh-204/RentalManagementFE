@@ -4,7 +4,7 @@ import { Plus, Search, Loader, ArrowUpDown } from 'lucide-react';
 import { useTenants } from '../../tenants';
 import { useRooms } from '../../rooms';
 import { useContracts } from '../hooks/useContracts';
-import ContractReminders from './ContractReminders';
+import ContractReminders from '../components/ContractReminders';
 import {
   getContractStatusLabel,
   getContractStatusColor,
