@@ -6,6 +6,9 @@ import {
   Download,
   FileUp,
   LoaderCircle,
+  Sparkles,
+  TrendingUp,
+  Zap,
 } from 'lucide-react';
 import RoomStatusChart from './RoomStatusChart';
 import DebtOverview from './DebtOverview';
@@ -21,6 +24,12 @@ import { formatCount, formatMonthLabel } from '../utils/dashboardFormat';
 
 const DOWNLOAD_ERROR_MESSAGE =
   'Chưa tải được file mẫu. Nếu backend vừa được cập nhật, hãy khởi động lại backend rồi thử lại.';
+
+const TAGLINE_ITEMS = [
+  { icon: Sparkles, text: 'Quản lý thông minh', tone: 'violet' },
+  { icon: Zap, text: 'Vận hành dễ dàng', tone: 'lime' },
+  { icon: TrendingUp, text: 'Tăng trưởng bền vững', tone: 'pink' },
+];
 
 const Dashboard = () => {
   const { stats, roomStats, debtInfo, revenue, loading, error, refetch } = useDashboard();
@@ -131,7 +140,7 @@ const Dashboard = () => {
           initial={{ opacity: 0, y: -12 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.35 }}
-          className="dashboard-section-card"
+          className="dashboard-hero-main"
         >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
@@ -139,6 +148,32 @@ const Dashboard = () => {
               <h1 className="mt-4 text-3xl font-bold leading-tight text-ink-deep sm:text-4xl">
                 Dashboard nhà trọ
               </h1>
+              <p className="dashboard-hero-tagline" aria-label="Quản lý thông minh – Vận hành dễ dàng – Tăng trưởng bền vững">
+                {TAGLINE_ITEMS.map((item, index) => {
+                  const Icon = item.icon;
+                  return (
+                    <motion.span
+                      key={item.text}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4, delay: 0.12 + index * 0.1 }}
+                      className="dashboard-hero-tagline__group"
+                    >
+                      {index > 0 ? (
+                        <span className="dashboard-hero-tagline__divider" aria-hidden="true">
+                          –
+                        </span>
+                      ) : null}
+                      <span className={`dashboard-hero-tagline__pill dashboard-hero-tagline__pill--${item.tone}`}>
+                        <span className="dashboard-hero-tagline__icon">
+                          <Icon className="h-4 w-4" strokeWidth={2.25} />
+                        </span>
+                        <span className="dashboard-hero-tagline__text">{item.text}</span>
+                      </span>
+                    </motion.span>
+                  );
+                })}
+              </p>
             </div>
 
             <div className="dashboard-action-group">

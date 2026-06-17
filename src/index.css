@@ -538,6 +538,111 @@
     font-weight: 700;
   }
 
+  .dashboard-hero-tagline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 6px;
+    margin-top: 20px;
+    max-width: 52rem;
+  }
+
+  .dashboard-hero-tagline__group {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .dashboard-hero-tagline__divider {
+    font-family: var(--font-display);
+    font-size: 1.125rem;
+    font-weight: 500;
+    line-height: 1;
+    color: rgba(31, 22, 51, 0.28);
+    user-select: none;
+  }
+
+  .dashboard-hero-tagline__pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px 10px 12px;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.72);
+    box-shadow: 0 6px 18px rgba(31, 22, 51, 0.06);
+    transition: transform 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .dashboard-hero-tagline__pill:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 24px rgba(31, 22, 51, 0.1);
+  }
+
+  .dashboard-hero-tagline__pill--violet {
+    border-color: rgba(106, 95, 193, 0.22);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(238, 235, 255, 0.92));
+  }
+
+  .dashboard-hero-tagline__pill--lime {
+    border-color: rgba(194, 239, 78, 0.45);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(244, 255, 220, 0.92));
+  }
+
+  .dashboard-hero-tagline__pill--pink {
+    border-color: rgba(250, 127, 170, 0.28);
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 240, 246, 0.92));
+  }
+
+  .dashboard-hero-tagline__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+
+  .dashboard-hero-tagline__pill--violet .dashboard-hero-tagline__icon {
+    background: rgba(106, 95, 193, 0.14);
+    color: var(--color-accent-violet-deep);
+  }
+
+  .dashboard-hero-tagline__pill--lime .dashboard-hero-tagline__icon {
+    background: rgba(194, 239, 78, 0.28);
+    color: #4a6210;
+  }
+
+  .dashboard-hero-tagline__pill--pink .dashboard-hero-tagline__icon {
+    background: rgba(250, 127, 170, 0.18);
+    color: #b23d6a;
+  }
+
+  .dashboard-hero-tagline__text {
+    font-family: var(--font-display);
+    font-size: clamp(0.9rem, 1.6vw, 1.05rem);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    color: var(--color-ink-deep);
+    white-space: nowrap;
+  }
+
+  @media (max-width: 639px) {
+    .dashboard-hero-tagline__divider {
+      display: none;
+    }
+
+    .dashboard-hero-tagline {
+      gap: 8px;
+    }
+
+    .dashboard-hero-tagline__text {
+      white-space: normal;
+    }
+  }
+
   .dashboard-hero-metric {
     padding: 18px 18px 16px;
     border-radius: 18px;
