@@ -16,8 +16,10 @@ import {
   ChevronRight,
   StickyNote,
 } from 'lucide-react';
+import { GeoAlt } from 'react-bootstrap-icons';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
+import BuildingMapRoutes from '../../buildings/components/BuildingMapRoutes';
 import { resolveItemIcon } from '../../devices/utils/itemIcons';
 import {
   formatCurrency,
@@ -274,10 +276,11 @@ const UsersList = ({ users }) => (
   </div>
 );
 
-const RoomDetailModal = ({ room, isOpen, onClose, onEdit, loading = false }) => {
+const RoomDetailModal = ({ room, buildings = [], isOpen, onClose, onEdit, loading = false }) => {
   if (!room && !isOpen) return null;
 
   const displayName = room ? getRoomDisplayName(room) : '—';
+  const building = buildings?.find((b) => String(b.buildingId) === String(room?.buildingId));
 
   return (
     <AnimatePresence>
@@ -415,6 +418,23 @@ const RoomDetailModal = ({ room, isOpen, onClose, onEdit, loading = false }) => 
                     </div>
                     <RoomServicesList services={room.roomServices} />
                   </div>
+
+                  {building && building.latitude && building.longitude && (
+                    <div className="border-t border-hairline-cloud pt-4">
+                      <div className="mb-3 flex items-center gap-2">
+                        <GeoAlt size={18} className="text-accent-violet" />
+                        <h3 className="font-display text-lg font-semibold text-ink-deep font-sans">
+                          Bản đồ & Tuyến đường
+                        </h3>
+                      </div>
+                      <BuildingMapRoutes
+                        buildingName={building.buildingName}
+                        address={building.address}
+                        latitude={building.latitude}
+                        longitude={building.longitude}
+                      />
+                    </div>
+                  )}
                 </div>
               ) : null}
             </div>

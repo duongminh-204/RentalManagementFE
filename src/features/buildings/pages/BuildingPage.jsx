@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Building2, Plus, Edit3, Trash2, Loader2 } from 'lucide-react';
+import { Building, PlusLg, PencilSquare, Trash, ArrowRepeat, GeoAlt, XLg } from 'react-bootstrap-icons';
+import { motion, AnimatePresence } from 'framer-motion';
 import * as buildingsApi from '../api/buildingsApi';
+import BuildingMapRoutes from '../components/BuildingMapRoutes';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -16,6 +18,7 @@ const BuildingPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
+  const [mapRouteBuilding, setMapRouteBuilding] = useState(null);
 
   const loadBuildings = useCallback(async () => {
     setLoading(true);
@@ -59,7 +62,7 @@ const BuildingPage = () => {
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="flex items-center gap-3">
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Building2 size={24} />
+                <Building size={24} />
               </span>
               <div>
                 <h1 className="text-[28px] font-bold leading-tight text-ink-deep">Quản lý tòa nhà</h1>
@@ -71,7 +74,7 @@ const BuildingPage = () => {
               onClick={() => navigate('/buildings/create')}
               className="btn-primary inline-flex items-center gap-2"
             >
-              <Plus size={18} />
+              <PlusLg size={18} />
               Thêm tòa nhà
             </button>
           </div>
@@ -86,12 +89,12 @@ const BuildingPage = () => {
           <div className="mt-6 overflow-hidden rounded-xl border border-hairline-cloud">
             {loading ? (
               <div className="flex items-center justify-center gap-2 py-16 text-muted">
-                <Loader2 className="animate-spin text-accent-violet" size={24} />
+                <ArrowRepeat className="animate-spin text-accent-violet" size={24} />
                 <span className="text-sm">Đang tải danh sách tòa nhà…</span>
               </div>
             ) : buildings.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-2 py-16 text-center">
-                <Building2 size={36} className="text-gray-300" />
+                <Building size={36} className="text-gray-300" />
                 <p className="text-sm font-medium text-gray-600">Chưa có tòa nhà nào</p>
                 <p className="text-sm text-gray-400">Bấm &quot;Thêm tòa nhà&quot; để bắt đầu.</p>
               </div>
@@ -110,7 +113,22 @@ const BuildingPage = () => {
                   {buildings.map((building) => (
                     <tr key={building.buildingId} className="transition hover:bg-surface-press/40">
                       <td className="px-4 py-3 font-semibold text-ink-deep">{building.buildingName}</td>
-                      <td className="px-4 py-3 text-gray-600">{building.address || '—'}</td>
+                      <td className="px-4 py-3 text-gray-600">
+                        <div className="flex items-center gap-1.5">
+                          <span>{building.address || '—'}</span>
+                          {building.latitude && building.longitude && (
+                            <a
+                              href={`https://www.google.com/maps/search/?api=1&query=${building.latitude},${building.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center text-primary hover:text-indigo-600 transition-colors"
+                              title="Xem trên Google Maps"
+                            >
+                              <GeoAlt size={14} className="shrink-0" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
                       <td className="max-w-xs px-4 py-3 text-gray-500">
                         <span className="line-clamp-1">{building.description || '—'}</span>
                       </td>
@@ -119,11 +137,19 @@ const BuildingPage = () => {
                         <div className="flex items-center justify-end gap-2">
                           <button
                             type="button"
+                            onClick={() => setMapRouteBuilding(building)}
+                            className="rounded-lg border border-hairline-cloud bg-surface-light p-2 text-indigo-600 transition hover:bg-surface-press hover:text-indigo-500"
+                            title="Bản đồ & Tuyến đường"
+                          >
+                            <GeoAlt size={16} />
+                          </button>
+                          <button
+                            type="button"
                             onClick={() => navigate(`/buildings/${building.buildingId}/edit`)}
                             className="rounded-lg border border-hairline-cloud bg-surface-light p-2 text-ink-deep transition hover:bg-surface-press"
                             title="Sửa"
                           >
-                            <Edit3 size={16} />
+                            <PencilSquare size={16} />
                           </button>
                           <button
                             type="button"
@@ -133,9 +159,9 @@ const BuildingPage = () => {
                             title="Xóa"
                           >
                             {deletingId === building.buildingId ? (
-                              <Loader2 size={16} className="animate-spin" />
+                              <ArrowRepeat size={16} className="animate-spin" />
                             ) : (
-                              <Trash2 size={16} />
+                              <Trash size={16} />
                             )}
                           </button>
                         </div>
@@ -147,6 +173,69 @@ const BuildingPage = () => {
             )}
           </div>
         </section>
+
+      {/* Map & Routes Modal */}
+      <AnimatePresence>
+        {mapRouteBuilding && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            role="dialog"
+            aria-modal="true"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 cursor-default bg-slate-900/60 backdrop-blur-sm transition-opacity"
+              onClick={() => setMapRouteBuilding(null)}
+              aria-label="Đóng"
+            />
+
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-800 shadow-2xl"
+            >
+              {/* Modal Header */}
+              <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
+                <div>
+                  <p className="text-xs font-semibold text-blue-500 uppercase tracking-wider">Bản đồ & Tuyến đường</p>
+                  <h3 className="text-lg font-bold text-gray-900 mt-0.5">
+                    {mapRouteBuilding.buildingName}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setMapRouteBuilding(null)}
+                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
+                >
+                  <XLg size={20} />
+                </button>
+              </div>
+
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <BuildingMapRoutes
+                  buildingName={mapRouteBuilding.buildingName}
+                  address={mapRouteBuilding.address}
+                  latitude={mapRouteBuilding.latitude}
+                  longitude={mapRouteBuilding.longitude}
+                />
+              </div>
+
+              {/* Modal Footer */}
+              <div className="border-t border-gray-200 px-6 py-3 flex justify-end bg-white">
+                <button
+                  type="button"
+                  onClick={() => setMapRouteBuilding(null)}
+                  className="px-4 py-2 text-sm font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors border border-gray-300"
+                >
+                  Đóng
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
       </div>
     </div>
   );

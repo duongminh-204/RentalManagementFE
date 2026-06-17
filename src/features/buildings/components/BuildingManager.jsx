@@ -1,11 +1,14 @@
 import { useState } from 'react';
 import { Plus, Edit3, Trash2, Save, X, Loader2 } from 'lucide-react';
 import * as buildingsApi from '../api/buildingsApi';
+import AddressAutocomplete from './AddressAutocomplete';
 
 const initialForm = {
   buildingName: '',
   address: '',
   description: '',
+  latitude: null,
+  longitude: null,
 };
 
 const BuildingManager = ({
@@ -32,6 +35,8 @@ const BuildingManager = ({
       buildingName: building.buildingName || '',
       address: building.address || '',
       description: building.description || '',
+      latitude: building.latitude || null,
+      longitude: building.longitude || null,
     });
     setError(null);
   };
@@ -68,6 +73,8 @@ const BuildingManager = ({
         buildingName: form.buildingName.trim(),
         address: form.address.trim(),
         description: form.description?.trim() || null,
+        latitude: form.latitude,
+        longitude: form.longitude,
       };
       if (editId) {
         await buildingsApi.updateBuilding(editId, payload);
@@ -146,28 +153,30 @@ const BuildingManager = ({
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3 rounded-xl border border-hairline-cloud bg-white p-4">
-        <div className="grid gap-3 sm:grid-cols-2">
+      <form onSubmit={handleSubmit} className="space-y-4 rounded-xl border border-hairline-cloud bg-white p-4">
+        <div>
           <label className="block text-sm text-ink-deep">
-            <span className="block text-xs font-semibold uppercase text-accent-violet-mid">Tên tòa nhà</span>
+            <span className="block text-xs font-semibold uppercase text-accent-violet-mid mb-1">Tên tòa nhà <span className="text-accent-pink">*</span></span>
             <input
               type="text"
               value={form.buildingName}
               onChange={(e) => setForm((prev) => ({ ...prev, buildingName: e.target.value }))}
-              className="text-input mt-1"
+              className="text-input"
               required
-            />
-          </label>
-          <label className="block text-sm text-ink-deep">
-            <span className="block text-xs font-semibold uppercase text-accent-violet-mid">Địa chỉ</span>
-            <input
-              type="text"
-              value={form.address}
-              onChange={(e) => setForm((prev) => ({ ...prev, address: e.target.value }))}
-              className="text-input mt-1"
+              placeholder="Ví dụ: Tòa nhà A, Block B..."
             />
           </label>
         </div>
+
+        <AddressAutocomplete
+          address={form.address}
+          latitude={form.latitude}
+          longitude={form.longitude}
+          onChange={({ address, latitude, longitude }) =>
+            setForm((prev) => ({ ...prev, address, latitude, longitude }))
+          }
+          error={null}
+        />
         <label className="block text-sm text-ink-deep">
           <span className="block text-xs font-semibold uppercase text-accent-violet-mid">Mô tả</span>
           <textarea

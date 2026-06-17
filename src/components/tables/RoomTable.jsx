@@ -1,11 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Edit, Trash2 } from 'lucide-react';
+import { PencilSquare, Trash, Eye } from 'react-bootstrap-icons';
 import RoomStatusBadge from '../common/RoomStatusBadge';
 
 const RoomTable = ({ 
   rooms, 
   loading, 
+  onView,
   onEdit, 
   onDelete, 
   onStatusChange 
@@ -66,10 +67,17 @@ const RoomTable = ({
               <td className="px-6 py-4">
                 <div className="flex items-center gap-2">
                   <button
+                    onClick={() => onView?.(room)}
+                    className="inline-flex items-center gap-1 px-3 py-2 bg-slate-50 text-slate-600 hover:bg-slate-100 rounded-lg transition-colors text-sm font-medium border border-gray-200"
+                  >
+                    <Eye size={16} />
+                    Xem
+                  </button>
+                  <button
                     onClick={() => onEdit(room)}
                     className="inline-flex items-center gap-1 px-3 py-2 bg-blue-50 text-accent-violet hover:bg-blue-100 rounded-lg transition-colors text-sm font-medium"
                   >
-                    <Edit size={16} />
+                    <PencilSquare size={16} />
                     Sửa
                   </button>
                   <button
@@ -80,7 +88,7 @@ const RoomTable = ({
                     }}
                     className="inline-flex items-center gap-1 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
                   >
-                    <Trash2 size={16} />
+                    <Trash size={16} />
                     Xóa
                   </button>
                 </div>

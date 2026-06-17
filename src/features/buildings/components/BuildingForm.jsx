@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Save, X, Loader2 } from 'lucide-react';
+import AddressAutocomplete from './AddressAutocomplete';
 
 const initialForm = {
   buildingName: '',
   address: '',
   description: '',
+  latitude: null,
+  longitude: null,
 };
 
 const BuildingForm = ({
@@ -24,6 +27,8 @@ const BuildingForm = ({
         buildingName: initialData.buildingName || '',
         address: initialData.address || '',
         description: initialData.description || '',
+        latitude: initialData.latitude || null,
+        longitude: initialData.longitude || null,
       });
     } else {
       setForm(initialForm);
@@ -50,6 +55,8 @@ const BuildingForm = ({
       buildingName: form.buildingName.trim(),
       address: form.address.trim(),
       description: form.description?.trim() || null,
+      latitude: form.latitude,
+      longitude: form.longitude,
     });
   };
 
@@ -69,19 +76,15 @@ const BuildingForm = ({
         />
       </div>
 
-      <div>
-        <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
-          Địa chỉ <span className="text-accent-pink">*</span>
-        </label>
-        <input
-          type="text"
-          name="address"
-          value={form.address}
-          onChange={handleChange}
-          className="text-input"
-          placeholder="Số nhà, đường, phường/xã, quận/huyện..."
-        />
-      </div>
+      <AddressAutocomplete
+        address={form.address}
+        latitude={form.latitude}
+        longitude={form.longitude}
+        onChange={({ address, latitude, longitude }) =>
+          setForm((prev) => ({ ...prev, address, latitude, longitude }))
+        }
+        error={null}
+      />
 
       <div>
         <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">

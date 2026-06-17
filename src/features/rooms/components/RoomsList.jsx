@@ -179,6 +179,11 @@ const RoomsList = () => {
     if (roomId) loadRoomIntoPanel(roomId, normalizeRoomFromApi(room));
   };
 
+  const handleViewRoom = (room) => {
+    setSelectedRoomDetail(room);
+    setShowRoomDetail(true);
+  };
+
   const handleDelete = async (roomId) => {
     if (!window.confirm('Bạn có chắc muốn xóa phòng này?')) return;
     try {
@@ -429,6 +434,7 @@ const RoomsList = () => {
               <RoomTable
                 rooms={filteredRooms}
                 loading={loading}
+                onView={handleViewRoom}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 onStatusChange={changeRoomStatus}
@@ -443,6 +449,7 @@ const RoomsList = () => {
         {showRoomDetail && (
           <RoomDetailModal
             room={selectedRoomDetail}
+            buildings={buildings}
             isOpen={showRoomDetail}
             onClose={() => setShowRoomDetail(false)}
             onEdit={(room) => {
