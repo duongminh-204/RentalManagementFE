@@ -34,6 +34,8 @@ import {
 } from '../utils/tenantHelpers';
 import TenantAddressPicker from './TenantAddressPicker';
 import DateInput from '../../../components/common/DateInput';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { toMoneyInputValue } from '../../../utils/currencyInput';
 import { getAllRooms } from '../../rooms/api/roomsApi';
 import { normalizeRoomsList, groupRoomsByBuilding } from '../../rooms/utils/roomHelpers';
 import { getTenantHistory } from '../api/tenantsApi';
@@ -138,7 +140,7 @@ const TenantManagementPanel = ({
         roomId: tenant.roomId ? String(tenant.roomId) : '',
         moveInDate: toInputDate(tenant.moveInDate),
         moveOutDate: toInputDate(tenant.moveOutDate),
-        deposit: tenant.deposit ?? '',
+        deposit: toMoneyInputValue(tenant.deposit ?? ''),
         notes: tenant.notes || '',
         status: tenant.status || 'active',
         isActive: tenant.isActive !== false,
@@ -308,9 +310,7 @@ const TenantManagementPanel = ({
 
   const cccdDisplay = idCardPreview || resolveMediaUrl(tenant?.idCardImage);
   const avatarDisplay =
-    avatarPreview ||
-    resolveMediaUrl(tenant?.avatar) ||
-    (tenant?.fullName ? getDefaultAvatar(tenant.fullName) : null);
+    avatarPreview || resolveMediaUrl(tenant?.avatar) || getDefaultAvatar();
 
   return (
     <aside className="flex h-full max-h-[calc(100vh-10rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] lg:min-h-[600px]">
@@ -322,7 +322,7 @@ const TenantManagementPanel = ({
               <img
                 src={avatarDisplay}
                 alt={tenant?.fullName || 'Avatar'}
-                className="h-24 w-24 rounded-2xl border-2 border-accent-lime/50 object-contain shadow-md cursor-pointer transition hover:opacity-90"
+                className="h-32 w-32 rounded-2xl border-2 border-accent-lime/50 object-cover shadow-md cursor-pointer transition hover:opacity-90"
                 onClick={() => {
                   if (avatarDisplay) {
                     setPreviewImage(avatarDisplay);
@@ -330,7 +330,7 @@ const TenantManagementPanel = ({
                   }
                 }}
                 onError={(e) => {
-                  e.target.src = getDefaultAvatar(tenant?.fullName || 'U');
+                  e.target.src = getDefaultAvatar();
                 }}
               />
 
@@ -613,13 +613,10 @@ const TenantManagementPanel = ({
                       <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
                         <Banknote size={12} /> Tiền cọc (₫)
                       </label>
-                      <input
-                        type="number"
+                      <CurrencyInput
                         name="deposit"
-                        min={0}
                         value={form.deposit}
                         onChange={handleChange}
-                        className="text-input"
                       />
                     </div>
                   </div>

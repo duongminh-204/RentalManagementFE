@@ -1,15 +1,17 @@
-import React, { useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { X } from 'lucide-react';
 import { formatCurrency } from '../utils/contractHelpers';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 
 const ContractTerminateModal = ({ contract, onSubmit, onCancel, loading = false }) => {
   const [reason, setReason] = useState('');
-  const [deduction, setDeduction] = useState(0);
+  const [deduction, setDeduction] = useState('0');
   const [notes, setNotes] = useState('');
 
   const refund = useMemo(() => {
     const deposit = Number(contract?.deposit) || 0;
-    const deduct = Math.max(0, Number(deduction) || 0);
+    const deduct = Math.max(0, parseMoneyInputNumber(deduction));
     return Math.max(0, deposit - deduct);
   }, [contract?.deposit, deduction]);
 
@@ -18,7 +20,7 @@ const ContractTerminateModal = ({ contract, onSubmit, onCancel, loading = false 
     if (!reason.trim()) return;
     onSubmit({
       reason: reason.trim(),
-      depositDeductionAmount: Number(deduction) || 0,
+      depositDeductionAmount: parseMoneyInputNumber(deduction),
       notes: notes.trim() || undefined,
     });
   };
@@ -47,13 +49,12 @@ const ContractTerminateModal = ({ contract, onSubmit, onCancel, loading = false 
             <label className="mb-1 block text-sm font-medium">
               Khấu trừ cọc (VNĐ) — Cọc hiện tại: {formatCurrency(contract?.deposit || 0)}
             </label>
-            <input
-              type="number"
-              min="0"
-              max={contract?.deposit || 0}
+            <CurrencyInput
+              name="deduction"
               value={deduction}
               onChange={(e) => setDeduction(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              placeholder="0"
             />
           </div>
           <p className="rounded-lg bg-green-50 px-3 py-2 text-sm text-green-800">

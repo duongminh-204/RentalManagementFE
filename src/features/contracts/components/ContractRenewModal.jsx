@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { X } from 'lucide-react';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 
 const ContractRenewModal = ({ contract, onSubmit, onCancel, loading = false }) => {
   const [extendMonths, setExtendMonths] = useState(12);
-  const [newRentPrice, setNewRentPrice] = useState(contract?.rentPrice ?? '');
+  const [newRentPrice, setNewRentPrice] = useState(toMoneyInputValue(contract?.rentPrice ?? ''));
   const [cloneContract, setCloneContract] = useState(true);
   const [notes, setNotes] = useState('');
 
@@ -11,7 +13,7 @@ const ContractRenewModal = ({ contract, onSubmit, onCancel, loading = false }) =
     e.preventDefault();
     onSubmit({
       extendMonths: Number(extendMonths),
-      newRentPrice: newRentPrice ? Number(newRentPrice) : undefined,
+      newRentPrice: newRentPrice ? parseMoneyInputNumber(newRentPrice) : undefined,
       cloneContract,
       notes: notes.trim() || undefined,
     });
@@ -39,12 +41,12 @@ const ContractRenewModal = ({ contract, onSubmit, onCancel, loading = false }) =
           </div>
           <div>
             <label className="mb-1 block text-sm font-medium">Giá thuê mới (VNĐ)</label>
-            <input
-              type="number"
-              min="0"
+            <CurrencyInput
+              name="newRentPrice"
               value={newRentPrice}
               onChange={(e) => setNewRentPrice(e.target.value)}
               className="w-full rounded-lg border border-gray-300 px-3 py-2"
+              placeholder="3.000.000"
             />
           </div>
           <label className="flex items-center gap-2 text-sm">

@@ -15,6 +15,8 @@ import {
   getContractStatusColor,
   resolveContractStatus,
 } from '../utils/contractHelpers';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue, formatMoneyInput } from '../../../utils/currencyInput';
 
 const ContractForm = ({
   contract = null,
@@ -62,8 +64,8 @@ const ContractForm = ({
         roomId: contract.roomId || fixedRoomId || '',
         startDate: toApiDate(contract.startDate),
         endDate: toApiDate(contract.endDate),
-        rentPrice: contract.rentPrice ?? '',
-        deposit: contract.deposit ?? '',
+        rentPrice: toMoneyInputValue(contract.rentPrice ?? ''),
+        deposit: toMoneyInputValue(contract.deposit ?? ''),
         paymentCycle: contract.paymentCycle || 'Monthly',
         terms: contract.terms || '',
         notes: contract.notes || '',
@@ -86,12 +88,15 @@ const ContractForm = ({
     const tenant = tenants.find((t) => String(t.id) === String(formData.tenantId));
     setFormData((prev) => ({
       ...prev,
-      rentPrice: prev.rentPrice !== '' && prev.rentPrice != null ? prev.rentPrice : (room?.price || room?.rentPrice || ''),
+      rentPrice:
+        prev.rentPrice !== '' && prev.rentPrice != null
+          ? prev.rentPrice
+          : toMoneyInputValue(room?.price || room?.rentPrice || ''),
       deposit:
         prev.deposit !== '' && prev.deposit != null
           ? prev.deposit
           : room?.price
-            ? Math.round(room.price)
+            ? formatMoneyInput(Math.round(room.price))
             : '',
     }));
   }, [formData.roomId, formData.tenantId, rooms, tenants, contract?.id, defaultTerms]);
@@ -135,14 +140,14 @@ const ContractForm = ({
       errors.endDate = 'Ngày hết hạn phải sau ngày bắt đầu';
     }
 
-    if (!formData.deposit) {
+    if (!formData.deposit && parseMoneyInputNumber(formData.deposit) !== 0) {
       errors.deposit = 'Vui lòng nhập tiền cọc';
-    } else if (isNaN(formData.deposit) || formData.deposit < 0) {
+    } else if (parseMoneyInputNumber(formData.deposit) < 0) {
       errors.deposit = 'Tiền cọc phải là số dương';
     }
-    if (!formData.rentPrice && formData.rentPrice !== 0) {
+    if (!formData.rentPrice && parseMoneyInputNumber(formData.rentPrice) !== 0) {
       errors.rentPrice = 'Vui lòng nhập giá thuê';
-    } else if (isNaN(formData.rentPrice) || formData.rentPrice < 0) {
+    } else if (parseMoneyInputNumber(formData.rentPrice) < 0) {
       errors.rentPrice = 'Giá thuê phải là số dương';
     }
 
@@ -216,8 +221,8 @@ const ContractForm = ({
       onSubmit({
         ...formData,
         roomId: fixedRoomId ?? formData.roomId,
-        rentPrice: Number(formData.rentPrice),
-        deposit: Number(formData.deposit),
+        rentPrice: parseMoneyInputNumber(formData.rentPrice),
+        deposit: parseMoneyInputNumber(formData.deposit),
         contractFile,
       });
     }
@@ -389,12 +394,12 @@ const ContractForm = ({
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Giá thuê (VNĐ/tháng) *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 name="rentPrice"
                 value={formData.rentPrice}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet ${validationErrors.rentPrice ? 'border-red-500' : 'border-gray-300'}`}
+                placeholder="3.000.000"
               />
               {validationErrors.rentPrice && (
                 <p className="text-red-500 text-sm mt-1">{validationErrors.rentPrice}</p>
@@ -423,14 +428,13 @@ const ContractForm = ({
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Tiền cọc (VNĐ) *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 name="deposit"
                 value={formData.deposit}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet ${validationErrors.deposit ? 'border-red-500' : 'border-gray-300'
                   }`}
-                placeholder="3000000"
+                placeholder="3.000.000"
               />
               {validationErrors.deposit && (
                 <p className="text-red-500 text-sm mt-1">{validationErrors.deposit}</p>

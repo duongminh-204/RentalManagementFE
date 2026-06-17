@@ -29,6 +29,8 @@ import {
   ClipboardList
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -108,10 +110,10 @@ const InvoicesPage = () => {
         0
       )
     : 0;
-  const otherFee = formatNumberField(formData.otherFee);
-  const discountAmount = formatNumberField(formData.discountAmount);
+  const otherFee = parseMoneyInputNumber(formData.otherFee);
+  const discountAmount = parseMoneyInputNumber(formData.discountAmount);
   const parkingFeeOverride = formData.parkingFeeOverride
-    ? formatNumberField(formData.parkingFeeOverride)
+    ? parseMoneyInputNumber(formData.parkingFeeOverride)
     : null;
 
   const previewElectricFee = electricConsumed * electricPrice;
@@ -443,9 +445,7 @@ const InvoicesPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
                   <TrendingUp className="w-3.5 h-3.5 text-accent-violet-mid" /> Phí phát sinh khác
                 </span>
-                <input
-                  type="number"
-                  min="0"
+                <CurrencyInput
                   name="otherFee"
                   value={formData.otherFee}
                   onChange={handleChange}
@@ -456,9 +456,7 @@ const InvoicesPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
                   <Percent className="w-3.5 h-3.5 text-accent-pink" /> Chiết khấu / Giảm giá
                 </span>
-                <input
-                  type="number"
-                  min="0"
+                <CurrencyInput
                   name="discountAmount"
                   value={formData.discountAmount}
                   onChange={handleChange}
@@ -473,9 +471,7 @@ const InvoicesPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
                   <CreditCard className="w-3.5 h-3.5 text-accent-violet-mid" /> Phí xe máy/ô tô ghi đè
                 </span>
-                <input
-                  type="number"
-                  min="0"
+                <CurrencyInput
                   name="parkingFeeOverride"
                   value={formData.parkingFeeOverride}
                   onChange={handleChange}

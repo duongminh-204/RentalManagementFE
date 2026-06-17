@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { X, Upload, AlertCircle } from 'lucide-react';
 import ImageModal from '../../../components/common/ImageModal';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { toMoneyInputValue, parseMoneyInputNumber } from '../../../utils/currencyInput';
 import { validatePhoneNumber, validateCCCD, formatCCCD } from '../utils/tenantHelpers';
 
 const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error = null }) => {
@@ -30,7 +32,7 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
         cccd: tenant.cccd || '',
         moveInDate: tenant.moveInDate ? new Date(tenant.moveInDate).toISOString().split('T')[0] : '',
         moveOutDate: tenant.moveOutDate ? new Date(tenant.moveOutDate).toISOString().split('T')[0] : '',
-        deposit: tenant.deposit || '',
+        deposit: toMoneyInputValue(tenant.deposit ?? ''),
         notes: tenant.notes || '',
         roomId: tenant.roomId || '',
       });
@@ -73,7 +75,7 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
 
     if (!formData.deposit) {
       errors.deposit = 'Vui lòng nhập tiền cọc';
-    } else if (isNaN(formData.deposit) || formData.deposit < 0) {
+    } else if (parseMoneyInputNumber(formData.deposit) < 0) {
       errors.deposit = 'Tiền cọc phải là số dương';
     }
 
@@ -123,6 +125,7 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
     if (validateForm()) {
       onSubmit({
         ...formData,
+        deposit: parseMoneyInputNumber(formData.deposit),
         idCardImage,
       });
     }
@@ -278,15 +281,14 @@ const TenantForm = ({ tenant = null, onSubmit, onCancel, loading = false, error 
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Tiền cọc (VNĐ) *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 name="deposit"
                 value={formData.deposit}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                   validationErrors.deposit ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="1000000"
+                placeholder="1.000.000"
               />
               {validationErrors.deposit && (
                 <p className="text-red-500 text-sm mt-1">{validationErrors.deposit}</p>

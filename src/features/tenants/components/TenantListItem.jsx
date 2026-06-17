@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { User, Phone, Home, Building2 } from 'lucide-react';
+import { Phone, Home, Building2 } from 'lucide-react';
 import ImageModal from '../../../components/common/ImageModal';
 import {
   formatCCCD,
+  getDefaultAvatar,
   getTenantStatusBadgeClass,
   getTenantStatusLabel,
 } from '../utils/tenantHelpers';
@@ -24,22 +25,25 @@ const TenantListItem = ({ tenant, selected, onClick }) => {
         <div className="flex items-start gap-3">
           <div
             onClick={(e) => {
-              if (tenant.avatar) {
-                e.stopPropagation();
-                setShowImageModal(true);
-              }
+              e.stopPropagation();
+              setShowImageModal(true);
             }}
-            className={`flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ${
-              tenant.avatar ? 'cursor-pointer hover:opacity-90 transition-opacity' : ''
+            className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ${
+              tenant.avatar || getDefaultAvatar()
+                ? 'cursor-pointer hover:opacity-90 transition-opacity'
+                : ''
             } ${
-              selected ? 'bg-accent-lime text-ink-deep' : 'bg-accent-violet-deep text-on-primary'
+              selected ? 'border border-accent-lime/60' : 'border border-hairline-cloud'
             }`}
           >
-            {tenant.avatar ? (
-              <img src={tenant.avatar} alt="" className="h-full w-full object-contain" />
-            ) : (
-              tenant.fullName?.[0]?.toUpperCase() || <User size={20} />
-            )}
+            <img
+              src={tenant.avatar || getDefaultAvatar()}
+              alt=""
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                e.currentTarget.src = getDefaultAvatar();
+              }}
+            />
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-start justify-between gap-2">
@@ -81,7 +85,7 @@ const TenantListItem = ({ tenant, selected, onClick }) => {
       <ImageModal
         isOpen={showImageModal}
         onClose={() => setShowImageModal(false)}
-        src={tenant.avatar}
+        src={tenant.avatar || getDefaultAvatar()}
         alt={tenant.fullName}
       />
     </>

@@ -33,6 +33,8 @@ import {
 } from '../utils/vehicleHelpers';
 import { resolveMediaUrl } from '../../rooms/utils/roomHelpers';
 import DateInput from '../../../components/common/DateInput';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 import { toApiDate } from '../../../utils/dateHelpers';
 
 const TABS = [
@@ -90,7 +92,7 @@ const VehicleManagementPanel = ({
         brand: vehicle.brand || '',
         color: vehicle.color || '',
         registrationDate: toApiDate(vehicle.registrationDate),
-        parkingFee: vehicle.parkingFee ?? '',
+        parkingFee: toMoneyInputValue(vehicle.parkingFee ?? ''),
         tenantId: vehicle.tenantId ? String(vehicle.tenantId) : '',
         roomId: vehicle.roomId ? String(vehicle.roomId) : '',
         notes: vehicle.notes || '',
@@ -124,9 +126,9 @@ const VehicleManagementPanel = ({
     if (!form.brand.trim()) errors.brand = 'Vui lòng nhập hãng xe';
     if (!form.color) errors.color = 'Vui lòng chọn màu';
     if (!form.registrationDate) errors.registrationDate = 'Vui lòng chọn ngày đăng ký';
-    if (!form.parkingFee && form.parkingFee !== 0) {
+    if (!form.parkingFee && parseMoneyInputNumber(form.parkingFee) !== 0) {
       errors.parkingFee = 'Vui lòng nhập phí gửi xe';
-    } else if (Number(form.parkingFee) < 0) {
+    } else if (parseMoneyInputNumber(form.parkingFee) < 0) {
       errors.parkingFee = 'Phí phải là số dương';
     }
     if (form.status === 'active') {
@@ -158,7 +160,7 @@ const VehicleManagementPanel = ({
       {
         ...form,
         licensePlate: form.licensePlate.trim().toUpperCase(),
-        parkingFee: Number(form.parkingFee),
+        parkingFee: parseMoneyInputNumber(form.parkingFee),
         tenantId: form.tenantId ? parseInt(form.tenantId, 10) : null,
         roomId: form.roomId ? parseInt(form.roomId, 10) : null,
       },
@@ -435,14 +437,10 @@ const VehicleManagementPanel = ({
                         <label className="mb-1 flex items-center gap-1.5 text-xs font-semibold uppercase text-accent-violet-mid">
                           <Banknote size={12} /> Phí gửi (VNĐ/tháng) *
                         </label>
-                        <input
-                          type="number"
+                        <CurrencyInput
                           name="parkingFee"
                           value={form.parkingFee}
                           onChange={handleChange}
-                          className="text-input"
-                          min="0"
-                          step="1000"
                         />
                         {validationErrors.parkingFee && (
                           <p className="mt-1 text-xs text-accent-pink">{validationErrors.parkingFee}</p>

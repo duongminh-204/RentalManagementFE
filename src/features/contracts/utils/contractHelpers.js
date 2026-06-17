@@ -1,3 +1,5 @@
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
+
 export const normalizeContractFromApi = (raw) => {
   if (!raw) return null;
   const id = raw.id ?? raw.contractId ?? raw.ContractId;
@@ -85,8 +87,8 @@ export const prepareContractPayload = (data) => {
     ...rest,
     tenantId: Number(rest.tenantId),
     roomId: Number(rest.roomId),
-    rentPrice: Number(rest.rentPrice) || 0,
-    deposit: Number(rest.deposit) || 0,
+    rentPrice: parseMoneyInputNumber(rest.rentPrice),
+    deposit: parseMoneyInputNumber(rest.deposit),
     paymentCycle: rest.paymentCycle || 'Monthly',
     status: 'Active',
   };

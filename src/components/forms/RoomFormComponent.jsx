@@ -17,6 +17,8 @@ import {
   ShieldCheck,
   Camera,
 } from 'lucide-react';
+import CurrencyInput from '../common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../utils/currencyInput';
 
 const AMENITIES = [
   { id: 'wifi', label: 'Wifi miễn phí', icon: Wifi },
@@ -75,9 +77,9 @@ const RoomFormComponent = ({
       setFormData({
         roomNumber: initialData.roomNumber || initialData.roomName || '',
         buildingId: initialData.buildingId ?? 1,
-        rentalPrice: initialData.rentalPrice ?? initialData.price ?? '',
-        electricityPrice: initialData.electricityPrice ?? initialData.electricPrice ?? '',
-        waterPrice: initialData.waterPrice ?? '',
+        rentalPrice: toMoneyInputValue(initialData.rentalPrice ?? initialData.price ?? ''),
+        electricityPrice: toMoneyInputValue(initialData.electricityPrice ?? initialData.electricPrice ?? ''),
+        waterPrice: toMoneyInputValue(initialData.waterPrice ?? ''),
         area: initialData.area ?? '',
         maxPeople: initialData.maxPeople ?? '',
         status: initialData.status || 'vacant',
@@ -94,15 +96,15 @@ const RoomFormComponent = ({
       errors.roomNumber = 'Số phòng là bắt buộc';
     }
     
-    if (!formData.rentalPrice || formData.rentalPrice <= 0) {
+    if (parseMoneyInputNumber(formData.rentalPrice) <= 0) {
       errors.rentalPrice = 'Giá thuê phải lớn hơn 0';
     }
-    
-    if (!formData.electricityPrice || formData.electricityPrice < 0) {
+
+    if (parseMoneyInputNumber(formData.electricityPrice) < 0) {
       errors.electricityPrice = 'Giá điện không hợp lệ';
     }
-    
-    if (!formData.waterPrice || formData.waterPrice < 0) {
+
+    if (parseMoneyInputNumber(formData.waterPrice) < 0) {
       errors.waterPrice = 'Giá nước không hợp lệ';
     }
     
@@ -129,7 +131,12 @@ const RoomFormComponent = ({
     e.preventDefault();
     
     if (validateForm()) {
-      onSubmit(formData);
+      onSubmit({
+        ...formData,
+        rentalPrice: parseMoneyInputNumber(formData.rentalPrice),
+        electricityPrice: parseMoneyInputNumber(formData.electricityPrice),
+        waterPrice: parseMoneyInputNumber(formData.waterPrice),
+      });
     }
   };
 
@@ -196,8 +203,7 @@ const RoomFormComponent = ({
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Giá thuê (₫/tháng) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
+            <CurrencyInput
               name="rentalPrice"
               value={formData.rentalPrice}
               onChange={handleChange}
@@ -218,8 +224,7 @@ const RoomFormComponent = ({
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Giá điện (₫/kWh) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
+            <CurrencyInput
               name="electricityPrice"
               value={formData.electricityPrice}
               onChange={handleChange}
@@ -240,8 +245,7 @@ const RoomFormComponent = ({
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               Giá nước (₫/m³) <span className="text-red-500">*</span>
             </label>
-            <input
-              type="number"
+            <CurrencyInput
               name="waterPrice"
               value={formData.waterPrice}
               onChange={handleChange}

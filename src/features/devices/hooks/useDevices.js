@@ -3,6 +3,7 @@ import * as buildingsApi from '../../buildings/api/buildingsApi';
 import * as roomMgmtApi from '../../rooms/api/roomManagementApi';
 import { getAllRooms, getRoomById } from '../../rooms/api/roomsApi';
 import { normalizeRoomFromApi, normalizeRoomsList } from '../../rooms/utils/roomHelpers';
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 
 const normalizeBuilding = (building) => ({
   buildingId: building.buildingId ?? building.id,
@@ -234,7 +235,7 @@ export const useDevices = () => {
         if (category === 'service') {
           await roomMgmtApi.createService({
             serviceName: trimmed,
-            unitPrice: Number(price) || 0,
+            unitPrice: parseMoneyInputNumber(price),
             billingCycle,
             icon: guessedIcon,
           });

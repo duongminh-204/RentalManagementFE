@@ -7,6 +7,8 @@ import {
   ITEM_CATEGORY_OPTIONS,
   getTypesByCategory,
 } from '../constants';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 
 const EMPTY_FORM = {
   category: 'device',
@@ -33,7 +35,11 @@ const DeviceFormModal = ({
 
   useEffect(() => {
     if (initialData) {
-      setFormData({ ...EMPTY_FORM, ...initialData });
+      setFormData({
+        ...EMPTY_FORM,
+        ...initialData,
+        price: toMoneyInputValue(initialData.price ?? ''),
+      });
     } else {
       const category = defaultCategory || 'device';
       setFormData({
@@ -94,7 +100,12 @@ const DeviceFormModal = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (validate()) onSubmit(formData);
+    if (validate()) {
+      onSubmit({
+        ...formData,
+        price: parseMoneyInputNumber(formData.price),
+      });
+    }
   };
 
   return (
@@ -262,13 +273,11 @@ const DeviceFormModal = ({
               <label className="mb-2 block text-sm font-semibold text-gray-700">
                 Giá dịch vụ (₫)
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 name="price"
-                min="0"
                 value={formData.price}
                 onChange={handleChange}
-                placeholder="VD: 150000 (để 0 nếu miễn phí)"
+                placeholder="VD: 150.000 (để 0 nếu miễn phí)"
                 className="w-full rounded-lg border border-gray-300 px-4 py-2 transition-all focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
               />
             </div>

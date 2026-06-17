@@ -1,7 +1,12 @@
+import defaultTenantAvatar from '../../../assets/Tenantjpg.jpg';
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
+
 const API_ORIGIN =
   import.meta.env.VITE_API_ORIGIN ||
   (import.meta.env.VITE_API_BASE_URL || 'http://localhost:8090/api').replace(/\/api\/?$/, '') ||
   'http://localhost:8090';
+
+export const DEFAULT_TENANT_AVATAR = defaultTenantAvatar;
 
 export const resolveMediaUrl = (url) => {
   if (!url) return null;
@@ -76,7 +81,7 @@ export const denormalizeTenantForApi = (form) => ({
   roomId: form.roomId ? Number(form.roomId) : null,
   moveInDate: form.moveInDate || null,
   moveOutDate: form.moveOutDate || null,
-  deposit: Number(form.deposit) || 0,
+  deposit: parseMoneyInputNumber(form.deposit),
   notes: form.notes?.trim() || null,
   isActive: form.isActive !== false,
   status: form.status || undefined,
@@ -165,11 +170,7 @@ export const resolveAvatarUrl = (url) => {
 };
 
 
-export const getDefaultAvatar = (fullName = '') => {
-  if (!fullName) return null;
-  const initial = fullName.trim().charAt(0).toUpperCase();
-  return `https://ui-avatars.com/api/?name=${encodeURIComponent(initial)}&background=6B46C1&color=fff&size=128`;
-};
+export const getDefaultAvatar = () => DEFAULT_TENANT_AVATAR;
 
 export const composeTenantAddress = ({
   streetDetail = '',

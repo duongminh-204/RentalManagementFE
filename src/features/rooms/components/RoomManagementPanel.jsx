@@ -28,6 +28,8 @@ import {
 import * as roomMgmtApi from '../api/roomManagementApi';
 import * as buildingApi from '../../buildings/api/buildingsApi';
 import BuildingManager from '../../buildings/components/BuildingManager';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 import {
   getContracts,
   getContractsByRoomId,
@@ -127,9 +129,9 @@ const RoomManagementPanel = ({
       setInfo({
         roomNumber: room.roomNumber || room.roomName || '',
         buildingId: room.buildingId ?? 2,
-        rentalPrice: room.rentalPrice ?? room.price ?? '',
-        electricPrice: room.electricPrice ?? room.electricityPrice ?? '',
-        waterPrice: room.waterPrice ?? '',
+        rentalPrice: toMoneyInputValue(room.rentalPrice ?? room.price ?? ''),
+        electricPrice: toMoneyInputValue(room.electricPrice ?? room.electricityPrice ?? ''),
+        waterPrice: toMoneyInputValue(room.waterPrice ?? ''),
         area: room.area ?? '',
         maxPeople: room.maxPeople ?? '',
         status: room.status || 'vacant',
@@ -389,10 +391,10 @@ const RoomManagementPanel = ({
     const payload = {
       roomNumber: info.roomNumber,
       buildingId: info.buildingId ? Number(info.buildingId) : null,
-      rentalPrice: Number(info.rentalPrice),
-      electricityPrice: Number(info.electricPrice),
-      electricPrice: Number(info.electricPrice),
-      waterPrice: Number(info.waterPrice),
+      rentalPrice: parseMoneyInputNumber(info.rentalPrice),
+      electricityPrice: parseMoneyInputNumber(info.electricPrice),
+      electricPrice: parseMoneyInputNumber(info.electricPrice),
+      waterPrice: parseMoneyInputNumber(info.waterPrice),
       area: info.area !== '' ? Number(info.area) : null,
       maxPeople: info.maxPeople !== '' ? Number(info.maxPeople) : null,
       status: canEditRoomStatus ? info.status : (room?.status ?? info.status),
@@ -647,36 +649,30 @@ const RoomManagementPanel = ({
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
                       Giá thuê
                     </label>
-                    <input
-                      type="number"
+                    <CurrencyInput
                       name="rentalPrice"
                       value={info.rentalPrice}
                       onChange={handleInfoChange}
-                      className="text-input"
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
                       Giá điện / kWh
                     </label>
-                    <input
-                      type="number"
+                    <CurrencyInput
                       name="electricPrice"
                       value={info.electricPrice}
                       onChange={handleInfoChange}
-                      className="text-input"
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold uppercase text-accent-violet-mid">
                       Giá nước / m³
                     </label>
-                    <input
-                      type="number"
+                    <CurrencyInput
                       name="waterPrice"
                       value={info.waterPrice}
                       onChange={handleInfoChange}
-                      className="text-input"
                     />
                   </div>
                   <div>

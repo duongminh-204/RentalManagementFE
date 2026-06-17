@@ -16,6 +16,8 @@ import {
 import { useDevices } from '../hooks/useDevices';
 import { DEVICE_STATUS_OPTIONS, getStatusConfig } from '../constants';
 import { resolveItemIcon } from '../utils/itemIcons';
+import CurrencyInput from '../../../components/common/CurrencyInput';
+import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 
 const STATUS_ICONS = {
   active: { Icon: CheckCircle2, className: 'text-green-500' },
@@ -71,11 +73,9 @@ const CatalogAddArea = ({
       />
       {category === 'service' && (
         <>
-          <input
-            type="number"
-            min="0"
+          <CurrencyInput
             value={newPrice}
-            onChange={onPriceChange}
+            onChange={(e) => onPriceChange(e)}
             placeholder="Giá (₫) - để trống nếu miễn phí"
             className="mt-2 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
           />
@@ -240,7 +240,7 @@ const DevicesList = () => {
       await addCatalogItem({
         name: newName,
         category: addingFor,
-        price: newPrice,
+        price: parseMoneyInputNumber(newPrice),
         billingCycle: newBillingCycle,
       });
       cancelAdding();

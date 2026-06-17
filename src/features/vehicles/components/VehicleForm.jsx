@@ -8,7 +8,9 @@ import {
   VEHICLE_COLORS,
 } from '../utils/vehicleHelpers';
 import DateInput from '../../../components/common/DateInput';
+import CurrencyInput from '../../../components/common/CurrencyInput';
 import { toApiDate } from '../../../utils/dateHelpers';
+import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 
 const VehicleForm = ({
   vehicle = null,
@@ -45,7 +47,7 @@ const VehicleForm = ({
         brand: vehicle.brand || '',
         color: vehicle.color || '',
         registrationDate: toApiDate(vehicle.registrationDate),
-        parkingFee: vehicle.parkingFee || '',
+        parkingFee: toMoneyInputValue(vehicle.parkingFee ?? ''),
         tenantId: vehicle.tenantId || '',
         roomId: vehicle.roomId || '',
         notes: vehicle.notes || '',
@@ -82,9 +84,9 @@ const VehicleForm = ({
       errors.registrationDate = 'Vui lòng chọn ngày đăng ký';
     }
 
-    if (!formData.parkingFee) {
+    if (!formData.parkingFee && parseMoneyInputNumber(formData.parkingFee) !== 0) {
       errors.parkingFee = 'Vui lòng nhập phí gửi xe';
-    } else if (isNaN(formData.parkingFee) || formData.parkingFee < 0) {
+    } else if (parseMoneyInputNumber(formData.parkingFee) < 0) {
       errors.parkingFee = 'Phí gửi xe phải là số dương';
     }
 
@@ -149,6 +151,7 @@ const VehicleForm = ({
         ...formData,
         tenantId: formData.tenantId ? parseInt(formData.tenantId, 10) : null,
         roomId: formData.roomId ? parseInt(formData.roomId, 10) : null,
+        parkingFee: parseMoneyInputNumber(formData.parkingFee),
         vehicleImage,
       });
     }
@@ -313,15 +316,14 @@ const VehicleForm = ({
               <label className="block text-sm font-medium text-gray-900 mb-2">
                 Phí gửi xe (VNĐ/tháng) *
               </label>
-              <input
-                type="number"
+              <CurrencyInput
                 name="parkingFee"
                 value={formData.parkingFee}
                 onChange={handleChange}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet ${
                   validationErrors.parkingFee ? 'border-red-500' : 'border-gray-300'
                 }`}
-                placeholder="100000"
+                placeholder="100.000"
               />
               {validationErrors.parkingFee && (
                 <p className="text-red-500 text-sm mt-1">{validationErrors.parkingFee}</p>
