@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   Building,
@@ -14,7 +14,8 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { getStoredRole, getStoredUser } from '../../hooks/useAuth';
+import { getRoleLabel, getStoredUser } from '../../hooks/useAuth';
+import UserAvatar from './UserAvatar';
 
 const navItems = [
   { label: 'Tổng quan', path: '/dashboard', icon: Home },
@@ -35,11 +36,24 @@ const navLinkClass = ({ isActive }) =>
 
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [user, setUser] = useState(getStoredUser);
   const navigate = useNavigate();
 
-  const user = getStoredUser();
-  const role = getStoredRole();
+  const role = user?.role || '';
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
+  const roleLabel = getRoleLabel(role);
+
+  useEffect(() => {
+    const refreshUser = () => setUser(getStoredUser());
+
+    window.addEventListener('storage', refreshUser);
+    window.addEventListener('user-updated', refreshUser);
+
+    return () => {
+      window.removeEventListener('storage', refreshUser);
+      window.removeEventListener('user-updated', refreshUser);
+    };
+  }, []);
 
   const close = () => setIsOpen(false);
 
@@ -79,17 +93,19 @@ const Sidebar = () => {
       </nav>
 
       <div className="border-t border-hairline-cloud px-3 py-4">
-        <div className="mb-2 flex items-center gap-3 px-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-press text-ink-deep">
-            <User size={18} />
-          </div>
+        <Link
+          to="/profile"
+          onClick={close}
+          className="mb-2 flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-press"
+        >
+          <UserAvatar user={user} size="md" />
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink-deep">{displayName}</p>
             <p className="truncate text-xs font-medium uppercase tracking-wide text-accent-violet-mid">
-              {role || 'Chưa có quyền'}
+              {roleLabel}
             </p>
           </div>
-        </div>
+        </Link>
         <button
           type="button"
           onClick={handleLogout}
@@ -106,11 +122,14 @@ const Sidebar = () => {
     <>
       {/* Mobile top bar */}
       <div className="sticky top-0 z-40 flex items-center justify-between border-b border-hairline-cloud bg-surface-light px-4 py-3 lg:hidden">
-        <Link to="/dashboard" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-            <Building2 className="text-on-primary" size={18} />
+        <Link to="/profile" className="flex min-w-0 items-center gap-2.5">
+          <UserAvatar user={user} size="sm" />
+          <div className="min-w-0">
+            <p className="truncate font-display text-sm font-semibold text-ink-deep">{displayName}</p>
+            <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-accent-violet-mid">
+              {roleLabel}
+            </p>
           </div>
-          <span className="font-display text-sm font-semibold text-ink-deep">RentalManagement</span>
         </Link>
         <button
           type="button"

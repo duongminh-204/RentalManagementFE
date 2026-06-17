@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   Building2,
@@ -14,16 +14,29 @@ import {
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getRoleLabel, getStoredRole, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+import { getRoleLabel, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+import UserAvatar from './UserAvatar';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [user, setUser] = useState(getStoredUser);
   const location = useLocation();
   const navigate = useNavigate();
 
-  const role = getStoredRole();
-  const user = getStoredUser();
+  useEffect(() => {
+    const refreshUser = () => setUser(getStoredUser());
+
+    window.addEventListener('storage', refreshUser);
+    window.addEventListener('user-updated', refreshUser);
+
+    return () => {
+      window.removeEventListener('storage', refreshUser);
+      window.removeEventListener('user-updated', refreshUser);
+    };
+  }, []);
+
+  const role = user?.role || '';
   const isAdmin = isAdminRole(role);
   const roleLabel = getRoleLabel(role);
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
@@ -92,9 +105,7 @@ const Header = () => {
                 onClick={() => setIsProfileOpen(!isProfileOpen)}
                 className="nav-link border-0 bg-transparent"
               >
-                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-press text-ink-deep">
-                  <User size={18} />
-                </div>
+                <UserAvatar user={user} size="sm" />
                 <span className="text-sm font-medium">{displayName}</span>
               </button>
 

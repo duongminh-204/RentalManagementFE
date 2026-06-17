@@ -48,6 +48,7 @@ export const syncStoredUser = (profile) => {
       role: profile.role || current.role,
     };
     localStorage.setItem('user', JSON.stringify(merged));
+    window.dispatchEvent(new CustomEvent('user-updated', { detail: merged }));
   } catch {
     // Bỏ qua nếu localStorage không khả dụng
   }
