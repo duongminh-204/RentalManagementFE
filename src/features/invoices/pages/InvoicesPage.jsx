@@ -299,7 +299,7 @@ const InvoicesPage = () => {
               Quản lý & Lập <span className="chip-lime">Hóa Đơn</span>
             </h1>
             <p className="max-w-2xl text-sm leading-relaxed text-muted font-sans">
-              Hệ thống lập hóa đơn tự động nhanh chóng. Nhập số điện nước mới, xem trước đơn giá & hóa đơn ước tính trực quan ở chế độ phân cực Terminal cao cấp và lưu trữ lịch sử hóa đơn bảo mật.
+              Hệ thống lập hóa đơn tự động nhanh chóng. Nhập chỉ số điện nước mới, xem trước đơn giá và hóa đơn ước tính trực quan trước khi lưu.
             </p>
           </div>
           
@@ -540,21 +540,21 @@ const InvoicesPage = () => {
           </form>
         </div>
 
-        {/* Right Column: Real-time Terminal Calculator (card-dark polarity flip) */}
+        {/* Right Column: Real-time invoice preview */}
         <div className="card-dark flex flex-col min-h-[450px]">
           <div className="flex items-center justify-between border-b border-hairline-violet pb-4 mb-4">
             <div className="flex items-center gap-2">
               <div className="w-2.5 h-2.5 rounded-full bg-rose-500" />
               <div className="w-2.5 h-2.5 rounded-full bg-amber-500" />
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-              <span className="text-xs font-mono text-on-dark-muted ml-2">utility_calculator.sh</span>
+              <span className="text-xs font-semibold text-on-dark-muted ml-2">Bảng xem trước hóa đơn</span>
             </div>
-            <span className="text-[10px] font-mono rounded bg-hairline-violet px-2 py-0.5 text-on-dark-muted">v2.4</span>
+            <span className="text-[10px] font-semibold rounded bg-hairline-violet px-2 py-0.5 text-on-dark-muted">Tạm tính</span>
           </div>
 
-          <div className="flex-1 font-mono text-xs space-y-4">
+          <div className="flex-1 text-xs space-y-4">
             <div>
-              <span className="text-accent-lime">sentri@rental-node</span>:<span className="text-accent-pink">~/billing</span>$ ./calculate_room_fees.sh
+              <span className="text-accent-lime font-semibold">Cập nhật theo thông tin bên trái</span>
             </div>
 
             <AnimatePresence mode="wait">
