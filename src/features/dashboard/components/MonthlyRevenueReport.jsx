@@ -195,7 +195,6 @@ const MonthlyRevenueReport = () => {
             <div className="dashboard-legend-card">
               <p className="text-sm font-semibold text-muted">Tổng doanh thu trong kỳ</p>
               <p className="mt-2 text-xl font-bold text-ink-deep">{formatCurrency(totalAmount)}</p>
-              <p className="mt-2 text-sm text-muted">Đang xem trong {selectedPeriodLabel.toLowerCase()}</p>
             </div>
           </div>
 
