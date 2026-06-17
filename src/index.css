@@ -1189,3 +1189,124 @@
 .leaflet-bottom {
   z-index: 1;
 }
+
+/* ── Invoice print layout ── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 10mm 12mm;
+  }
+
+  html,
+  body {
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    background: white !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body.printing-invoice aside,
+  body.printing-invoice .sticky.top-0.z-40 {
+    display: none !important;
+  }
+
+  body.printing-invoice .lg\:pl-64 {
+    padding-left: 0 !important;
+  }
+
+  body.printing-invoice main {
+    min-height: auto !important;
+  }
+
+  body.printing-invoice .invoice-page-content > :not(.invoice-print-overlay) {
+    display: none !important;
+  }
+
+  body.printing-invoice .invoice-print-backdrop,
+  body.printing-invoice .invoice-print-actions,
+  body.printing-invoice .invoice-print-close,
+  body.printing-invoice .invoice-print-select,
+  body.printing-invoice .invoice-print-qr-glow {
+    display: none !important;
+    visibility: hidden !important;
+  }
+
+  body.printing-invoice .invoice-print-overlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: white !important;
+    backdrop-filter: none !important;
+    z-index: auto !important;
+  }
+
+  body.printing-invoice .invoice-print-receipt {
+    position: relative !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    height: auto !important;
+    overflow: visible !important;
+    transform: none !important;
+    opacity: 1 !important;
+    box-shadow: none !important;
+    border: 1px solid #e5e7eb !important;
+    border-radius: 12px !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
+    page-break-inside: avoid;
+  }
+
+  body.printing-invoice .invoice-print-body {
+    overflow: visible !important;
+    max-height: none !important;
+    flex: 1 1 auto !important;
+    padding: 16px 20px !important;
+  }
+
+  body.printing-invoice .invoice-print-header {
+    page-break-after: avoid;
+  }
+
+  body.printing-invoice .invoice-print-total {
+    page-break-before: avoid;
+  }
+
+  body.printing-invoice .invoice-print-qr-panel {
+    width: 220px !important;
+    flex-shrink: 0 !important;
+    page-break-inside: avoid;
+    background: #f8f7fc !important;
+    color: #1f1633 !important;
+    border-top: none !important;
+    border-left: 1px solid #e5e7eb !important;
+    padding: 16px 14px !important;
+  }
+
+  body.printing-invoice .invoice-print-qr-panel .text-on-primary,
+  body.printing-invoice .invoice-print-qr-panel .text-on-dark-muted,
+  body.printing-invoice .invoice-print-qr-panel .text-on-dark-faint {
+    color: #1f1633 !important;
+  }
+
+  body.printing-invoice .invoice-print-qr-panel .text-accent-lime {
+    color: #4a6600 !important;
+  }
+
+  body.printing-invoice .invoice-print-qr-panel .invoice-print-payment-info {
+    background: #ffffff !important;
+    border-color: #e5e7eb !important;
+  }
+
+  body.printing-invoice .invoice-print-qr-image img {
+    width: 150px !important;
+    height: 150px !important;
+    page-break-inside: avoid;
+  }
+}
