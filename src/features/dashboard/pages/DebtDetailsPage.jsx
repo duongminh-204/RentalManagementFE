@@ -24,6 +24,8 @@ import { recordDebtPayment, restoreDebtItem } from '../api/dashboardApi';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCount, formatCurrency } from '../utils/dashboardFormat';
 import { parseWalletAccountFromQrPayload } from '../../../utils/qrPayload';
+import { buildPaymentMethodPreviewQrUrl } from '../../../utils/vietqr';
+import { getPaymentMethodWalletAccount, getPaymentMethodIdentifier, isWalletVirtualAccountNumber } from '../../../utils/paymentMethods';
 
 const QR_STORAGE_KEY = 'rentalDebtBankQr';
 const PAYMENT_METHODS_STORAGE_KEY = 'rentalDebtPaymentMethods';
@@ -361,6 +363,10 @@ const parseBankInfoFromOcr = (text = '') => {
     .map(normalizeOcrText)
     .filter(Boolean);
   const accountNumber = normalizedText.match(/\b\d{6,20}\b/)?.[0] || '';
+  const walletAccount =
+    normalizedText.match(/\b(?:99(?:MM|ZP)|PSP)[A-Z0-9]{8,}\b/)?.[0] ||
+    normalizedText.match(/\bPSP\d{10,}\b/)?.[0] ||
+    '';
   const accountName =
     lines.find(
       (line) =>
@@ -377,6 +383,7 @@ const parseBankInfoFromOcr = (text = '') => {
     bankName,
     accountName,
     accountNumber,
+    walletAccountNumber: walletAccount,
   };
 };
 
@@ -439,6 +446,16 @@ const validatePaymentMethod = (method) => {
     errors.phoneNumber = 'Vui lòng nhập số điện thoại';
   } else if (!isValidVietnamPhoneNumber(method.phoneNumber)) {
     errors.phoneNumber = 'Số điện thoại không đúng định dạng';
+  }
+
+  if (method.type === 'momo' || method.type === 'zalopay') {
+    const walletAccount = getPaymentMethodWalletAccount(method);
+    if (!walletAccount && !method.qrImageUrl) {
+      errors.walletAccountNumber =
+        'Cần số ví VietQR (PSP... / 99MM... / 99ZP...) hoặc upload ảnh QR từ app để sinh mã quét được từ app ngân hàng';
+    } else if (method.walletAccountNumber && !isWalletVirtualAccountNumber(method.walletAccountNumber)) {
+      errors.walletAccountNumber = 'Số ví phải bắt đầu bằng PSP, 99MM hoặc 99ZP';
+    }
   }
 
   return errors;
@@ -873,16 +890,22 @@ const DebtDetailsPage = () => {
 
       if (targetMethod.type !== 'bank') {
         const walletAccount = parseWalletAccountFromQrPayload(rawPayload);
+        const needsOcr = !walletAccount;
+        const ocrInfo = needsOcr ? await recognizeQrScreenshotText(file) : {};
+        const mergedWallet =
+          walletAccount ||
+          ocrInfo.walletAccountNumber ||
+          '';
 
         updatePaymentMethod(methodId, {
           qrImageUrl,
-          walletAccountNumber: walletAccount,
-          accountName: parsedInfo.accountName || targetMethod.accountName,
+          walletAccountNumber: mergedWallet,
+          accountName: parsedInfo.accountName || ocrInfo.accountName || targetMethod.accountName,
         });
 
         setQrScanMessage(
-          walletAccount
-            ? `Đã lưu QR và đọc số ví ${walletAccount}. Hóa đơn sẽ sinh mã VietQR quét được từ app ngân hàng.`
+          mergedWallet
+            ? `Đã lưu QR và số ví ${mergedWallet}. Hóa đơn sẽ sinh mã VietQR quét được từ app ngân hàng.`
             : 'Chưa đọc được số ví VietQR (PSP... / 99MM... / 99ZP...). Upload ảnh QR rõ nét từ app MoMo/ZaloPay hoặc nhập số ví thủ công.'
         );
         return;
@@ -928,7 +951,15 @@ const DebtDetailsPage = () => {
       ? activeSelectedBankOption?.name || 'Chọn ngân hàng'
       : providerLabels[activePaymentMethod?.type] || 'Phương thức';
   const activeAccountIdentifier =
-    activePaymentMethod?.type === 'bank' ? activePaymentMethod.accountNumber : activePaymentMethod?.phoneNumber;
+    activePaymentMethod?.type === 'bank'
+      ? activePaymentMethod.accountNumber
+      : getPaymentMethodIdentifier(activePaymentMethod) || activePaymentMethod?.phoneNumber;
+  const activePreviewQrUrl = activePaymentMethod ? buildPaymentMethodPreviewQrUrl(activePaymentMethod) : '';
+  const activeUsesUniversalVietQr =
+    Boolean(activePreviewQrUrl) &&
+    (activePaymentMethod?.type === 'bank'
+      ? Boolean(activePaymentMethod.accountNumber)
+      : Boolean(getPaymentMethodWalletAccount(activePaymentMethod)));
 
   const handleMarkPaid = async (debtMonth, debtItem = null) => {
     const targetKey = debtItem ? `${debtMonth.invoiceId}-${debtItem.itemKey}` : `${debtMonth.invoiceId}-all`;
@@ -1178,7 +1209,9 @@ const DebtDetailsPage = () => {
 
                 {activePaymentMethod.type !== 'bank' ? (
                   <div>
-                    <label className="qr-bank-field block rounded-2xl border border-[#eadff2] bg-white px-4 py-3">
+                    <label className={`qr-bank-field block rounded-2xl border bg-white px-4 py-3 ${
+                      activePaymentMethodErrors.walletAccountNumber ? 'border-accent-pink' : 'border-[#eadff2]'
+                    }`}>
                       <span className="block text-xs font-semibold text-muted/70">
                         Số ví VietQR (PSP... / 99MM... / 99ZP...)
                       </span>
@@ -1192,28 +1225,43 @@ const DebtDetailsPage = () => {
                         placeholder="VD: PSP2616812000000210 — lấy từ STK dưới QR nhận tiền trong app"
                         className="mt-1 w-full bg-transparent text-base font-semibold text-ink-deep outline-none placeholder:text-muted/40"
                       />
+                      <span className="mt-2 block text-xs font-normal text-muted/80">
+                        Bắt buộc để sinh mã QR quét được từ mọi app ngân hàng (VietQR qua BVBank). Số điện thoại chỉ dùng trong app MoMo/ZaloPay.
+                      </span>
+                      {activePaymentMethodErrors.walletAccountNumber ? (
+                        <span className="mt-1 block text-xs font-normal text-accent-pink">
+                          {activePaymentMethodErrors.walletAccountNumber}
+                        </span>
+                      ) : null}
                     </label>
                   </div>
                 ) : null}
               </div>
 
               <div className="rounded-2xl border border-[#eadff2] bg-[#faf7fc] p-4">
-                {activePaymentMethod.qrImageUrl ? (
+                {activePreviewQrUrl || activePaymentMethod.qrImageUrl ? (
                   <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => handleClearQrImage(activePaymentMethod.id)}
-                      className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#eadff2] bg-white/95 text-ink-deep shadow-sm transition hover:bg-[#fff1f6] hover:text-accent-pink"
-                      aria-label="Xóa ảnh QR"
-                      title="Xóa ảnh QR"
-                    >
-                      <X className="h-4 w-4" />
-                    </button>
+                    {activePaymentMethod.qrImageUrl ? (
+                      <button
+                        type="button"
+                        onClick={() => handleClearQrImage(activePaymentMethod.id)}
+                        className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#eadff2] bg-white/95 text-ink-deep shadow-sm transition hover:bg-[#fff1f6] hover:text-accent-pink"
+                        aria-label="Xóa ảnh QR"
+                        title="Xóa ảnh QR"
+                      >
+                        <X className="h-4 w-4" />
+                      </button>
+                    ) : null}
                     <img
-                      src={activePaymentMethod.qrImageUrl}
+                      src={activePreviewQrUrl || activePaymentMethod.qrImageUrl}
                       alt={`QR ${activeMethodTitle}`}
                       className="mx-auto aspect-square w-full rounded-xl bg-white object-contain"
                     />
+                    {activeUsesUniversalVietQr ? (
+                      <p className="mt-2 text-center text-xs font-semibold text-[#2f7d4f]">
+                        VietQR đa năng — quét được từ mọi app ngân hàng, MoMo và ZaloPay
+                      </p>
+                    ) : null}
                   </div>
                 ) : (
                   <label className="flex aspect-square w-full cursor-pointer items-center justify-center rounded-xl border border-dashed border-[#d8c7df] bg-white text-center text-sm font-semibold text-muted transition hover:border-accent-pink hover:bg-[#fff8fb] hover:text-ink-deep">

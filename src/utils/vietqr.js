@@ -1,6 +1,6 @@
 import QRCode from 'qrcode';
 import { QRPay, BanksObject } from 'vietnam-qr-pay';
-import { getBankOption } from './paymentMethods';
+import { getBankOption, getPaymentMethodWalletAccount } from './paymentMethods';
 import { formatMonthYearLabel } from './dateHelpers';
 import {
   isWalletVirtualAccount,
@@ -118,7 +118,20 @@ const buildWalletPaymentQrImageUrl = async (paymentMethod, invoice, walletAccoun
     return '';
   }
 
-  // VietQR EMV qua BVBank (99MM/PSP/99ZP) — app ngân hàng, MoMo và ZaloPay đều quét được
+  // VietQR đa năng qua BVBank — quét được từ mọi app ngân hàng, MoMo và ZaloPay
+  const vietQrImageUrl = buildVietQrImageUrl({
+    bankId: BANVIET_BIN,
+    accountNumber: walletAccount,
+    accountName: paymentMethod.accountName,
+    amount: invoice.totalAmount,
+    addInfo: buildInvoiceTransferContent(invoice),
+    template: 'compact',
+  });
+
+  if (vietQrImageUrl) {
+    return vietQrImageUrl;
+  }
+
   const emvPayload = buildWalletEmvPayload(paymentMethod, invoice, walletAccount);
   return buildQrImageFromData(emvPayload);
 };
@@ -211,4 +224,40 @@ export const getPaymentQrScanHint = (paymentMethod, walletAccount = '') => {
   }
 
   return 'Quét bằng ứng dụng tương ứng để thanh toán.';
+};
+
+/** Xem trước QR trên trang cấu hình — ưu tiên VietQR động thay vì ảnh tĩnh */
+export const buildPaymentMethodPreviewQrUrl = (paymentMethod) => {
+  if (!paymentMethod) {
+    return '';
+  }
+
+  if (paymentMethod.type === 'bank') {
+    const bankOption = getBankOption(paymentMethod.provider || paymentMethod.bankName);
+    if (bankOption && paymentMethod.accountNumber) {
+      const vietQrUrl = buildVietQrImageUrl({
+        bankId: bankOption.logoCode,
+        accountNumber: paymentMethod.accountNumber,
+        accountName: paymentMethod.accountName,
+        template: 'compact',
+      });
+      if (vietQrUrl) {
+        return vietQrUrl;
+      }
+    }
+
+    return paymentMethod.qrImageUrl || '';
+  }
+
+  const walletAccount = getPaymentMethodWalletAccount(paymentMethod);
+  if (walletAccount) {
+    return buildVietQrImageUrl({
+      bankId: BANVIET_BIN,
+      accountNumber: walletAccount,
+      accountName: paymentMethod.accountName,
+      template: 'compact',
+    });
+  }
+
+  return paymentMethod.qrImageUrl || '';
 };

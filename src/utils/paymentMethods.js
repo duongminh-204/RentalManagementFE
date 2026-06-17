@@ -152,6 +152,8 @@ export const getPaymentMethodTitle = (method) => {
 const isWalletVirtualAccount = (value) =>
   /^(?:99(?:MM|ZP)|PSP)[A-Z0-9]{8,}$/i.test(String(value || '').trim());
 
+export const isWalletVirtualAccountNumber = isWalletVirtualAccount;
+
 export const getPaymentMethodWalletAccount = (method) => {
   if (!method) {
     return '';
@@ -193,6 +195,26 @@ export const getPaymentMethodIdentifierLabel = (method) => {
 
   return getPaymentMethodWalletAccount(method) ? 'Số ví VietQR' : 'Số điện thoại';
 };
+
+/** MoMo/ZaloPay cần số ví VietQR (hoặc ảnh QR để hệ thống đọc số ví) mới sinh QR cho app ngân hàng */
+export const canGenerateUniversalWalletQr = (method) => {
+  if (!method || method.enabled === false) {
+    return false;
+  }
+
+  if (method.type === 'bank') {
+    return Boolean(getMatchedBankName(method.provider || method.bankName) && method.accountNumber);
+  }
+
+  if (method.type === 'momo' || method.type === 'zalopay') {
+    return Boolean(getPaymentMethodWalletAccount(method));
+  }
+
+  return false;
+};
+
+export const loadPaymentMethodsForInvoice = () =>
+  loadPaymentMethods().filter(canGenerateUniversalWalletQr);
 
 // Giữ tương thích code cũ chỉ dùng ngân hàng
 export const loadBankPaymentMethods = () =>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useRooms } from '../../rooms/hooks/useRooms';
 import { getStoredUser } from '../../../hooks/useAuth';
@@ -38,15 +38,18 @@ import {
   getPaymentMethodIdentifier,
   getPaymentMethodIdentifierLabel,
   getPaymentMethodTitle,
-  loadPaymentMethods,
+  getPaymentMethodWalletAccount,
+  loadPaymentMethodsForInvoice,
 } from '../../../utils/paymentMethods';
 import {
   buildInvoiceTransferContent,
   buildInvoicePaymentQrImageUrlAsync,
+  buildVietQrImageUrl,
   canAutoFillInvoiceAmount,
   getPaymentQrScanHint,
 } from '../../../utils/vietqr';
 import { resolveWalletAccountFromPaymentMethod } from '../../../utils/qrPayload';
+import { buildInvoiceExportFileName } from '../utils/invoiceHelpers';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -312,7 +315,7 @@ const InvoicesPage = () => {
   }, []);
 
   useEffect(() => {
-    const methods = loadPaymentMethods();
+    const methods = loadPaymentMethodsForInvoice();
     setPaymentMethods(methods);
 
     const defaultMethod = getDefaultPaymentMethod(methods);
@@ -377,8 +380,21 @@ const InvoicesPage = () => {
   const qrAutoFillsAmount = canAutoFillInvoiceAmount(selectedPaymentMethod, invoiceWalletAccount);
   const qrScanHint = getPaymentQrScanHint(selectedPaymentMethod, invoiceWalletAccount);
 
+  const handlePrintInvoice = useCallback(() => {
+    const originalTitle = document.title;
+    document.title = buildInvoiceExportFileName(invoiceResult);
+    document.body.classList.add('printing-invoice');
+    const cleanup = () => {
+      document.body.classList.remove('printing-invoice');
+      document.title = originalTitle;
+      window.removeEventListener('afterprint', cleanup);
+    };
+    window.addEventListener('afterprint', cleanup);
+    requestAnimationFrame(() => window.print());
+  }, [invoiceResult]);
+
   return (
-    <div className="page-content page-content--wide">
+    <div className="page-content page-content--wide invoice-page-content">
       {/* Title Header Section with Sentri Design styling */}
       <div className="mb-8 overflow-hidden rounded-[2rem] border border-hairline-cloud bg-white p-6 shadow-sm">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -900,26 +916,26 @@ const InvoicesPage = () => {
       {/* Interactive Beautiful Invoice Modal */}
       <AnimatePresence>
         {invoiceResult && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-deep/60 backdrop-blur-sm">
+          <div className="invoice-print-overlay fixed inset-0 z-50 flex items-center justify-center p-4 bg-ink-deep/60 backdrop-blur-sm">
             {/* Click outside to close */}
-            <div className="absolute inset-0" onClick={() => setInvoiceResult(null)} />
+            <div className="invoice-print-backdrop absolute inset-0" onClick={() => setInvoiceResult(null)} />
             
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative z-10 w-full max-w-3xl overflow-hidden rounded-[2.5rem] bg-white shadow-2xl border border-hairline-cloud flex flex-col md:flex-row max-h-[90svh]"
+              className="invoice-print-receipt relative z-10 w-full max-w-3xl overflow-hidden rounded-[2.5rem] bg-white shadow-2xl border border-hairline-cloud flex flex-col md:flex-row max-h-[90svh]"
             >
               {/* Left Column: Invoice Details */}
-              <div className="flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
-                <div className="flex items-center justify-between">
+              <div className="invoice-print-body flex-1 p-6 md:p-8 overflow-y-auto space-y-6">
+                <div className="invoice-print-header flex items-center justify-between">
                   <div className="space-y-1">
                     <span className="eyebrow">BIÊN LAI ĐIỆN TỬ</span>
                     <h3 className="text-xl font-bold text-ink-deep font-display">Chi Tiết Hóa Đơn #{invoiceResult.invoiceId}</h3>
                   </div>
                   <button
                     onClick={() => setInvoiceResult(null)}
-                    className="rounded-full bg-surface-press p-2 hover:bg-surface-press-strong transition md:hidden"
+                    className="invoice-print-close rounded-full bg-surface-press p-2 hover:bg-surface-press-strong transition md:hidden"
                   >
                     <X className="w-5 h-5 text-ink-deep" />
                   </button>
@@ -981,7 +997,7 @@ const InvoicesPage = () => {
                 )}
 
                 {/* Final calculated total */}
-                <div className="bg-surface-light rounded-2xl p-4 border border-hairline-cloud flex justify-between items-center shadow-sm">
+                <div className="invoice-print-total bg-surface-light rounded-2xl p-4 border border-hairline-cloud flex justify-between items-center shadow-sm">
                   <span className="text-sm font-bold text-ink-deep">Tổng tiền hóa đơn:</span>
                   <span className="text-xl font-bold text-accent-violet-deep font-display">
                     {formatCurrency(invoiceResult.totalAmount)}
@@ -989,9 +1005,9 @@ const InvoicesPage = () => {
                 </div>
 
                 {/* Footer utility buttons */}
-                <div className="flex gap-3 justify-end pt-2 border-t border-hairline-cloud">
+                <div className="invoice-print-actions flex gap-3 justify-end pt-2 border-t border-hairline-cloud">
                   <button
-                    onClick={() => window.print()}
+                    onClick={handlePrintInvoice}
                     className="btn-inverted !py-2 !px-4 text-xs sm:text-sm inline-flex items-center gap-1.5"
                   >
                     <Printer className="w-4 h-4" /> In biên nhận
@@ -1006,11 +1022,11 @@ const InvoicesPage = () => {
               </div>
 
               {/* Right Column: Scan Quick Transfer Code */}
-              <div className="w-full md:w-[280px] bg-surface-night p-6 md:p-8 text-center flex flex-col justify-center items-center border-t md:border-t-0 md:border-l border-hairline-violet text-on-primary">
+              <div className="invoice-print-qr-panel w-full md:w-[280px] bg-surface-night p-6 md:p-8 text-center flex flex-col justify-center items-center border-t md:border-t-0 md:border-l border-hairline-violet text-on-primary">
                 {/* Desktop Absolute Close X icon */}
                 <button
                   onClick={() => setInvoiceResult(null)}
-                  className="absolute top-4 right-4 rounded-full bg-hairline-violet/40 p-2 hover:bg-hairline-violet/70 transition hidden md:block text-on-primary"
+                  className="invoice-print-close absolute top-4 right-4 rounded-full bg-hairline-violet/40 p-2 hover:bg-hairline-violet/70 transition hidden md:block text-on-primary"
                 >
                   <X className="w-5 h-5" />
                 </button>
@@ -1024,7 +1040,7 @@ const InvoicesPage = () => {
                 </span>
 
                 {paymentMethods.length > 1 ? (
-                  <div className="mb-4 w-full text-left">
+                  <div className="invoice-print-select mb-4 w-full text-left">
                     <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-on-dark-muted">
                       Phương thức thanh toán
                     </label>
@@ -1048,8 +1064,8 @@ const InvoicesPage = () => {
                     <span>Đang tạo QR...</span>
                   </div>
                 ) : invoiceQrImageUrl ? (
-                  <div className="relative group">
-                    <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-accent-lime to-accent-pink opacity-50 blur group-hover:opacity-75 transition duration-500" />
+                  <div className="invoice-print-qr-image relative group">
+                    <div className="invoice-print-qr-glow absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-accent-lime to-accent-pink opacity-50 blur group-hover:opacity-75 transition duration-500" />
                     <div className="relative rounded-3xl bg-white p-3 shadow-xl">
                       <img
                         src={invoiceQrImageUrl}
@@ -1077,7 +1093,7 @@ const InvoicesPage = () => {
                 )}
 
                 {selectedPaymentMethod && invoiceQrImageUrl && !invoiceQrLoading ? (
-                  <div className="mt-4 w-full rounded-2xl border border-hairline-violet/60 bg-hairline-violet/10 p-3 text-left text-[11px] text-on-dark-muted space-y-1">
+                  <div className="invoice-print-payment-info mt-4 w-full rounded-2xl border border-hairline-violet/60 bg-hairline-violet/10 p-3 text-left text-[11px] text-on-dark-muted space-y-1">
                     <p>
                       <span className="text-on-dark-faint">Phương thức:</span>{' '}
                       <span className="font-semibold text-on-primary">
