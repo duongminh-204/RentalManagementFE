@@ -211,7 +211,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2 2xl:grid-cols-3">
               <RevenueChart monthlyRevenue={monthlyRevenue} totalDebt={totalDebt} />
               <DebtOverview
                 unpaidTenantsCount={unpaidTenantsCount}
