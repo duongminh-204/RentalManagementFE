@@ -1,3 +1,4 @@
+import QRCode from 'qrcode';
 import { QRPay, BanksObject } from 'vietnam-qr-pay';
 import { getBankOption } from './paymentMethods';
 import { formatMonthYearLabel } from './dateHelpers';
@@ -74,12 +75,20 @@ export const buildVietQrImageUrl = ({
   return query ? `${baseUrl}?${query}` : baseUrl;
 };
 
-export const buildQrImageFromData = (data, size = 240) => {
+export const buildQrImageFromData = async (data, size = 240) => {
   if (!data) {
     return '';
   }
 
-  return `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&margin=12&data=${encodeURIComponent(data)}`;
+  try {
+    return await QRCode.toDataURL(data, {
+      width: size,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+    });
+  } catch {
+    return '';
+  }
 };
 
 const buildWalletEmvPayload = (paymentMethod, invoice, walletAccount) => {
@@ -104,7 +113,7 @@ const buildWalletEmvPayload = (paymentMethod, invoice, walletAccount) => {
   return qr.build();
 };
 
-const buildWalletPaymentQrImageUrl = (paymentMethod, invoice, walletAccount) => {
+const buildWalletPaymentQrImageUrl = async (paymentMethod, invoice, walletAccount) => {
   if (!walletAccount) {
     return '';
   }
@@ -134,7 +143,7 @@ export const buildInvoiceVietQrImageUrl = (paymentMethod, invoice = {}) => {
   });
 };
 
-export const buildInvoicePaymentQrImageUrl = (paymentMethod, invoice = {}, walletAccount = '') => {
+export const buildInvoicePaymentQrImageUrlAsync = async (paymentMethod, invoice = {}, walletAccount = '') => {
   if (!paymentMethod) {
     return '';
   }
@@ -146,26 +155,20 @@ export const buildInvoicePaymentQrImageUrl = (paymentMethod, invoice = {}, walle
   if (paymentMethod.type === 'momo' || paymentMethod.type === 'zalopay') {
     const resolvedWalletAccount =
       walletAccount ||
-      String(paymentMethod.walletAccountNumber || '').trim() ||
-      (isWalletVirtualAccount(paymentMethod.accountNumber) ? paymentMethod.accountNumber : '');
+      (await resolveWalletAccountFromPaymentMethod(paymentMethod));
 
     if (!resolvedWalletAccount) {
       return '';
     }
 
-    return buildWalletPaymentQrImageUrl(paymentMethod, invoice, resolvedWalletAccount.toUpperCase());
+    return buildWalletPaymentQrImageUrl(
+      paymentMethod,
+      invoice,
+      resolvedWalletAccount.toUpperCase()
+    );
   }
 
   return '';
-};
-
-export const buildInvoicePaymentQrImageUrlAsync = async (paymentMethod, invoice = {}) => {
-  if (!paymentMethod) {
-    return '';
-  }
-
-  const walletAccount = await resolveWalletAccountFromPaymentMethod(paymentMethod);
-  return buildInvoicePaymentQrImageUrl(paymentMethod, invoice, walletAccount);
 };
 
 export const canAutoFillInvoiceAmount = (paymentMethod, walletAccount = '') => {

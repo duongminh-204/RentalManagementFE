@@ -149,6 +149,27 @@ export const getPaymentMethodTitle = (method) => {
   return PAYMENT_PROVIDER_LABELS[method.type] || method.provider || 'Thanh toán';
 };
 
+const isWalletVirtualAccount = (value) =>
+  /^(?:99(?:MM|ZP)|PSP)[A-Z0-9]{8,}$/i.test(String(value || '').trim());
+
+export const getPaymentMethodWalletAccount = (method) => {
+  if (!method) {
+    return '';
+  }
+
+  const walletAccount = String(method.walletAccountNumber || '').trim();
+  if (isWalletVirtualAccount(walletAccount)) {
+    return walletAccount.toUpperCase();
+  }
+
+  const directAccount = String(method.accountNumber || '').trim();
+  if (isWalletVirtualAccount(directAccount)) {
+    return directAccount.toUpperCase();
+  }
+
+  return '';
+};
+
 export const getPaymentMethodIdentifier = (method) => {
   if (!method) {
     return '';
@@ -158,7 +179,7 @@ export const getPaymentMethodIdentifier = (method) => {
     return method.accountNumber || '';
   }
 
-  return method.phoneNumber || method.accountNumber || '';
+  return getPaymentMethodWalletAccount(method) || method.phoneNumber || method.accountNumber || '';
 };
 
 export const getPaymentMethodIdentifierLabel = (method) => {
@@ -166,7 +187,11 @@ export const getPaymentMethodIdentifierLabel = (method) => {
     return '';
   }
 
-  return method.type === 'bank' ? 'Số tài khoản' : 'Số điện thoại / ví';
+  if (method.type === 'bank') {
+    return 'Số tài khoản';
+  }
+
+  return getPaymentMethodWalletAccount(method) ? 'Số ví VietQR' : 'Số điện thoại';
 };
 
 // Giữ tương thích code cũ chỉ dùng ngân hàng

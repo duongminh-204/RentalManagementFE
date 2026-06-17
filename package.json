@@ -20,6 +20,7 @@
     "konva": "^10.3.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.14.0",
+    "qrcode": "^1.5.4",
     "react": "^19.2.6",
     "react-bootstrap-icons": "^1.11.6",
     "react-dom": "^19.2.6",

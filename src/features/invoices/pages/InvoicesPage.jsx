@@ -1088,6 +1088,12 @@ const InvoicesPage = () => {
                       <span className="text-on-dark-faint">{selectedPaymentIdentifierLabel}:</span>{' '}
                       <span className="font-semibold text-on-primary">{selectedPaymentIdentifier}</span>
                     </p>
+                    {selectedPaymentMethod?.type !== 'bank' && invoiceWalletAccount && selectedPaymentMethod?.phoneNumber ? (
+                      <p>
+                        <span className="text-on-dark-faint">Số điện thoại MoMo:</span>{' '}
+                        <span className="font-semibold text-on-primary">{selectedPaymentMethod.phoneNumber}</span>
+                      </p>
+                    ) : null}
                     {selectedPaymentMethod.accountName ? (
                       <p>
                         <span className="text-on-dark-faint">Chủ tài khoản:</span>{' '}
