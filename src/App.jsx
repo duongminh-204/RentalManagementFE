@@ -4,13 +4,13 @@ import { Dashboard } from './features/dashboard';
 import RoomsPage from "./features/rooms/pages/RoomsPage";
 import { BuildingPage, BuildingCreate, BuildingEdit } from "./features/buildings";
 import TenantsPage from "./features/tenants/pages/TenantsPage";
-import ContractsPage from "./features/contracts/pages/ContractsPage";
 import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
 import DevicesPage from "./features/devices/pages/DevicesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
 
 import { PrivateRoute } from './routes/PrivateRoute';
+import { contractRoutes } from './routes/index.jsx';
 
 function App() {
   return (
@@ -77,14 +77,7 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route
-          path="/contracts"
-          element={
-            <PrivateRoute>
-              <ContractsPage />
-            </PrivateRoute>
-          }
-        />
+        {contractRoutes}
         <Route
           path="/vehicles"
           element={
