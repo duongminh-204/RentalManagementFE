@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useRooms } from '../../rooms/hooks/useRooms';
 import { getStoredUser } from '../../../hooks/useAuth';
 import { formatCurrency } from '../../rooms/utils/roomHelpers';
@@ -20,7 +21,6 @@ import {
   Eye, 
   X,
   Printer,
-  ChevronRight,
   TrendingUp,
   Percent,
   MessageSquare,
@@ -33,6 +33,20 @@ import CurrencyInput from '../../../components/common/CurrencyInput';
 import MonthYearInput from '../../../components/common/MonthYearInput';
 import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 import { formatMonthYearLabel } from '../../../utils/dateHelpers';
+import {
+  getDefaultPaymentMethod,
+  getPaymentMethodIdentifier,
+  getPaymentMethodIdentifierLabel,
+  getPaymentMethodTitle,
+  loadPaymentMethods,
+} from '../../../utils/paymentMethods';
+import {
+  buildInvoiceTransferContent,
+  buildInvoicePaymentQrImageUrlAsync,
+  canAutoFillInvoiceAmount,
+  getPaymentQrScanHint,
+} from '../../../utils/vietqr';
+import { resolveWalletAccountFromPaymentMethod } from '../../../utils/qrPayload';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -86,6 +100,11 @@ const InvoicesPage = () => {
     monthTo: '',
     status: ''
   });
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState('');
+  const [invoiceQrImageUrl, setInvoiceQrImageUrl] = useState('');
+  const [invoiceWalletAccount, setInvoiceWalletAccount] = useState('');
+  const [invoiceQrLoading, setInvoiceQrLoading] = useState(false);
 
   const selectedRoom = useMemo(
     () => rooms.find((room) => String(room.id) === String(formData.roomId)),
@@ -291,6 +310,72 @@ const InvoicesPage = () => {
   useEffect(() => {
     loadInvoiceHistory();
   }, []);
+
+  useEffect(() => {
+    const methods = loadPaymentMethods();
+    setPaymentMethods(methods);
+
+    const defaultMethod = getDefaultPaymentMethod(methods);
+    setSelectedPaymentMethodId(defaultMethod?.id || '');
+  }, [invoiceResult]);
+
+  const selectedPaymentMethod = useMemo(
+    () =>
+      paymentMethods.find((method) => method.id === selectedPaymentMethodId) ||
+      getDefaultPaymentMethod(paymentMethods),
+    [paymentMethods, selectedPaymentMethodId]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const buildQr = async () => {
+      if (!invoiceResult || !selectedPaymentMethod) {
+        setInvoiceQrImageUrl('');
+        setInvoiceWalletAccount('');
+        setInvoiceQrLoading(false);
+        return;
+      }
+
+      setInvoiceQrLoading(true);
+
+      try {
+        const walletAccount = await resolveWalletAccountFromPaymentMethod(selectedPaymentMethod);
+        const qrImageUrl = await buildInvoicePaymentQrImageUrlAsync(selectedPaymentMethod, invoiceResult);
+
+        if (!cancelled) {
+          setInvoiceWalletAccount(walletAccount);
+          setInvoiceQrImageUrl(qrImageUrl);
+        }
+      } catch {
+        if (!cancelled) {
+          setInvoiceWalletAccount('');
+          setInvoiceQrImageUrl('');
+        }
+      } finally {
+        if (!cancelled) {
+          setInvoiceQrLoading(false);
+        }
+      }
+    };
+
+    buildQr();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [invoiceResult, selectedPaymentMethod]);
+
+  const invoiceTransferContent = useMemo(
+    () => (invoiceResult ? buildInvoiceTransferContent(invoiceResult) : ''),
+    [invoiceResult]
+  );
+
+  const selectedPaymentMethodTitle = getPaymentMethodTitle(selectedPaymentMethod);
+  const selectedPaymentIdentifier = getPaymentMethodIdentifier(selectedPaymentMethod);
+  const selectedPaymentIdentifierLabel = getPaymentMethodIdentifierLabel(selectedPaymentMethod);
+  const qrAutoFillsAmount = canAutoFillInvoiceAmount(selectedPaymentMethod, invoiceWalletAccount);
+  const qrScanHint = getPaymentQrScanHint(selectedPaymentMethod, invoiceWalletAccount);
 
   return (
     <div className="page-content page-content--wide">
@@ -930,41 +1015,101 @@ const InvoicesPage = () => {
                   <X className="w-5 h-5" />
                 </button>
 
-                <span className="text-[10px] font-mono tracking-widest text-accent-lime uppercase mb-4 block">VIETQR TRANSFER</span>
+                <span className="text-[10px] font-mono tracking-widest text-accent-lime uppercase mb-4 block">
+                  {selectedPaymentMethod?.type === 'momo'
+                    ? 'MOMO TRANSFER'
+                    : selectedPaymentMethod?.type === 'zalopay'
+                      ? 'ZALOPAY TRANSFER'
+                      : 'VIETQR TRANSFER'}
+                </span>
+
+                {paymentMethods.length > 1 ? (
+                  <div className="mb-4 w-full text-left">
+                    <label className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-on-dark-muted">
+                      Phương thức thanh toán
+                    </label>
+                    <select
+                      value={selectedPaymentMethod?.id || ''}
+                      onChange={(event) => setSelectedPaymentMethodId(event.target.value)}
+                      className="w-full rounded-xl border border-hairline-violet bg-surface-night px-3 py-2 text-xs text-on-primary"
+                    >
+                      {paymentMethods.map((method) => (
+                        <option key={method.id} value={method.id}>
+                          {getPaymentMethodTitle(method)} · {getPaymentMethodIdentifier(method)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
                 
-                {invoiceResult.qrCodeUrl ? (
+                {invoiceQrLoading ? (
+                  <div className="rounded-3xl bg-hairline-violet/20 p-8 text-sm text-on-dark-muted border border-hairline-violet border-dashed w-[190px] h-[190px] flex items-center justify-center gap-2">
+                    <RefreshCw className="w-5 h-5 animate-spin text-accent-lime" />
+                    <span>Đang tạo QR...</span>
+                  </div>
+                ) : invoiceQrImageUrl ? (
                   <div className="relative group">
                     <div className="absolute -inset-0.5 rounded-3xl bg-gradient-to-r from-accent-lime to-accent-pink opacity-50 blur group-hover:opacity-75 transition duration-500" />
                     <div className="relative rounded-3xl bg-white p-3 shadow-xl">
                       <img
-                        src={`https://api.qrserver.com/v1/create-qr-code?size=200x200&data=${encodeURIComponent(
-                          invoiceResult.qrCodeUrl
-                        )}`}
-                        alt="QR code thanh toán"
-                        className="w-[170px] h-[170px] mx-auto rounded-xl"
+                        src={invoiceQrImageUrl}
+                        alt={`QR thanh toán ${selectedPaymentMethodTitle}`}
+                        className="w-[170px] h-[170px] mx-auto rounded-xl object-contain"
                       />
                     </div>
                   </div>
                 ) : (
-                  <div className="rounded-3xl bg-hairline-violet/20 p-8 text-sm text-on-dark-muted border border-hairline-violet border-dashed w-[190px] h-[190px] flex items-center justify-center">
-                    Chưa tạo mã thanh toán QR
+                  <div className="rounded-3xl bg-hairline-violet/20 p-6 text-sm text-on-dark-muted border border-hairline-violet border-dashed w-full max-w-[220px] flex flex-col items-center justify-center gap-3">
+                    <p className="text-center leading-relaxed">
+                      {paymentMethods.length
+                        ? selectedPaymentMethod?.type === 'momo' || selectedPaymentMethod?.type === 'zalopay'
+                          ? 'Chưa có số ví VietQR (PSP... / 99MM... / 99ZP...). Vào Công nợ, upload QR từ app MoMo/ZaloPay hoặc nhập số ví rồi bấm Lưu.'
+                          : 'Không thể tạo mã QR với phương thức thanh toán đã chọn.'
+                        : 'Chưa cấu hình phương thức thanh toán để sinh mã QR.'}
+                    </p>
+                    <Link
+                      to="/debts"
+                      className="text-xs font-semibold text-accent-lime hover:underline"
+                    >
+                      Cấu hình thanh toán
+                    </Link>
                   </div>
                 )}
 
-                <p className="text-[11px] text-on-dark-muted mt-5 max-w-[200px] leading-relaxed">
-                  Dùng ứng dụng ngân hàng di động hoặc ví Momo/ZaloPay để quét mã QR chuyển khoản nhanh gọn.
-                </p>
+                {selectedPaymentMethod && invoiceQrImageUrl && !invoiceQrLoading ? (
+                  <div className="mt-4 w-full rounded-2xl border border-hairline-violet/60 bg-hairline-violet/10 p-3 text-left text-[11px] text-on-dark-muted space-y-1">
+                    <p>
+                      <span className="text-on-dark-faint">Phương thức:</span>{' '}
+                      <span className="font-semibold text-on-primary">
+                        {selectedPaymentMethodTitle}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="text-on-dark-faint">{selectedPaymentIdentifierLabel}:</span>{' '}
+                      <span className="font-semibold text-on-primary">{selectedPaymentIdentifier}</span>
+                    </p>
+                    {selectedPaymentMethod.accountName ? (
+                      <p>
+                        <span className="text-on-dark-faint">Chủ tài khoản:</span>{' '}
+                        <span className="font-semibold text-on-primary">{selectedPaymentMethod.accountName}</span>
+                      </p>
+                    ) : null}
+                    <p>
+                      <span className="text-on-dark-faint">Số tiền:</span>{' '}
+                      <span className="font-semibold text-accent-lime">{formatCurrency(invoiceResult.totalAmount)}</span>
+                    </p>
+                    {qrAutoFillsAmount ? (
+                      <p>
+                        <span className="text-on-dark-faint">Nội dung CK:</span>{' '}
+                        <span className="font-semibold text-on-primary">{invoiceTransferContent}</span>
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
 
-                {invoiceResult.qrCodeUrl && (
-                  <a
-                    href={invoiceResult.qrCodeUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="btn-inverted !bg-accent-lime !text-ink-deep !border-none w-full mt-6 py-2.5 inline-flex items-center justify-center gap-1.5 hover:!scale-105 transition font-bold"
-                  >
-                    Link chuyển khoản <ChevronRight className="w-4 h-4" />
-                  </a>
-                )}
+                <p className="text-[11px] text-on-dark-muted mt-5 max-w-[220px] leading-relaxed">
+                  {qrScanHint}
+                </p>
               </div>
             </motion.div>
           </div>

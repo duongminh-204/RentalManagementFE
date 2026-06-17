@@ -23,6 +23,7 @@ import { Link } from 'react-router-dom';
 import { recordDebtPayment, restoreDebtItem } from '../api/dashboardApi';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCount, formatCurrency } from '../utils/dashboardFormat';
+import { parseWalletAccountFromQrPayload } from '../../../utils/qrPayload';
 
 const QR_STORAGE_KEY = 'rentalDebtBankQr';
 const PAYMENT_METHODS_STORAGE_KEY = 'rentalDebtPaymentMethods';
@@ -36,6 +37,7 @@ const createPaymentMethod = (overrides = {}) => {
     accountName: '',
     accountNumber: '',
     phoneNumber: '',
+    walletAccountNumber: '',
     qrImageUrl: '',
     enabled: true,
     isDefault: false,
@@ -465,6 +467,7 @@ const normalizePaymentMethod = (method, index = 0) => {
     accountName: String(method?.accountName || '').trim(),
     accountNumber: String(method?.accountNumber || '').trim(),
     phoneNumber: String(method?.phoneNumber || '').trim(),
+    walletAccountNumber: String(method?.walletAccountNumber || '').trim(),
     qrImageUrl: method?.qrImageUrl || '',
     enabled: method?.enabled !== false,
     isDefault: Boolean(method?.isDefault),
@@ -865,15 +868,26 @@ const DebtDetailsPage = () => {
       setQrScanMessage(targetMethod.type === 'bank' ? 'Đang đọc QR ngân hàng...' : 'Đang lưu ảnh QR...');
 
       const qrImageUrl = await readFileAsDataUrl(file);
-      updatePaymentMethod(methodId, { qrImageUrl });
+      const rawPayload = await decodeQrImage(file);
+      const parsedInfo = parseVietQrPayload(rawPayload);
 
       if (targetMethod.type !== 'bank') {
-        setQrScanMessage('Đã lưu ảnh QR cho phương thức thanh toán này.');
+        const walletAccount = parseWalletAccountFromQrPayload(rawPayload);
+
+        updatePaymentMethod(methodId, {
+          qrImageUrl,
+          walletAccountNumber: walletAccount,
+          accountName: parsedInfo.accountName || targetMethod.accountName,
+        });
+
+        setQrScanMessage(
+          walletAccount
+            ? `Đã lưu QR và đọc số ví ${walletAccount}. Hóa đơn sẽ sinh mã VietQR quét được từ app ngân hàng.`
+            : 'Chưa đọc được số ví VietQR (PSP... / 99MM... / 99ZP...). Upload ảnh QR rõ nét từ app MoMo/ZaloPay hoặc nhập số ví thủ công.'
+        );
         return;
       }
 
-      const rawPayload = await decodeQrImage(file);
-      const parsedInfo = parseVietQrPayload(rawPayload);
       const needsOcr = !parsedInfo.bankName || !parsedInfo.accountName || !parsedInfo.accountNumber;
       const ocrInfo = needsOcr ? await recognizeQrScreenshotText(file) : {};
       const mergedInfo = {
@@ -1161,6 +1175,26 @@ const DebtDetailsPage = () => {
                     ) : null}
                   </label>
                 </div>
+
+                {activePaymentMethod.type !== 'bank' ? (
+                  <div>
+                    <label className="qr-bank-field block rounded-2xl border border-[#eadff2] bg-white px-4 py-3">
+                      <span className="block text-xs font-semibold text-muted/70">
+                        Số ví VietQR (PSP... / 99MM... / 99ZP...)
+                      </span>
+                      <input
+                        value={activePaymentMethod.walletAccountNumber || ''}
+                        onChange={(event) =>
+                          updatePaymentMethod(activePaymentMethod.id, {
+                            walletAccountNumber: event.target.value.toUpperCase(),
+                          })
+                        }
+                        placeholder="VD: PSP2616812000000210 — lấy từ STK dưới QR nhận tiền trong app"
+                        className="mt-1 w-full bg-transparent text-base font-semibold text-ink-deep outline-none placeholder:text-muted/40"
+                      />
+                    </label>
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-2xl border border-[#eadff2] bg-[#faf7fc] p-4">
