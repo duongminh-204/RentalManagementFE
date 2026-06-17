@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { User, Phone, Home } from 'lucide-react';
+import { User, Phone, Home, Building2 } from 'lucide-react';
 import ImageModal from '../../../components/common/ImageModal';
 import {
   formatCCCD,
@@ -56,6 +56,12 @@ const TenantListItem = ({ tenant, selected, onClick }) => {
               <p className={`mt-1 flex items-center gap-1.5 text-xs ${selected ? 'text-on-dark-muted' : 'text-muted'}`}>
                 <Phone size={12} />
                 {tenant.phoneNumber}
+              </p>
+            )}
+            {tenant.buildingName && (
+              <p className={`mt-0.5 flex items-center gap-1.5 text-xs ${selected ? 'text-on-dark-muted' : 'text-muted'}`}>
+                <Building2 size={12} />
+                <span className="truncate">{tenant.buildingName}</span>
               </p>
             )}
             {tenant.roomNumber && (

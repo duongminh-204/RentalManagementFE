@@ -3,11 +3,15 @@ import { LoginPage, RegisterPage } from './features/auth';
 import { Dashboard } from './features/dashboard';
 import DebtDetailsPage from './features/dashboard/pages/DebtDetailsPage';
 import RoomsPage from "./features/rooms/pages/RoomsPage";
+import { BuildingPage, BuildingCreate, BuildingEdit } from "./features/buildings";
 import TenantsPage from "./features/tenants/pages/TenantsPage";
-import ContractsPage from "./features/contracts/pages/ContractsPage";
 import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
+import DevicesPage from "./features/devices/pages/DevicesPage";
+import InvoicesPage from "./features/invoices/pages/InvoicesPage";
+import { ProfilePage } from './features/profile';
 
 import { PrivateRoute } from './routes/PrivateRoute';
+import { contractRoutes } from './routes/index.jsx';
 
 function App() {
   return (
@@ -43,6 +47,38 @@ function App() {
           }
         />
         <Route
+          path="/buildings"
+          element={
+            <PrivateRoute>
+              <BuildingPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/buildings/create"
+          element={
+            <PrivateRoute>
+              <BuildingCreate />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/buildings/:id/edit"
+          element={
+            <PrivateRoute>
+              <BuildingEdit />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/invoices"
+          element={
+            <PrivateRoute>
+              <InvoicesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
           path="/tenants"
           element={
             <PrivateRoute>
@@ -50,19 +86,29 @@ function App() {
             </PrivateRoute>
           }
         />
-        <Route
-          path="/contracts"
-          element={
-            <PrivateRoute>
-              <ContractsPage />
-            </PrivateRoute>
-          }
-        />
+        {contractRoutes}
         <Route
           path="/vehicles"
           element={
             <PrivateRoute>
               <VehiclesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/devices"
+          element={
+            <PrivateRoute>
+              <DevicesPage />
+            </PrivateRoute>
+          }
+        />
+        <Route path="/services" element={<Navigate to="/devices" replace />} />
+        <Route
+          path="/profile"
+          element={
+            <PrivateRoute>
+              <ProfilePage />
             </PrivateRoute>
           }
         />

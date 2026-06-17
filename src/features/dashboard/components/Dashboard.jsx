@@ -134,14 +134,14 @@ const Dashboard = () => {
           className="dashboard-section-card"
         >
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-            <div>
+            <div className="min-w-0">
               <span className="dashboard-hero-badge">Tổng quan {currentMonthLabel}</span>
               <h1 className="mt-4 text-3xl font-bold leading-tight text-ink-deep sm:text-4xl">
-                Dashboard nhìn nhanh tình hình nhà trọ.
+                Dashboard nhà trọ
               </h1>
             </div>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="dashboard-action-group">
               <button
                 type="button"
                 onClick={handleExportExcel}
@@ -211,7 +211,7 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
-            <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-3">
+            <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2 2xl:grid-cols-3">
               <RevenueChart monthlyRevenue={monthlyRevenue} totalDebt={totalDebt} />
               <DebtOverview
                 unpaidTenantsCount={unpaidTenantsCount}

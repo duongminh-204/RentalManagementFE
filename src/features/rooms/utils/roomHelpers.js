@@ -75,7 +75,8 @@ export const normalizeRoomServiceFromApi = (item) => {
     serviceName: item.serviceName ?? item.name ?? '',
     unitPrice: Number(item.unitPrice) || 0,
     unit: item.unit ?? null,
-    quantity: Number(item.quantity) || 1,
+    billingCycle: item.billingCycle ?? 'Monthly',
+    icon: item.icon ?? null,
   };
 };
 
@@ -84,10 +85,12 @@ export const normalizeDeviceFromApi = (device) => {
   return {
     deviceId: device.deviceId ?? device.id,
     roomId: device.roomId,
+    deviceCatalogId: device.deviceCatalogId ?? null,
     deviceName: device.deviceName ?? device.name ?? '',
     quantity: Number(device.quantity) || 1,
     status: device.status ?? 'Working',
-    note: device.note ?? null,
+    imageUrl: resolveMediaUrl(device.imageUrl ?? device.ImageUrl ?? null),
+    icon: device.icon ?? null,
   };
 };
 
@@ -289,4 +292,32 @@ export const formatAdditionalServices = (services) => {
     return services.join(', ');
   }
   return services || '';
+};
+
+/** Nhóm phòng theo tòa nhà — dùng cho dropdown chọn phòng */
+export const groupRoomsByBuilding = (rooms = [], buildings = []) => {
+  const buildingMap = new Map(
+    buildings.map((b) => [String(b.buildingId ?? b.id), b])
+  );
+  const groups = new Map();
+
+  rooms.forEach((room) => {
+    const bid = room.buildingId != null ? String(room.buildingId) : '__none__';
+    if (!groups.has(bid)) {
+      const building = buildingMap.get(bid);
+      groups.set(bid, {
+        buildingId: room.buildingId ?? null,
+        buildingName:
+          building?.buildingName ??
+          building?.name ??
+          (bid === '__none__' ? 'Chưa gán tòa' : `Tòa #${bid}`),
+        rooms: [],
+      });
+    }
+    groups.get(bid).rooms.push(room);
+  });
+
+  return [...groups.values()].sort((a, b) =>
+    (a.buildingName || '').localeCompare(b.buildingName || '', 'vi')
+  );
 };

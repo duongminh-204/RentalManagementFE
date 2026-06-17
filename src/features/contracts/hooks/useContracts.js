@@ -2,24 +2,28 @@ import { useState, useCallback, useEffect } from 'react';
 import {
   getContracts,
   getContractById,
+  getContractDetail,
   createContract,
   updateContract,
   deleteContract,
   uploadContractFile,
   getExpiringContracts,
+  getContractReminders,
   renewContract,
   terminateContract,
-} from '../api/contractsApi';
-import { normalizeContractsList } from '../utils/contractHelpers';
+  updateContractDeposit,
+  generateContractFromTemplate,
+} from '../api/contractService';
+import { normalizeContractFromApi, normalizeContractsList } from '../utils/contractHelpers';
 import { openOrDownloadContractFile } from '../utils/contractFileHelpers';
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState([]);
   const [expiringContracts, setExpiringContracts] = useState([]);
+  const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Fetch all contracts
   const fetchContracts = useCallback(async (params = {}) => {
     try {
       setLoading(true);
@@ -28,157 +32,125 @@ export const useContracts = () => {
       setContracts(normalizeContractsList(data));
     } catch (err) {
       setError(err.response?.data?.message || 'Lỗi khi tải dữ liệu hợp đồng');
-      console.error('Error fetching contracts:', err);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Get single contract
   const getContract = useCallback(async (id) => {
-    try {
-      setError(null);
-      const data = await getContractById(id);
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi tải chi tiết hợp đồng');
-      throw err;
-    }
+    const data = await getContractById(id);
+    return normalizeContractFromApi(data);
   }, []);
 
-  // Add new contract
+  const getDetail = useCallback(async (id) => {
+    const data = await getContractDetail(id);
+    return normalizeContractFromApi(data);
+  }, []);
+
   const addContract = useCallback(async (contractData) => {
-    try {
-      setError(null);
-      const data = await createContract(contractData);
-      setContracts((prevContracts) => [...prevContracts, data]);
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi thêm hợp đồng');
-      throw err;
-    }
+    const data = await createContract(contractData);
+    const normalized = normalizeContractFromApi(data);
+    setContracts((prev) => [...prev, normalized]);
+    return normalized;
   }, []);
 
-  // Edit contract
   const editContract = useCallback(async (id, contractData) => {
-    try {
-      setError(null);
-      const data = await updateContract(id, contractData);
-      setContracts((prevContracts) =>
-        prevContracts.map((c) => (c.id === id ? data : c))
-      );
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi cập nhật hợp đồng');
-      throw err;
-    }
+    const data = await updateContract(id, contractData);
+    const normalized = normalizeContractFromApi(data);
+    setContracts((prev) => prev.map((c) => (c.id === id ? normalized : c)));
+    return normalized;
   }, []);
 
-  // Remove contract
   const removeContract = useCallback(async (id) => {
-    try {
-      setError(null);
-      await deleteContract(id);
-      setContracts((prevContracts) => prevContracts.filter((c) => c.id !== id));
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi xóa hợp đồng');
-      throw err;
-    }
+    await deleteContract(id);
+    setContracts((prev) => prev.filter((c) => c.id !== id));
   }, []);
 
-  // Upload contract file
   const uploadFile = useCallback(async (contractId, file) => {
-    try {
-      setError(null);
-      const data = await uploadContractFile(contractId, file);
-      setContracts((prevContracts) =>
-        prevContracts.map((c) => (c.id === contractId ? { ...c, fileUrl: data.fileUrl } : c))
-      );
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi upload file hợp đồng');
-      throw err;
-    }
+    const data = await uploadContractFile(contractId, file);
+    setContracts((prev) =>
+      prev.map((c) => (c.id === contractId ? { ...c, fileUrl: data.fileUrl } : c))
+    );
+    return data;
   }, []);
 
-  // Download contract file
   const downloadFile = useCallback(async (contract) => {
-    try {
-      setError(null);
-      const target =
-        typeof contract === 'object'
-          ? contract
-          : { id: contract };
-      await openOrDownloadContractFile(target);
-    } catch (err) {
-      setError(err.message || err.response?.data?.message || 'Lỗi khi xem/tải file hợp đồng');
-      throw err;
-    }
+    const target = typeof contract === 'object' ? contract : { id: contract };
+    await openOrDownloadContractFile(target);
   }, []);
 
-  // Get expiring contracts
   const fetchExpiringContracts = useCallback(async (days = 30) => {
-    try {
-      setError(null);
-      const data = await getExpiringContracts(days);
-      setExpiringContracts(normalizeContractsList(data));
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi tải hợp đồng sắp hết hạn');
-      throw err;
-    }
+    const data = await getExpiringContracts(days);
+    const normalized = normalizeContractsList(data);
+    setExpiringContracts(normalized);
+    return normalized;
   }, []);
 
-  // Renew contract
+  const fetchReminders = useCallback(async () => {
+    const data = await getContractReminders();
+    setReminders(Array.isArray(data) ? data : []);
+    return data;
+  }, []);
+
   const renewContractFn = useCallback(async (contractId, renewalData) => {
-    try {
-      setError(null);
-      const data = await renewContract(contractId, renewalData);
-      setContracts((prevContracts) =>
-        prevContracts.map((c) => (c.id === contractId ? data : c))
-      );
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi gia hạn hợp đồng');
-      throw err;
-    }
+    const data = await renewContract(contractId, renewalData);
+    const normalized = normalizeContractFromApi(data);
+    setContracts((prev) => {
+      const filtered = renewalData?.cloneContract === false
+        ? prev.map((c) => (c.id === contractId ? normalized : c))
+        : prev.filter((c) => c.id !== contractId);
+      return [...filtered, normalized];
+    });
+    return normalized;
   }, []);
 
-  // Terminate contract
   const terminateContractFn = useCallback(async (contractId, terminationData) => {
-    try {
-      setError(null);
-      const data = await terminateContract(contractId, terminationData);
-      setContracts((prevContracts) =>
-        prevContracts.map((c) => (c.id === contractId ? data : c))
-      );
-      return data;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi chấm dứt hợp đồng');
-      throw err;
-    }
+    const data = await terminateContract(contractId, terminationData);
+    const normalized = normalizeContractFromApi(data);
+    setContracts((prev) => prev.map((c) => (c.id === contractId ? normalized : c)));
+    return normalized;
   }, []);
 
-  // Load contracts on mount
+  const updateDepositFn = useCallback(async (contractId, depositData) => {
+    const data = await updateContractDeposit(contractId, depositData);
+    const normalized = normalizeContractFromApi(data);
+    setContracts((prev) => prev.map((c) => (c.id === contractId ? normalized : c)));
+    return normalized;
+  }, []);
+
+  const generateFromTemplate = useCallback(async (contractId, templateData) => {
+    const data = await generateContractFromTemplate(contractId, templateData);
+    setContracts((prev) =>
+      prev.map((c) => (c.id === contractId ? { ...c, fileUrl: data.fileUrl } : c))
+    );
+    return data;
+  }, []);
+
   useEffect(() => {
     fetchContracts();
     fetchExpiringContracts();
-  }, [fetchContracts, fetchExpiringContracts]);
+    fetchReminders();
+  }, [fetchContracts, fetchExpiringContracts, fetchReminders]);
 
   return {
     contracts,
     expiringContracts,
+    reminders,
     loading,
     error,
     fetchContracts,
     getContract,
+    getDetail,
     addContract,
     editContract,
     removeContract,
     uploadFile,
     downloadFile,
     fetchExpiringContracts,
+    fetchReminders,
     renewContractFn,
     terminateContractFn,
+    updateDepositFn,
+    generateFromTemplate,
   };
 };

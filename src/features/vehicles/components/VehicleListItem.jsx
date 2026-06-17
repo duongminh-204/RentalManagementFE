@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Car, Home, User, Banknote, AlertTriangle } from 'lucide-react';
+import { Car, Home, User, Banknote, AlertTriangle, Building2 } from 'lucide-react';
 import ImageModal from '../../../components/common/ImageModal';
 import {
   formatCurrency,
@@ -85,12 +85,21 @@ const VehicleListItem = ({ vehicle, tenant, room, selected, onClick }) => {
             </p>
           )}
 
+          {(vehicle.buildingName || room?.buildingId) && (
+            <p
+              className={`mt-0.5 flex items-center gap-1.5 text-xs ${selected ? 'text-on-dark-faint' : 'text-muted'}`}
+            >
+              <Building2 size={12} />
+              <span className="truncate">{vehicle.buildingName || `Tòa #${room?.buildingId}`}</span>
+            </p>
+          )}
+
           {room && (
             <p
               className={`mt-0.5 flex items-center gap-1.5 text-xs ${selected ? 'text-on-dark-faint' : 'text-muted'}`}
             >
               <Home size={12} />
-              Phòng {room.roomNumber || room.roomName}
+              Phòng {room.roomNumber || room.roomName || vehicle.roomNumber}
             </p>
           )}
 

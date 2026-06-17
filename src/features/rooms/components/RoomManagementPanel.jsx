@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
+import { resolveItemIcon } from '../../devices/utils/itemIcons';
 import { formatCurrency, getRoomDisplayName, resolveMediaUrl } from '../utils/roomHelpers';
 import {
   openOrDownloadContractFile,
@@ -86,6 +87,7 @@ const emptyInfo = () => ({
 const RoomManagementPanel = ({
   room,
   mode = 'edit',
+  defaultBuildingId = null,
   loading = false,
   onClose,
   onSaveRoom,
@@ -98,14 +100,9 @@ const RoomManagementPanel = ({
   const [roomImageFile, setRoomImageFile] = useState(null);
   const [roomImagePreview, setRoomImagePreview] = useState(null);
   const [serviceCatalog, setServiceCatalog] = useState([]);
-  const [selectedServiceId, setSelectedServiceId] = useState('');
-  const [serviceQty, setServiceQty] = useState(1);
-  const [deviceForm, setDeviceForm] = useState({
-    deviceName: '',
-    quantity: 1,
-    status: 'Working',
-    note: '',
-  });
+  const [deviceCatalog, setDeviceCatalog] = useState([]);
+  const [createDeviceSel, setCreateDeviceSel] = useState({});
+  const [createServiceSel, setCreateServiceSel] = useState({});
   const [buildings, setBuildings] = useState([]);
   const [buildingsLoading, setBuildingsLoading] = useState(false);
   const [buildingManagerOpen, setBuildingManagerOpen] = useState(false);
@@ -139,28 +136,62 @@ const RoomManagementPanel = ({
         description: room.description || '',
       });
     } else if (isCreate) {
-      setInfo(emptyInfo());
+      setInfo({
+        ...emptyInfo(),
+        ...(defaultBuildingId != null ? { buildingId: Number(defaultBuildingId) } : {}),
+      });
       setActiveTab('info');
+      setCreateDeviceSel({});
+      setCreateServiceSel({});
     }
-  }, [room, isCreate]);
+  }, [room, isCreate, defaultBuildingId]);
 
   useEffect(() => {
-    if (isCreate && buildings.length > 0 && !buildings.some((b) => b.buildingId === info.buildingId)) {
+    if (!isCreate) return;
+    let active = true;
+    Promise.all([roomMgmtApi.getServiceCatalog(), roomMgmtApi.getDeviceCatalog()])
+      .then(([services, devices]) => {
+        if (!active) return;
+        setServiceCatalog(Array.isArray(services) ? services : []);
+        setDeviceCatalog(Array.isArray(devices) ? devices : []);
+      })
+      .catch((e) => console.error(e));
+    return () => {
+      active = false;
+    };
+  }, [isCreate]);
+
+  const toggleCreateDevice = (deviceCatalogId) => {
+    setCreateDeviceSel((prev) => {
+      const next = { ...prev };
+      if (next[deviceCatalogId] != null) delete next[deviceCatalogId];
+      else next[deviceCatalogId] = 1;
+      return next;
+    });
+  };
+
+  const toggleCreateService = (serviceId) => {
+    setCreateServiceSel((prev) => {
+      const next = { ...prev };
+      if (next[serviceId] != null) delete next[serviceId];
+      else next[serviceId] = true;
+      return next;
+    });
+  };
+
+  useEffect(() => {
+    if (
+      isCreate &&
+      defaultBuildingId == null &&
+      buildings.length > 0 &&
+      !buildings.some((b) => b.buildingId === info.buildingId)
+    ) {
       setInfo((prev) => ({
         ...prev,
         buildingId: buildings[0].buildingId,
       }));
     }
-  }, [buildings, isCreate, info.buildingId]);
-
-  const loadCatalogs = useCallback(async () => {
-    try {
-      const services = await roomMgmtApi.getServiceCatalog();
-      setServiceCatalog(Array.isArray(services) ? services : []);
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  }, [buildings, isCreate, info.buildingId, defaultBuildingId]);
 
   const loadBuildings = useCallback(async () => {
     setBuildingsLoading(true);
@@ -175,10 +206,6 @@ const RoomManagementPanel = ({
       setBuildingsLoading(false);
     }
   }, []);
-
-  useEffect(() => {
-    if (canManageExtras) loadCatalogs();
-  }, [canManageExtras, loadCatalogs]);
 
   useEffect(() => {
     loadBuildings();
@@ -359,7 +386,7 @@ const RoomManagementPanel = ({
 
   const handleSaveInfo = (e) => {
     e.preventDefault();
-    onSaveRoom?.({
+    const payload = {
       roomNumber: info.roomNumber,
       buildingId: info.buildingId ? Number(info.buildingId) : null,
       rentalPrice: Number(info.rentalPrice),
@@ -370,7 +397,26 @@ const RoomManagementPanel = ({
       maxPeople: info.maxPeople !== '' ? Number(info.maxPeople) : null,
       status: canEditRoomStatus ? info.status : (room?.status ?? info.status),
       description: info.description || null,
-    });
+    };
+
+    if (isCreate) {
+      payload.initialDevices = Object.entries(createDeviceSel).map(([deviceCatalogId, quantity]) => {
+        const catalogItem = deviceCatalog.find(
+          (d) => String(d.deviceCatalogId) === String(deviceCatalogId)
+        );
+        return {
+          deviceCatalogId: Number(deviceCatalogId),
+          deviceName: catalogItem?.name || '',
+          quantity: Number(quantity) || 1,
+          status: 'Working',
+        };
+      });
+      payload.initialServices = Object.keys(createServiceSel).map((serviceId) => ({
+        serviceId: Number(serviceId),
+      }));
+    }
+
+    onSaveRoom?.(payload);
   };
 
   const runAction = async (fn) => {
@@ -415,21 +461,6 @@ const RoomManagementPanel = ({
       setRoomImagePreview(null);
     });
   };
-
-  const handleAddDevice = () =>
-    runAction(async () => {
-      await roomMgmtApi.addDevice(roomId, deviceForm);
-      setDeviceForm({ deviceName: '', quantity: 1, status: 'Working', note: '' });
-    });
-
-  const handleAddService = () =>
-    runAction(async () => {
-      await roomMgmtApi.assignRoomService(roomId, {
-        serviceId: Number(selectedServiceId),
-        quantity: Number(serviceQty) || 1,
-      });
-      setSelectedServiceId('');
-    });
 
   const handleRemoveRoomTenant = async (contractId) => {
     if (
@@ -858,6 +889,122 @@ const RoomManagementPanel = ({
                   </section>
                 )}
 
+                {isCreate && (
+                  <section className="space-y-4 rounded-xl border border-hairline-cloud bg-surface-press/40 p-4">
+                    <div className="flex items-center gap-2">
+                      <Wrench size={18} className="text-accent-violet" />
+                      <h3 className="text-sm font-semibold uppercase tracking-wide text-accent-violet-mid">
+                        Thiết bị & dịch vụ ban đầu
+                      </h3>
+                    </div>
+                    <p className="text-xs text-muted">
+                      Tích chọn để thêm ngay khi tạo phòng. Có thể chỉnh số lượng và bổ sung sau ở các tab tương ứng.
+                    </p>
+
+                    {/* Thiết bị từ danh mục */}
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-deep">Thiết bị</p>
+                      {deviceCatalog.length === 0 ? (
+                        <p className="text-xs text-muted">
+                          Chưa có thiết bị trong danh mục. Thêm thiết bị ở trang Thiết bị &amp; Dịch vụ.
+                        </p>
+                      ) : (
+                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                        {deviceCatalog.map((d) => {
+                          const checked = createDeviceSel[d.deviceCatalogId] != null;
+                          const DeviceIcon = resolveItemIcon(d);
+                          return (
+                            <div
+                              key={d.deviceCatalogId}
+                              className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                                checked ? 'border-accent-violet bg-surface-light' : 'border-hairline-cloud bg-surface-light'
+                              }`}
+                            >
+                              <label className="flex flex-1 cursor-pointer items-center gap-2 select-none">
+                                <input
+                                  type="checkbox"
+                                  checked={checked}
+                                  onChange={() => toggleCreateDevice(d.deviceCatalogId)}
+                                  className="h-4 w-4 rounded border-gray-300 text-primary"
+                                />
+                                <span
+                                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                    checked ? 'bg-primary text-on-primary' : 'bg-surface-press text-gray-500'
+                                  }`}
+                                >
+                                  <DeviceIcon size={16} />
+                                </span>
+                                <span className="text-sm text-ink-deep">{d.name}</span>
+                              </label>
+                              {checked && (
+                                <input
+                                  type="number"
+                                  min={1}
+                                  value={createDeviceSel[d.deviceCatalogId]}
+                                  onChange={(e) =>
+                                    setCreateDeviceSel((prev) => ({
+                                      ...prev,
+                                      [d.deviceCatalogId]: Math.max(1, Number(e.target.value) || 1),
+                                    }))
+                                  }
+                                  className="text-input w-16 py-1 text-sm"
+                                  title="Số lượng"
+                                />
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      )}
+                    </div>
+
+                    {/* Dịch vụ từ danh mục */}
+                    <div>
+                      <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-ink-deep">Dịch vụ</p>
+                      {serviceCatalog.length === 0 ? (
+                        <p className="text-xs text-muted">Chưa có dịch vụ trong danh mục. Tạo dịch vụ ở trang Dịch vụ.</p>
+                      ) : (
+                        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                          {serviceCatalog.map((s) => {
+                            const checked = createServiceSel[s.serviceId] != null;
+                            const ServiceIcon = resolveItemIcon(s);
+                            return (
+                              <div
+                                key={s.serviceId}
+                                className={`flex items-center gap-2 rounded-lg border px-3 py-2 transition ${
+                                  checked ? 'border-accent-violet bg-surface-light' : 'border-hairline-cloud bg-surface-light'
+                                }`}
+                              >
+                                <label className="flex min-w-0 flex-1 cursor-pointer items-center gap-2 select-none">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={() => toggleCreateService(s.serviceId)}
+                                    className="h-4 w-4 rounded border-gray-300 text-primary"
+                                  />
+                                  <span
+                                    className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                                      checked ? 'bg-primary text-on-primary' : 'bg-surface-press text-gray-500'
+                                    }`}
+                                  >
+                                    <ServiceIcon size={16} />
+                                  </span>
+                                  <span className="min-w-0 truncate text-sm text-ink-deep">
+                                    {s.serviceName}
+                                    <span className="text-xs text-muted">
+                                      {' '}— {formatCurrency(s.unitPrice)}{s.unit ? `/${s.unit}` : ''}
+                                    </span>
+                                  </span>
+                                </label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </section>
+                )}
+
                 <button type="submit" disabled={saveLoading || busy} className="btn-primary w-full">
                   <Save size={18} />
                   {saveLoading ? 'Đang lưu…' : isCreate ? 'Tạo phòng' : 'Lưu thông tin'}
@@ -1045,135 +1192,71 @@ const RoomManagementPanel = ({
 
             {activeTab === 'devices' && canManageExtras && (
               <div className="space-y-4">
-                <div className="space-y-2 rounded-xl border border-hairline-cloud bg-surface-press/40 p-3">
-                  <input
-                    placeholder="Tên thiết bị"
-                    value={deviceForm.deviceName}
-                    onChange={(e) =>
-                      setDeviceForm((p) => ({ ...p, deviceName: e.target.value }))
-                    }
-                    className="text-input"
-                  />
-                  <div className="grid grid-cols-2 gap-2">
-                    <input
-                      type="number"
-                      min={1}
-                      placeholder="SL"
-                      value={deviceForm.quantity}
-                      onChange={(e) =>
-                        setDeviceForm((p) => ({ ...p, quantity: Number(e.target.value) }))
-                      }
-                      className="text-input"
-                    />
-                    <select
-                      value={deviceForm.status}
-                      onChange={(e) =>
-                        setDeviceForm((p) => ({ ...p, status: e.target.value }))
-                      }
-                      className="text-input"
-                    >
-                      <option value="Working">Hoạt động</option>
-                      <option value="Broken">Hỏng</option>
-                      <option value="Repair">Đang sửa</option>
-                    </select>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={handleAddDevice}
-                    disabled={busy || !deviceForm.deviceName.trim()}
-                    className="btn-primary w-full"
-                  >
-                    <Plus size={16} /> Thêm thiết bị
-                  </button>
-                </div>
                 <ul className="space-y-2">
-                  {(room.devices || []).map((d) => (
-                    <li
-                      key={d.deviceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud px-3 py-2"
-                    >
-                      <div>
-                        <p className="font-medium text-ink-deep">{d.deviceName}</p>
-                        <p className="text-xs text-muted">
-                          SL: {d.quantity} · {d.status}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          runAction(() => roomMgmtApi.deleteDevice(roomId, d.deviceId))
-                        }
-                        className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
+                  {(room.devices || []).map((d) => {
+                    const DeviceIcon = resolveItemIcon(d);
+                    return (
+                      <li
+                        key={d.deviceId}
+                        className="flex items-center justify-between rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2"
                       >
-                        <Trash2 size={16} />
-                      </button>
-                    </li>
-                  ))}
+                        <div className="flex min-w-0 flex-1 items-center gap-3">
+                          {d.imageUrl ? (
+                            <img
+                              src={d.imageUrl}
+                              alt={d.deviceName}
+                              className="h-12 w-12 shrink-0 cursor-pointer rounded-lg border border-hairline-cloud object-cover transition hover:opacity-80"
+                              onClick={() => setPreviewImage(d.imageUrl)}
+                              title="Click để xem ảnh lớn"
+                            />
+                          ) : (
+                            <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-hairline-cloud bg-surface-press text-accent-violet">
+                              <DeviceIcon size={20} aria-hidden />
+                            </span>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate font-medium text-ink-deep">{d.deviceName}</p>
+                            <p className="truncate text-xs text-muted">
+                              SL: {d.quantity} · {d.status}
+                            </p>
+                          </div>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
+                {!room.devices?.length && (
+                  <p className="text-center text-sm text-muted">Chưa có thiết bị</p>
+                )}
               </div>
             )}
 
             {activeTab === 'services' && canManageExtras && (
               <div className="space-y-4">
-                <div className="flex flex-wrap gap-2">
-                  <select
-                    value={selectedServiceId}
-                    onChange={(e) => setSelectedServiceId(e.target.value)}
-                    className="text-input min-w-0 flex-1"
-                  >
-                    <option value="">Chọn dịch vụ…</option>
-                    {serviceCatalog.map((s) => (
-                      <option key={s.serviceId} value={s.serviceId}>
-                        {s.serviceName} — {formatCurrency(s.unitPrice)}
-                        {s.unit ? `/${s.unit}` : ''}
-                      </option>
-                    ))}
-                  </select>
-                  <input
-                    type="number"
-                    min={1}
-                    value={serviceQty}
-                    onChange={(e) => setServiceQty(e.target.value)}
-                    className="text-input w-20"
-                  />
-                  <button
-                    type="button"
-                    onClick={handleAddService}
-                    disabled={busy || !selectedServiceId}
-                    className="btn-primary"
-                  >
-                    <Plus size={18} />
-                  </button>
-                </div>
                 <ul className="space-y-2">
-                  {(room.roomServices || []).map((rs) => (
-                    <li
-                      key={rs.roomServiceId}
-                      className="flex items-center justify-between rounded-lg border border-hairline-cloud bg-surface-press/30 px-3 py-2"
-                    >
-                      <div>
-                        <p className="font-medium text-ink-deep">{rs.serviceName}</p>
-                        <p className="text-xs text-muted">
-                          {formatCurrency(rs.unitPrice)}
-                          {rs.unit ? `/${rs.unit}` : ''} · SL: {rs.quantity}
-                        </p>
-                      </div>
-                      <button
-                        type="button"
-                        onClick={() =>
-                          runAction(() =>
-                            roomMgmtApi.deleteRoomService(roomId, rs.roomServiceId)
-                          )
-                        }
-                        className="rounded-md p-2 text-accent-pink hover:bg-surface-press"
+                  {(room.roomServices || []).map((rs) => {
+                    const ServiceIcon = resolveItemIcon(rs);
+                    return (
+                      <li
+                        key={rs.roomServiceId}
+                        className="flex items-center gap-3 rounded-lg border border-hairline-cloud bg-surface-light px-3 py-2"
                       >
-                        <Trash2 size={16} />
-                      </button>
-                    </li>
-                  ))}
+                        <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg border border-hairline-cloud bg-surface-press text-accent-violet">
+                          <ServiceIcon size={20} aria-hidden />
+                        </span>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-ink-deep">{rs.serviceName}</p>
+                          <p className="text-xs text-muted">
+                            {formatCurrency(rs.unitPrice)}
+                            {rs.unit ? `/${rs.unit}` : ''}
+                          </p>
+                        </div>
+                      </li>
+                    );
+                  })}
                 </ul>
                 {!room.roomServices?.length && (
-                  <p className="text-center text-sm text-muted">Chưa có dịch vụ</p>
+                  <p className="text-center text-sm text-muted">Chưa có dịch vụ nào được gán cho phòng này</p>
                 )}
               </div>
             )}

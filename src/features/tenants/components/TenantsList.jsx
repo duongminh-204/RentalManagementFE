@@ -1,9 +1,10 @@
-import { useState, useMemo, useCallback } from 'react';
-import { Plus, Search, Loader2, Users } from 'lucide-react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { Plus, Search, Loader2, Users, Building2 } from 'lucide-react';
 import TenantListItem from './TenantListItem';
 import TenantManagementPanel from './TenantManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
 import { useTenants } from '../hooks/useTenants';
+import * as buildingsApi from '../../buildings/api/buildingsApi';
 
 const TENANT_STATUS_OPTIONS = [
   { value: 'all', label: 'Tất cả trạng thái' },
@@ -27,13 +28,34 @@ const TenantsList = () => {
     removeIdCardImage,
   } = useTenants();
 
+  const [buildings, setBuildings] = useState([]);
+  const [selectedBuildingId, setSelectedBuildingId] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+
+  useEffect(() => {
+    let active = true;
+    buildingsApi
+      .getAllBuildings()
+      .then((data) => {
+        if (active) setBuildings(Array.isArray(data) ? data : []);
+      })
+      .catch(console.error);
+    return () => {
+      active = false;
+    };
+  }, []);
   const [panelMode, setPanelMode] = useState(null);
   const [selectedTenant, setSelectedTenant] = useState(null);
   const [panelLoading, setPanelLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveError, setSaveError] = useState(null);
+
+  const countTenantsByBuilding = useCallback(
+    (buildingId) =>
+      tenants.filter((t) => String(t.buildingId) === String(buildingId)).length,
+    [tenants]
+  );
 
   const filteredTenants = useMemo(() => {
     return tenants.filter((t) => {
@@ -44,9 +66,12 @@ const TenantsList = () => {
         t.phoneNumber?.includes(searchTerm) ||
         t.cccd?.includes(searchTerm);
       const matchStatus = statusFilter === 'all' || t.status === statusFilter;
-      return matchSearch && matchStatus;
+      const matchBuilding =
+        selectedBuildingId === 'all' ||
+        String(t.buildingId) === String(selectedBuildingId);
+      return matchSearch && matchStatus && matchBuilding;
     });
-  }, [tenants, searchTerm, statusFilter]);
+  }, [tenants, searchTerm, statusFilter, selectedBuildingId]);
 
   const stats = useMemo(
     () => ({
@@ -177,7 +202,56 @@ const TenantsList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
-        <div className="mb-6">
+        <div className="mb-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">
+          <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
+            <Building2 size={18} className="text-accent-violet-mid" />
+            Khách thuê theo tòa nhà
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedBuildingId('all')}
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                selectedBuildingId === 'all'
+                  ? 'bg-primary text-on-primary'
+                  : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+              }`}
+            >
+              Tất cả tòa nhà
+              <span
+                className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                  selectedBuildingId === 'all' ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                }`}
+              >
+                {tenants.length}
+              </span>
+            </button>
+            {buildings.map((building) => {
+              const active = String(selectedBuildingId) === String(building.buildingId);
+              const count = countTenantsByBuilding(building.buildingId);
+              return (
+                <button
+                  key={building.buildingId}
+                  type="button"
+                  onClick={() => setSelectedBuildingId(building.buildingId)}
+                  className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    active
+                      ? 'bg-primary text-on-primary'
+                      : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
+                  }`}
+                >
+                  {building.buildingName}
+                  <span
+                    className={`inline-flex h-5 min-w-[20px] items-center justify-center rounded-full px-1.5 text-xs ${
+                      active ? 'bg-white/25 text-on-primary' : 'bg-surface-press text-gray-500'
+                    }`}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {/* <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">

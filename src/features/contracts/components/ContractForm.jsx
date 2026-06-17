@@ -26,16 +26,17 @@ const ContractForm = ({
   loading = false,
   error = null,
   embedded = false,
+  defaultTerms = '',
 }) => {
   const [formData, setFormData] = useState({
-    // contractNumber: '',
     tenantId: '',
     roomId: '',
     startDate: '',
     endDate: '',
-    // rentalPrice: '',
+    rentPrice: '',
     deposit: '',
-    terms: '',
+    paymentCycle: 'Monthly',
+    terms: defaultTerms,
     notes: '',
   });
 
@@ -57,13 +58,13 @@ const ContractForm = ({
   useEffect(() => {
     if (contract) {
       setFormData({
-        // contractNumber: contract.contractNumber || '',
         tenantId: contract.tenantId || '',
         roomId: contract.roomId || fixedRoomId || '',
         startDate: toApiDate(contract.startDate),
         endDate: toApiDate(contract.endDate),
+        rentPrice: contract.rentPrice ?? '',
         deposit: contract.deposit ?? '',
-        rentalPrice: contract.rentalPrice || '',
+        paymentCycle: contract.paymentCycle || 'Monthly',
         terms: contract.terms || '',
         notes: contract.notes || '',
       });
@@ -77,7 +78,23 @@ const ContractForm = ({
       }
       setContractFile(null);
     }
-  }, [contract]);
+  }, [contract, fixedRoomId]);
+
+  useEffect(() => {
+    if (contract?.id) return;
+    const room = rooms.find((r) => String(r.id) === String(formData.roomId));
+    const tenant = tenants.find((t) => String(t.id) === String(formData.tenantId));
+    setFormData((prev) => ({
+      ...prev,
+      rentPrice: prev.rentPrice !== '' && prev.rentPrice != null ? prev.rentPrice : (room?.price || room?.rentPrice || ''),
+      deposit:
+        prev.deposit !== '' && prev.deposit != null
+          ? prev.deposit
+          : room?.price
+            ? Math.round(room.price)
+            : '',
+    }));
+  }, [formData.roomId, formData.tenantId, rooms, tenants, contract?.id, defaultTerms]);
 
   const computedStatus = useMemo(() => {
     if (!formData.startDate || !formData.endDate) return 'pending';
@@ -123,11 +140,11 @@ const ContractForm = ({
     } else if (isNaN(formData.deposit) || formData.deposit < 0) {
       errors.deposit = 'Tiền cọc phải là số dương';
     }
-    // if (!formData.rentalPrice) {
-    //   errors.rentalPrice = 'Vui lòng nhập giá thuê';
-    // } else if (isNaN(formData.rentalPrice) || formData.rentalPrice < 0) {
-    //   errors.rentalPrice = 'Giá thuê phải là số dương';
-    // }
+    if (!formData.rentPrice && formData.rentPrice !== 0) {
+      errors.rentPrice = 'Vui lòng nhập giá thuê';
+    } else if (isNaN(formData.rentPrice) || formData.rentPrice < 0) {
+      errors.rentPrice = 'Giá thuê phải là số dương';
+    }
 
     if (!formData.terms.trim()) {
       errors.terms = 'Vui lòng nhập điều khoản';
@@ -199,6 +216,7 @@ const ContractForm = ({
       onSubmit({
         ...formData,
         roomId: fixedRoomId ?? formData.roomId,
+        rentPrice: Number(formData.rentPrice),
         deposit: Number(formData.deposit),
         contractFile,
       });
@@ -273,7 +291,7 @@ const ContractForm = ({
                 <option value="">-- Chọn khách thuê --</option>
                 {tenants.map((tenant) => (
                   <option key={tenant.id} value={tenant.id}>
-                    {tenant.fullName}
+                    {tenant.fullName}{tenant.phoneNumber ? ` — ${tenant.phoneNumber}` : ''}
                   </option>
                 ))}
               </select>
@@ -298,7 +316,7 @@ const ContractForm = ({
                   <option value="">-- Chọn phòng --</option>
                   {rooms.map((room) => (
                     <option key={room.id} value={room.id}>
-                      Phòng {room.roomNumber}
+                      {room.roomName || room.roomNumber} — {room.price ? `${room.price.toLocaleString('vi-VN')}đ` : ''}
                     </option>
                   ))}
                 </select>
@@ -364,6 +382,40 @@ const ContractForm = ({
               {validationErrors.endDate && (
                 <p className="text-red-500 text-sm mt-1">{validationErrors.endDate}</p>
               )}
+            </div>
+
+            {/* Giá thuê */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Giá thuê (VNĐ/tháng) *
+              </label>
+              <input
+                type="number"
+                name="rentPrice"
+                value={formData.rentPrice}
+                onChange={handleChange}
+                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet ${validationErrors.rentPrice ? 'border-red-500' : 'border-gray-300'}`}
+              />
+              {validationErrors.rentPrice && (
+                <p className="text-red-500 text-sm mt-1">{validationErrors.rentPrice}</p>
+              )}
+            </div>
+
+            {/* Chu kỳ thanh toán */}
+            <div>
+              <label className="block text-sm font-medium text-gray-900 mb-2">
+                Chu kỳ thanh toán
+              </label>
+              <select
+                name="paymentCycle"
+                value={formData.paymentCycle}
+                onChange={handleChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus-visible:outline-accent-violet"
+              >
+                <option value="Monthly">Hàng tháng</option>
+                <option value="Quarterly">Hàng quý</option>
+                <option value="Flexible">Linh hoạt</option>
+              </select>
             </div>
 
             {/* Tiền cọc */}

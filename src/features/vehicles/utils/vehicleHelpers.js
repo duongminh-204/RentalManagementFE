@@ -18,6 +18,8 @@ export const normalizeVehicleFromApi = (raw) => {
     roomId: raw.roomId ?? null,
     tenantName: raw.tenantName ?? null,
     roomNumber: raw.roomNumber ?? null,
+    buildingId: raw.buildingId ?? raw.BuildingId ?? null,
+    buildingName: raw.buildingName ?? raw.BuildingName ?? '',
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
   };

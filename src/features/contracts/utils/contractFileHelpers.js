@@ -1,5 +1,5 @@
 import { resolveMediaUrl } from '../../tenants/utils/tenantHelpers';
-import { downloadContractFile } from '../api/contractsApi';
+import { downloadContractFile } from '../api/contractService';
 
 export const getContractFileName = (contract, fallback = 'hop_dong') => {
   const url = contract?.fileUrl;

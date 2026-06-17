@@ -5,6 +5,25 @@ export const getServiceCatalog = async () => {
   return data;
 };
 
+export const getDeviceCatalog = async () => {
+  const { data } = await api.get('/room-management/device-catalog');
+  return data;
+};
+
+export const createDeviceCatalog = async (payload) => {
+  const { data } = await api.post('/room-management/device-catalog', payload);
+  return data;
+};
+
+export const updateDeviceCatalog = async (deviceCatalogId, payload) => {
+  const { data } = await api.put(`/room-management/device-catalog/${deviceCatalogId}`, payload);
+  return data;
+};
+
+export const deleteDeviceCatalog = async (deviceCatalogId) => {
+  await api.delete(`/room-management/device-catalog/${deviceCatalogId}`);
+};
+
 export const getTenantCandidates = async () => {
   const { data } = await api.get('/room-management/tenants/candidates');
   return data;
@@ -48,14 +67,6 @@ export const assignRoomService = async (roomId, payload) => {
   return data;
 };
 
-export const updateRoomService = async (roomId, roomServiceId, payload) => {
-  const { data } = await api.put(
-    `/room-management/rooms/${roomId}/services/${roomServiceId}`,
-    payload
-  );
-  return data;
-};
-
 export const deleteRoomService = async (roomId, roomServiceId) => {
   await api.delete(`/room-management/rooms/${roomId}/services/${roomServiceId}`);
 };
@@ -67,4 +78,32 @@ export const assignTenant = async (roomId, payload) => {
 
 export const removeTenant = async (roomId, contractId) => {
   await api.delete(`/room-management/rooms/${roomId}/tenants/${contractId}`);
+};
+
+/** Upload ảnh thiết bị (PNG/JPG) */
+export const uploadDeviceImage = async (roomId, deviceId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const { data } = await api.post(
+    `/room-management/rooms/${roomId}/devices/${deviceId}/upload-image`,
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
+  return data;
+};
+
+export const createService = async (payload) => {
+  const { data } = await api.post('/room-management/services', payload);
+  return data;
+};
+
+export const updateService = async (serviceId, payload) => {
+  const { data } = await api.put(`/room-management/services/${serviceId}`, payload);
+  return data;
+};
+
+export const deleteService = async (serviceId) => {
+  await api.delete(`/room-management/services/${serviceId}`);
 };
