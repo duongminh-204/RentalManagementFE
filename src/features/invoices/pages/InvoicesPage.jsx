@@ -30,7 +30,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import CurrencyInput from '../../../components/common/CurrencyInput';
+import MonthYearInput from '../../../components/common/MonthYearInput';
 import { parseMoneyInputNumber } from '../../../utils/currencyInput';
+import { formatMonthYearLabel } from '../../../utils/dateHelpers';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -363,12 +365,10 @@ const InvoicesPage = () => {
                 <span className="text-xs font-semibold uppercase tracking-wider text-ink-deep flex items-center gap-1">
                   <Calendar className="w-3.5 h-3.5 text-accent-violet-mid" /> Kỳ hóa đơn
                 </span>
-                <input
-                  type="month"
+                <MonthYearInput
                   name="monthYear"
                   value={formData.monthYear}
                   onChange={handleChange}
-                  className="text-input"
                 />
               </div>
             </div>
@@ -778,7 +778,7 @@ const InvoicesPage = () => {
                     <td className="px-6 py-4 font-semibold text-ink-deep">#{historyItem.invoiceId}</td>
                     <td className="px-6 py-4 font-medium text-ink-deep">{historyItem.roomName || '-'}</td>
                     <td className="px-6 py-4 text-ink-deep">{historyItem.tenantName || '-'}</td>
-                    <td className="px-6 py-4 text-ink-deep">{historyItem.monthYear}</td>
+                    <td className="px-6 py-4 text-ink-deep">{formatMonthYearLabel(historyItem.monthYear)}</td>
                     <td className="px-6 py-4 font-bold text-accent-violet-deep">{formatCurrency(historyItem.totalAmount)}</td>
                     <td className="px-6 py-4">
                       <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClasses(historyItem.status)}`}>
@@ -852,7 +852,7 @@ const InvoicesPage = () => {
                   </div>
                   <div>
                     <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Kỳ hóa đơn</p>
-                    <p className="text-sm font-medium text-ink-deep mt-0.5">{invoiceResult.monthYear || '—'}</p>
+                    <p className="text-sm font-medium text-ink-deep mt-0.5">{formatMonthYearLabel(invoiceResult.monthYear)}</p>
                   </div>
                   <div>
                     <p className="text-[10px] text-muted uppercase font-bold tracking-wider">Hạn đóng tiền</p>

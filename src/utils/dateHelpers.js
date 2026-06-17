@@ -40,3 +40,38 @@ export const toApiDate = (value) => {
 
 /** Alias tương thích form (giữ yyyy-MM-dd nội bộ) */
 export const toInputDate = toApiDate;
+
+/** yyyy-MM → nhãn tiếng Việt, ví dụ "tháng 6 năm 2025" */
+export const formatMonthYearLabel = (monthYear) => {
+  const normalized = String(monthYear ?? '').trim();
+  if (!/^\d{4}-\d{2}$/.test(normalized)) {
+    return normalized || '—';
+  }
+
+  const [year, month] = normalized.split('-');
+  const date = new Date(Number(year), Number(month) - 1, 1);
+  if (!isValid(date)) {
+    return normalized;
+  }
+
+  return new Intl.DateTimeFormat('vi-VN', {
+    month: 'long',
+    year: 'numeric',
+  }).format(date);
+};
+
+/** Tách yyyy-MM thành { month: 1-12, year } */
+export const parseMonthYear = (value) => {
+  const normalized = String(value ?? '').trim();
+  if (/^\d{4}-\d{2}$/.test(normalized)) {
+    const [year, month] = normalized.split('-');
+    return { month: Number(month), year: Number(year) };
+  }
+
+  const now = new Date();
+  return { month: now.getMonth() + 1, year: now.getFullYear() };
+};
+
+/** Ghép tháng + năm → yyyy-MM (định dạng API) */
+export const toMonthYearApi = (month, year) =>
+  `${year}-${String(month).padStart(2, '0')}`;
