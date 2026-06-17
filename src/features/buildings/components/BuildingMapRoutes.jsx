@@ -1,8 +1,16 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { GeoAlt, ArrowCounterclockwise, ArrowRepeat, CarFront, Bicycle, PersonWalking, Search, XCircleFill } from 'react-bootstrap-icons';
+import { reverseGeocode, searchAddresses } from '../../../utils/geocoding';
 
-export default function BuildingMapRoutes({ buildingName, address, latitude, longitude }) {
+export default function BuildingMapRoutes({
+  buildingName,
+  address,
+  latitude,
+  longitude,
+  embedded = false,
+  layoutReady = true,
+}) {
   const mapContainerRef = useRef(null);
   const mapInstance = useRef(null);
   const originMarkerRef = useRef(null);
@@ -14,6 +22,7 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [searchError, setSearchError] = useState(null);
 
   const [destination, setDestination] = useState(null); // { name, lat, lng }
   const [matrixLoading, setMatrixLoading] = useState(false);
@@ -24,6 +33,17 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
   });
 
   const origin = [latitude, longitude];
+
+  const refreshMapLayout = useCallback(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    map.invalidateSize({ animate: false });
+
+    if (latitude && longitude) {
+      map.setView([latitude, longitude], map.getZoom(), { animate: false });
+    }
+  }, [latitude, longitude]);
 
   // Fix Leaflet icons
   useEffect(() => {
@@ -37,25 +57,28 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
     L.Marker.prototype.options.icon = defaultIcon;
   }, []);
 
-  // Initialize Map
+  // Initialize Map only after modal/layout is ready so Leaflet gets correct dimensions.
   useEffect(() => {
-    if (!mapContainerRef.current || !latitude || !longitude) return;
+    if (!layoutReady || !mapContainerRef.current || !latitude || !longitude) return;
 
-    if (!mapInstance.current) {
-      mapInstance.current = L.map(mapContainerRef.current, {
+    let disposed = false;
+
+    const initMap = () => {
+      if (disposed || !mapContainerRef.current || mapInstance.current) return;
+
+      const map = L.map(mapContainerRef.current, {
         zoomControl: false,
       }).setView(origin, 14);
 
-      // Place zoom control at bottom-right
-      L.control.zoom({ position: 'bottomright' }).addTo(mapInstance.current);
+      mapInstance.current = map;
 
-      // Add standard bright OpenStreetMap tile layer
+      L.control.zoom({ position: 'bottomright' }).addTo(map);
+
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; OpenStreetMap contributors',
         maxZoom: 19,
-      }).addTo(mapInstance.current);
+      }).addTo(map);
 
-      // Add Origin Marker (Red Marker for building)
       const redIcon = L.icon({
         iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
         shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
@@ -65,20 +88,14 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
       });
 
       originMarkerRef.current = L.marker(origin, { icon: redIcon })
-        .addTo(mapInstance.current)
+        .addTo(map)
         .bindPopup(`<b>${buildingName || 'Tòa nhà'}</b><br/>${address || ''}`)
         .openPopup();
 
-      // Click on map to select destination
-      mapInstance.current.on('click', async (e) => {
+      map.on('click', async (e) => {
         const { lat, lng } = e.latlng;
-        // Reverse geocode to get address name
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
-          );
-          const data = await response.json();
-          const name = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+          const name = await reverseGeocode(lat, lng);
           const dest = { name, lat, lng };
           setInputValue(name);
           setDestination(dest);
@@ -91,13 +108,65 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
           calculateRouteAndDistances(dest);
         }
       });
-    } else {
-      mapInstance.current.setView(origin, 14);
-      if (originMarkerRef.current) {
-        originMarkerRef.current.setLatLng(origin);
+
+      map.whenReady(() => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            map.invalidateSize({ animate: false });
+          });
+        });
+      });
+    };
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(initMap);
+    });
+
+    return () => {
+      disposed = true;
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+        originMarkerRef.current = null;
+        destMarkerRef.current = null;
+        polylineRef.current = null;
       }
+    };
+  }, [layoutReady, latitude, longitude, buildingName, address]);
+
+  useEffect(() => {
+    if (!mapInstance.current || !latitude || !longitude) return;
+
+    mapInstance.current.setView(origin, mapInstance.current.getZoom(), { animate: false });
+    if (originMarkerRef.current) {
+      originMarkerRef.current.setLatLng(origin);
+      originMarkerRef.current.setPopupContent(`<b>${buildingName || 'Tòa nhà'}</b><br/>${address || ''}`);
     }
   }, [latitude, longitude, buildingName, address]);
+
+  // Leaflet renders incorrectly inside modals until the container has its final size.
+  useEffect(() => {
+    if (!layoutReady || !mapContainerRef.current || !latitude || !longitude) return;
+
+    refreshMapLayout();
+
+    const resizeTimers = [50, 150, 350, 700].map((delay) =>
+      window.setTimeout(refreshMapLayout, delay)
+    );
+
+    const observer = new ResizeObserver(() => {
+      refreshMapLayout();
+    });
+
+    observer.observe(mapContainerRef.current);
+    window.addEventListener('resize', refreshMapLayout);
+
+    return () => {
+      resizeTimers.forEach((timerId) => window.clearTimeout(timerId));
+      observer.disconnect();
+      window.removeEventListener('resize', refreshMapLayout);
+    };
+  }, [layoutReady, latitude, longitude, refreshMapLayout]);
 
   // Clean markers and polylines helper
   const clearRouteElements = () => {
@@ -208,29 +277,26 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
     }
   };
 
-  // Nominatim Autocomplete
   const fetchSuggestions = async (query) => {
-    if (!query || query.trim().length < 3) {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
+      setSearchError(null);
       return;
     }
+
     setLoadingSuggestions(true);
+    setSearchError(null);
+
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&countrycodes=vn&limit=5&accept-language=vi`
-      );
-      const data = await response.json();
-      setSuggestions(
-        data.map((item) => ({
-          name: item.display_name,
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon),
-        }))
-      );
+      const results = await searchAddresses(query, { limit: 5 });
+      setSuggestions(results);
+      if (results.length === 0) {
+        setSearchError('Không tìm thấy địa chỉ phù hợp.');
+      }
     } catch (err) {
       console.error(err);
+      setSuggestions([]);
+      setSearchError('Không thể tải gợi ý địa chỉ. Vui lòng thử lại sau vài giây.');
     } finally {
       setLoadingSuggestions(false);
     }
@@ -240,6 +306,7 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
     const value = e.target.value;
     setInputValue(value);
     setShowDropdown(true);
+    setSearchError(null);
 
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
@@ -258,6 +325,7 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
   const handleClearInput = () => {
     setInputValue('');
     setSuggestions([]);
+    setSearchError(null);
     setShowDropdown(false);
   };
 
@@ -281,8 +349,8 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
         setShowDropdown(false);
       }
     };
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
   if (!latitude || !longitude) {
@@ -297,18 +365,29 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
     );
   }
 
+  const mapHeightClass = embedded ? 'h-[min(420px,calc(90vh-13rem))]' : 'h-[500px]';
+
+  if (embedded && !layoutReady) {
+    return (
+      <div
+        className={`flex w-full items-center justify-center rounded-xl border border-gray-200 bg-gray-100 text-sm text-gray-500 ${mapHeightClass}`}
+      >
+        <ArrowRepeat className="mr-2 animate-spin" size={16} />
+        Đang tải bản đồ…
+      </div>
+    );
+  }
+
   return (
-    <div className="w-full max-w-5xl mx-auto text-gray-800">
-      {/* Map container with overlays */}
-      <div className="relative rounded-2xl overflow-hidden border border-gray-200 shadow-lg" style={{ minHeight: '500px' }}>
-        
-        {/* ===== SEARCH BAR OVERLAY (top-center on map) ===== */}
-        <div 
-          className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] w-[90%] max-w-lg map-search-container"
-          onClick={(e) => e.stopPropagation()}
+    <div className={`w-full text-gray-800 ${embedded ? '' : 'max-w-5xl mx-auto'}`}>
+      <div className={`relative ${mapHeightClass}`}>
+        {/* ===== SEARCH BAR OVERLAY (outside clipped map layer) ===== */}
+        <div
+          className="absolute left-1/2 top-4 z-[1100] w-[90%] max-w-lg -translate-x-1/2 map-search-container"
+          onMouseDown={(e) => e.stopPropagation()}
         >
           <div className="relative">
-            <div className="flex items-center bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+            <div className="flex items-center overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
               <div className="pl-4 pr-2 text-gray-400">
                 <Search size={18} />
               </div>
@@ -318,13 +397,13 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
                 value={inputValue}
                 onChange={handleInputChange}
                 onFocus={() => setShowDropdown(true)}
-                className="flex-1 px-2 py-3 text-sm text-gray-800 placeholder-gray-400 outline-none border-none bg-transparent"
+                className="flex-1 border-none bg-transparent px-2 py-3 text-sm text-gray-800 outline-none placeholder:text-gray-400"
               />
               {inputValue && (
                 <button
                   type="button"
                   onClick={handleClearInput}
-                  className="pr-3 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="pr-3 text-gray-400 transition-colors hover:text-gray-600"
                 >
                   <XCircleFill size={16} />
                 </button>
@@ -333,7 +412,7 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
                 <button
                   type="button"
                   onClick={handleReset}
-                  className="flex items-center gap-1 px-3 py-2 mr-1 text-xs font-medium text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                  className="mr-1 flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-medium text-blue-600 transition-colors hover:bg-blue-50"
                 >
                   <ArrowCounterclockwise size={13} />
                   Xóa
@@ -341,22 +420,24 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
               )}
             </div>
 
-            {/* Suggestions dropdown */}
-            {showDropdown && (suggestions.length > 0 || loadingSuggestions) && (
-              <ul className="absolute left-0 right-0 mt-2 max-h-60 overflow-y-auto rounded-xl bg-white border border-gray-200 text-gray-800 z-50 shadow-xl">
+            {showDropdown && (loadingSuggestions || suggestions.length > 0 || searchError) && (
+              <ul className="absolute left-0 right-0 z-[1200] mt-2 max-h-60 overflow-y-auto rounded-xl border border-gray-200 bg-white text-gray-800 shadow-xl">
                 {loadingSuggestions ? (
-                  <li className="px-4 py-3 text-sm text-gray-400 flex items-center gap-2">
+                  <li className="flex items-center gap-2 px-4 py-3 text-sm text-gray-400">
                     <ArrowRepeat className="animate-spin" size={14} />
                     Đang tìm kiếm...
                   </li>
+                ) : searchError ? (
+                  <li className="px-4 py-3 text-sm text-gray-500">{searchError}</li>
                 ) : (
                   suggestions.map((item, idx) => (
                     <li
-                      key={idx}
+                      key={`${item.lat}-${item.lng}-${idx}`}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectSuggestion(item)}
-                      className="px-4 py-3 text-sm hover:bg-blue-50 cursor-pointer transition-colors leading-snug flex items-start gap-2 border-b border-gray-50 last:border-b-0"
+                      className="flex cursor-pointer items-start gap-2 border-b border-gray-50 px-4 py-3 text-sm leading-snug transition-colors last:border-b-0 hover:bg-blue-50"
                     >
-                      <GeoAlt size={14} className="text-red-500 mt-0.5 shrink-0" />
+                      <GeoAlt size={14} className="mt-0.5 shrink-0 text-red-500" />
                       <span>{item.name}</span>
                     </li>
                   ))
@@ -365,70 +446,66 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
             )}
           </div>
 
-          {/* Hint text */}
           {!destination && !inputValue && (
-            <p className="text-center text-xs text-white/90 mt-2 drop-shadow-md">
+            <p className="mt-2 text-center text-xs text-white/90 drop-shadow-md">
               Nhấn vào bản đồ hoặc nhập địa chỉ để chọn điểm đến
             </p>
           )}
         </div>
 
-        {/* ===== DISTANCE INFO OVERLAY (bottom-left on map) ===== */}
+        {/* ===== DISTANCE INFO OVERLAY ===== */}
         {(destination || matrixLoading) && (
-          <div className="absolute bottom-4 left-4 z-[1000] w-72">
+          <div className="absolute bottom-4 left-4 z-[1100] w-72">
             {matrixLoading ? (
-              <div className="flex items-center gap-3 px-4 py-3 bg-white rounded-xl shadow-lg border border-gray-200">
-                <ArrowRepeat className="animate-spin text-blue-500 shrink-0" size={20} />
+              <div className="flex items-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-lg">
+                <ArrowRepeat className="shrink-0 animate-spin text-blue-500" size={20} />
                 <p className="text-xs text-gray-500">Đang tính khoảng cách...</p>
               </div>
             ) : destination ? (
-              <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
-                {/* Destination name */}
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Điểm đến</p>
-                  <p className="text-xs font-semibold text-gray-800 mt-0.5 line-clamp-2 leading-snug">{destination.name}</p>
+              <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg">
+                <div className="border-b border-gray-100 px-4 py-3">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-gray-400">Điểm đến</p>
+                  <p className="mt-0.5 line-clamp-2 text-xs font-semibold leading-snug text-gray-800">
+                    {destination.name}
+                  </p>
                 </div>
 
-                {/* Transport modes */}
                 <div className="divide-y divide-gray-50">
-                  {/* Driving */}
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-50">
                       <CarFront size={14} className="text-blue-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 font-medium">Xe máy / Ô tô</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium text-gray-400">Xe máy / Ô tô</p>
                       <p className="text-xs font-semibold text-gray-700">{distanceInfo.driving?.distance || '—'}</p>
                     </div>
-                    <span className="text-xs font-bold text-blue-600 shrink-0">
+                    <span className="shrink-0 text-xs font-bold text-blue-600">
                       {distanceInfo.driving?.duration || '—'}
                     </span>
                   </div>
 
-                  {/* Bicycling */}
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-teal-50 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal-50">
                       <Bicycle size={14} className="text-teal-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 font-medium">Xe đạp</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium text-gray-400">Xe đạp</p>
                       <p className="text-xs font-semibold text-gray-700">{distanceInfo.bicycling?.distance || '—'}</p>
                     </div>
-                    <span className="text-xs font-bold text-teal-600 shrink-0">
+                    <span className="shrink-0 text-xs font-bold text-teal-600">
                       {distanceInfo.bicycling?.duration || '—'}
                     </span>
                   </div>
 
-                  {/* Walking */}
-                  <div className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 transition-colors">
-                    <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center shrink-0">
+                  <div className="flex items-center gap-3 px-4 py-2.5 transition-colors hover:bg-gray-50">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-50">
                       <PersonWalking size={14} className="text-amber-600" />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[10px] text-gray-400 font-medium">Đi bộ</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-medium text-gray-400">Đi bộ</p>
                       <p className="text-xs font-semibold text-gray-700">{distanceInfo.walking?.distance || '—'}</p>
                     </div>
-                    <span className="text-xs font-bold text-amber-600 shrink-0">
+                    <span className="shrink-0 text-xs font-bold text-amber-600">
                       {distanceInfo.walking?.duration || '—'}
                     </span>
                   </div>
@@ -438,12 +515,14 @@ export default function BuildingMapRoutes({ buildingName, address, latitude, lon
           </div>
         )}
 
-        {/* ===== LEAFLET MAP ===== */}
+        {/* ===== LEAFLET MAP (clipped separately so dropdown is not hidden) ===== */}
         <div
-          ref={mapContainerRef}
-          style={{ width: '100%', height: '500px', cursor: 'pointer' }}
-          className="z-0"
-        />
+          className={`absolute inset-0 overflow-hidden border border-gray-200 shadow-lg ${
+            embedded ? 'rounded-xl' : 'rounded-2xl'
+          }`}
+        >
+          <div ref={mapContainerRef} className="h-full w-full cursor-pointer" />
+        </div>
       </div>
     </div>
   );

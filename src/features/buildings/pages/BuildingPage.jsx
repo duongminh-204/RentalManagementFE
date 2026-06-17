@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { Building, PlusLg, PencilSquare, Trash, ArrowRepeat, GeoAlt, XLg } from 'react-bootstrap-icons';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -19,6 +20,20 @@ const BuildingPage = () => {
   const [error, setError] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [mapRouteBuilding, setMapRouteBuilding] = useState(null);
+  const [mapLayoutReady, setMapLayoutReady] = useState(false);
+
+  useEffect(() => {
+    if (!mapRouteBuilding) {
+      setMapLayoutReady(false);
+      return undefined;
+    }
+
+    const fallbackTimer = window.setTimeout(() => {
+      setMapLayoutReady(true);
+    }, 450);
+
+    return () => window.clearTimeout(fallbackTimer);
+  }, [mapRouteBuilding]);
 
   const loadBuildings = useCallback(async () => {
     setLoading(true);
@@ -174,68 +189,78 @@ const BuildingPage = () => {
           </div>
         </section>
 
-      {/* Map & Routes Modal */}
-      <AnimatePresence>
-        {mapRouteBuilding && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
-            role="dialog"
-            aria-modal="true"
-          >
-            <button
-              type="button"
-              className="absolute inset-0 cursor-default bg-slate-900/60 backdrop-blur-sm transition-opacity"
-              onClick={() => setMapRouteBuilding(null)}
-              aria-label="Đóng"
-            />
-
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="relative z-10 flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-800 shadow-2xl"
-            >
-              {/* Modal Header */}
-              <div className="border-b border-gray-200 px-6 py-4 flex items-center justify-between bg-white">
-                <div>
-                  <p className="text-xs font-semibold text-blue-500 uppercase tracking-wider">Bản đồ & Tuyến đường</p>
-                  <h3 className="text-lg font-bold text-gray-900 mt-0.5">
-                    {mapRouteBuilding.buildingName}
-                  </h3>
-                </div>
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <AnimatePresence>
+            {mapRouteBuilding && (
+              <div
+                className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto p-4 sm:p-6"
+                role="dialog"
+                aria-modal="true"
+              >
                 <button
                   type="button"
+                  className="absolute inset-0 cursor-default bg-slate-900/60 backdrop-blur-sm transition-opacity"
                   onClick={() => setMapRouteBuilding(null)}
-                  className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-all"
-                >
-                  <XLg size={20} />
-                </button>
-              </div>
-
-              {/* Modal Body */}
-              <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
-                <BuildingMapRoutes
-                  buildingName={mapRouteBuilding.buildingName}
-                  address={mapRouteBuilding.address}
-                  latitude={mapRouteBuilding.latitude}
-                  longitude={mapRouteBuilding.longitude}
+                  aria-label="Đóng"
                 />
-              </div>
 
-              {/* Modal Footer */}
-              <div className="border-t border-gray-200 px-6 py-3 flex justify-end bg-white">
-                <button
-                  type="button"
-                  onClick={() => setMapRouteBuilding(null)}
-                  className="px-4 py-2 text-sm font-semibold rounded-xl bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors border border-gray-300"
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0, y: 16 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.95, opacity: 0, y: 16 }}
+                  transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+                  className="relative z-10 my-auto flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white text-gray-800 shadow-2xl"
+                  style={{ maxHeight: 'min(90vh, 860px)' }}
+                  onAnimationComplete={() => setMapLayoutReady(true)}
                 >
-                  Đóng
-                </button>
+                  {/* Modal Header */}
+                  <div className="flex shrink-0 items-center justify-between border-b border-gray-200 bg-white px-6 py-4">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-blue-500">
+                        Bản đồ & Tuyến đường
+                      </p>
+                      <h3 className="mt-0.5 text-lg font-bold text-gray-900">
+                        {mapRouteBuilding.buildingName}
+                      </h3>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setMapRouteBuilding(null)}
+                      className="rounded-lg p-1.5 text-gray-400 transition-all hover:bg-gray-100 hover:text-gray-600"
+                    >
+                      <XLg size={20} />
+                    </button>
+                  </div>
+
+                  {/* Modal Body */}
+                  <div className="min-h-0 shrink bg-gray-50 px-4 py-4 sm:px-6 sm:py-5">
+                    <BuildingMapRoutes
+                      embedded
+                      layoutReady={mapLayoutReady}
+                      buildingName={mapRouteBuilding.buildingName}
+                      address={mapRouteBuilding.address}
+                      latitude={mapRouteBuilding.latitude}
+                      longitude={mapRouteBuilding.longitude}
+                    />
+                  </div>
+
+                  {/* Modal Footer */}
+                  <div className="flex shrink-0 justify-end border-t border-gray-200 bg-white px-6 py-3">
+                    <button
+                      type="button"
+                      onClick={() => setMapRouteBuilding(null)}
+                      className="rounded-xl border border-gray-300 bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-200"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+                </motion.div>
               </div>
-            </motion.div>
-          </div>
+            )}
+          </AnimatePresence>,
+          document.body
         )}
-      </AnimatePresence>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import { GeoAlt, Compass } from 'react-bootstrap-icons';
+import { reverseGeocode, searchAddresses } from '../../../utils/geocoding';
 
 const DEFAULT_CENTER = [10.8231, 106.6297]; // Ho Chi Minh City
 
@@ -13,7 +14,9 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
   const [suggestions, setSuggestions] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [searchError, setSearchError] = useState(null);
   const [geoLoading, setGeoLoading] = useState(false);
+  const debounceRef = useRef(null);
 
   // Sync searchQuery when address prop changes from outside
   useEffect(() => {
@@ -21,6 +24,17 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
       setSearchQuery(address);
     }
   }, [address]);
+
+  const refreshMapLayout = useCallback(() => {
+    const map = mapInstance.current;
+    if (!map) return;
+
+    map.invalidateSize();
+
+    if (latitude && longitude) {
+      map.setView([latitude, longitude], map.getZoom());
+    }
+  }, [latitude, longitude]);
 
   // Leaflet icon fix for Vite
   useEffect(() => {
@@ -78,9 +92,34 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
 
     // Cleanup on unmount
     return () => {
-      // We don't destroy the map on minor updates, but if mapContainer is gone we should
+      if (mapInstance.current) {
+        mapInstance.current.remove();
+        mapInstance.current = null;
+        markerInstance.current = null;
+      }
     };
   }, [latitude, longitude]);
+
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    refreshMapLayout();
+
+    const resizeTimers = [100, 350, 700].map((delay) =>
+      window.setTimeout(refreshMapLayout, delay)
+    );
+
+    const observer = new ResizeObserver(() => {
+      refreshMapLayout();
+    });
+
+    observer.observe(mapContainerRef.current);
+
+    return () => {
+      resizeTimers.forEach((timerId) => window.clearTimeout(timerId));
+      observer.disconnect();
+    };
+  }, [refreshMapLayout]);
 
   // Handle marker drag end (reverse geocoding)
   const handleMarkerDragEnd = useCallback(async (event) => {
@@ -89,12 +128,7 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
     const lng = latlng.lng;
 
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
-      );
-      const data = await response.json();
-      const addr = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-      
+      const addr = await reverseGeocode(lat, lng);
       setSearchQuery(addr);
       onChange({ address: addr, latitude: lat, longitude: lng });
     } catch (err) {
@@ -103,46 +137,47 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
     }
   }, [onChange, searchQuery]);
 
-  // Search Address suggestions (Autocomplete) using Nominatim
   const fetchSuggestions = async (query) => {
-    if (!query || query.trim().length < 3) {
+    if (!query || query.trim().length < 2) {
       setSuggestions([]);
+      setSearchError(null);
       return;
     }
+
     setLoadingSuggestions(true);
+    setSearchError(null);
+
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(
-          query
-        )}&countrycodes=vn&limit=5&accept-language=vi`
-      );
-      const data = await response.json();
+      const results = await searchAddresses(query, { limit: 5 });
       setSuggestions(
-        data.map((item) => ({
-          display_name: item.display_name,
-          lat: parseFloat(item.lat),
-          lon: parseFloat(item.lon),
+        results.map((item) => ({
+          display_name: item.name,
+          lat: item.lat,
+          lon: item.lng,
         }))
       );
+      if (results.length === 0) {
+        setSearchError('Không tìm thấy địa chỉ phù hợp.');
+      }
     } catch (err) {
       console.error('Error fetching suggestions:', err);
+      setSuggestions([]);
+      setSearchError('Không thể tải gợi ý địa chỉ. Vui lòng thử lại.');
     } finally {
       setLoadingSuggestions(false);
     }
   };
 
-  // Debounced input change handler
   const handleInputChange = (e) => {
     const value = e.target.value;
     setSearchQuery(value);
     setShowDropdown(true);
+    setSearchError(null);
 
-    // Call suggestion with a slight delay
-    const delayDebounceFn = setTimeout(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
       fetchSuggestions(value);
     }, 400);
-
-    return () => clearTimeout(delayDebounceFn);
   };
 
   // Handle suggestion selection
@@ -181,12 +216,7 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
         const lng = position.coords.longitude;
 
         try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=vi`
-          );
-          const data = await response.json();
-          const addr = data.display_name || `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-
+          const addr = await reverseGeocode(lat, lng);
           setSearchQuery(addr);
           onChange({ address: addr, latitude: lat, longitude: lng });
 
@@ -222,8 +252,8 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
         setShowDropdown(false);
       }
     };
-    document.addEventListener('click', handleOutsideClick);
-    return () => document.removeEventListener('click', handleOutsideClick);
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
   }, []);
 
   return (
@@ -242,16 +272,19 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
               className="w-full rounded-lg bg-slate-700/50 border border-slate-600 px-4 py-2.5 text-slate-100 placeholder-slate-400 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all"
             />
             {/* Suggestions Dropdown */}
-            {showDropdown && (suggestions.length > 0 || loadingSuggestions) && (
-              <ul className="absolute left-0 right-0 mt-1 max-h-60 overflow-y-auto rounded-lg bg-slate-800 border border-slate-700 text-slate-200 z-50 divide-y divide-slate-700 shadow-xl">
+            {showDropdown && (loadingSuggestions || suggestions.length > 0 || searchError) && (
+              <ul className="absolute left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-slate-700 bg-slate-800 text-slate-200 shadow-xl divide-y divide-slate-700">
                 {loadingSuggestions ? (
                   <li className="px-4 py-3 text-sm text-slate-400">Đang tìm kiếm địa chỉ...</li>
+                ) : searchError ? (
+                  <li className="px-4 py-3 text-sm text-slate-400">{searchError}</li>
                 ) : (
                   suggestions.map((item, idx) => (
                     <li
-                      key={idx}
+                      key={`${item.lat}-${item.lon}-${idx}`}
+                      onMouseDown={(e) => e.preventDefault()}
                       onClick={() => handleSelectSuggestion(item)}
-                      className="px-4 py-2.5 text-sm hover:bg-slate-700 cursor-pointer transition-colors leading-snug"
+                      className="cursor-pointer px-4 py-2.5 text-sm leading-snug transition-colors hover:bg-slate-700"
                     >
                       {item.display_name}
                     </li>
@@ -279,11 +312,10 @@ export default function AddressAutocomplete({ address, latitude, longitude, onCh
       </div>
 
       {/* Leaflet Map Div */}
-      <div className="rounded-xl overflow-hidden border border-slate-600/50 shadow-lg relative z-0">
-        <div 
-          ref={mapContainerRef} 
-          style={{ width: '100%', height: '300px' }} 
-          className="z-0"
+      <div className="relative z-0 h-[300px] overflow-hidden rounded-xl border border-slate-600/50 shadow-lg">
+        <div
+          ref={mapContainerRef}
+          className="absolute inset-0 z-0 h-[300px]"
         />
       </div>
 

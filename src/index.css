@@ -1071,3 +1071,16 @@
     transform: translateY(-2px);
   }
 }
+
+/* Leaflet needs explicit dimensions when rendered inside flex/modal layouts */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  z-index: 0;
+}
+
+.leaflet-pane,
+.leaflet-top,
+.leaflet-bottom {
+  z-index: 1;
+}
