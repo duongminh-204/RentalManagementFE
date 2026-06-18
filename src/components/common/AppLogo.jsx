@@ -11,7 +11,7 @@ export default function AppLogo({
   if (variant === 'icon') {
     return (
       <span
-        className={`inline-flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-white ${className}`}
+        className={`inline-flex shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white ${className || 'h-10 w-10'}`}
       >
         <img
           src={src}

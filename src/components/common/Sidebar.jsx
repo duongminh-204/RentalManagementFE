@@ -71,14 +71,14 @@ const Sidebar = () => {
       <Link
         to="/dashboard"
         onClick={close}
-        className="flex items-center gap-3 border-b border-hairline-cloud px-5 py-5"
+        className="flex items-center gap-4 border-b border-hairline-cloud px-5 py-6"
       >
-        <AppLogo variant="icon" />
+        <AppLogo variant="icon" className="h-24 w-24" />
         <div className="min-w-0">
-          <p className="font-display text-sm font-semibold tracking-tight text-ink-deep">
+          <p className="font-display text-base font-semibold tracking-tight text-ink-deep">
             TROEZ
           </p>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
+          <p className="text-xs font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
             Quản lý phòng trọ
           </p>
         </div>
