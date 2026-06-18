@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage, RegisterPage } from './features/auth';
+import { HomePage } from './features/home';
 import { Dashboard } from './features/dashboard';
 import DebtDetailsPage from './features/dashboard/pages/DebtDetailsPage';
 import RoomsPage from "./features/rooms/pages/RoomsPage";
@@ -18,6 +19,7 @@ function App() {
     <Router>
       <Routes>
         {/* Public Routes */}
+        <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
 
@@ -113,11 +115,8 @@ function App() {
           }
         />
 
-        {/* Default Redirect */}
-        <Route path="/" element={<Navigate to="/login" replace />} />
-
         {/* Catch all */}
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Router>
   );
