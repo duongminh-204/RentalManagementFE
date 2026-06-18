@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Building2,
   DoorClosed,
@@ -188,6 +187,7 @@ const DevicesList = () => {
     items,
     loading,
     saving,
+    isPending,
     error,
     isAssigned,
     toggleCatalogItem,
@@ -276,11 +276,13 @@ const DevicesList = () => {
   const CatalogCell = ({ item }) => {
     const Icon = resolveItemIcon(item);
     const checked = isAssigned(selectedRoomId, item.id, item.category);
+    const toggleKey = `toggle-${selectedRoomId}-${item.category}-${item.id}`;
+    const pending = isPending(toggleKey);
     return (
       <div className="group/cell relative">
         <button
           type="button"
-          disabled={saving || !selectedRoomId}
+          disabled={pending || !selectedRoomId}
           onClick={() => toggleCatalogItem(selectedRoomId, item)}
           className={`flex w-full items-center gap-3 rounded-xl border p-3 text-left transition-colors ${
             checked
@@ -324,13 +326,13 @@ const DevicesList = () => {
     const isDevice = item.category === 'device';
     const statusIcon = STATUS_ICONS[item.status] || STATUS_ICONS.active;
     const StatusIcon = statusIcon.Icon;
+    const pending = isPending(`remove-${item.id}`) || isPending(`status-${item.id}`) || isPending(`image-${item.id}`);
+
     return (
-      <motion.div
-        layout
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97 }}
-        className="flex items-center gap-3 rounded-xl border border-hairline-cloud p-3"
+      <div
+        className={`flex items-center gap-3 rounded-xl border border-hairline-cloud p-3 transition-opacity ${
+          pending ? 'opacity-60' : ''
+        }`}
       >
         {/* Ảnh / icon — chỉ thiết bị mới upload ảnh */}
         {isDevice ? (
@@ -396,7 +398,7 @@ const DevicesList = () => {
         >
           <Trash2 size={15} />
         </button>
-      </motion.div>
+      </div>
     );
   };
 
@@ -409,11 +411,9 @@ const DevicesList = () => {
         </p>
       ) : (
         <div className="space-y-2">
-          <AnimatePresence>
-            {list.map((item) => (
-              <AssignedRow key={item.id} item={item} />
-            ))}
-          </AnimatePresence>
+          {list.map((item) => (
+            <AssignedRow key={item.id} item={item} />
+          ))}
         </div>
       )}
     </div>

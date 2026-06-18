@@ -123,6 +123,8 @@ const buildItemsFromRoomDetails = (rooms, roomDetails) => {
   return result;
 };
 
+const unwrapApiData = (response) => response?.data ?? response;
+
 export const useDevices = () => {
   const [buildings, setBuildings] = useState([]);
   const [rooms, setRooms] = useState([]);
@@ -132,6 +134,7 @@ export const useDevices = () => {
   const [selectedRoomId, setSelectedRoomId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [pendingKey, setPendingKey] = useState(null);
   const [error, setError] = useState(null);
 
   const refreshRoomDetail = useCallback(async (roomId) => {
@@ -211,19 +214,152 @@ export const useDevices = () => {
     [items]
   );
 
-  const runMutation = useCallback(async (fn) => {
-    setSaving(true);
-    setError(null);
-    try {
-      await fn();
-      await refresh();
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra');
-      throw err;
-    } finally {
-      setSaving(false);
-    }
-  }, [refresh]);
+  const isPending = useCallback(
+    (key) => pendingKey === key,
+    [pendingKey]
+  );
+
+  const applyRoomDetailPatch = useCallback((roomId, patchFn) => {
+    let snapshot;
+    setRoomDetails((prev) => {
+      snapshot = prev[roomId];
+      if (!snapshot) return prev;
+      return { ...prev, [roomId]: patchFn(snapshot) };
+    });
+    return () => {
+      setRoomDetails((prev) => {
+        if (snapshot === undefined) return prev;
+        return { ...prev, [roomId]: snapshot };
+      });
+    };
+  }, []);
+
+  const applyCatalogPatch = useCallback((category, patchFn) => {
+    let snapshot;
+    const setter = category === 'service' ? setServiceCatalog : setDeviceCatalog;
+    setter((prev) => {
+      snapshot = prev;
+      return patchFn(prev);
+    });
+    return () => setter(snapshot ?? []);
+  }, []);
+
+  const applyRemoveCatalogFromRooms = useCallback((catalogItem) => {
+    let snapshot;
+    const catalogId = catalogItem.serviceId ?? catalogItem.deviceCatalogId ?? catalogItem.id;
+    setRoomDetails((prev) => {
+      snapshot = prev;
+      const next = {};
+      for (const [roomId, detail] of Object.entries(prev)) {
+        if (catalogItem.category === 'service') {
+          next[roomId] = {
+            ...detail,
+            roomServices: (detail.roomServices || []).filter(
+              (rs) => String(rs.serviceId) !== String(catalogId)
+            ),
+          };
+        } else {
+          next[roomId] = {
+            ...detail,
+            devices: (detail.devices || []).filter(
+              (d) => String(d.deviceCatalogId) !== String(catalogId)
+            ),
+          };
+        }
+      }
+      return next;
+    });
+    return () => setRoomDetails(snapshot ?? {});
+  }, []);
+
+  const removeRoomAssignment = useCallback(
+    (roomId, item) =>
+      applyRoomDetailPatch(roomId, (detail) => {
+        if (item.category === 'service') {
+          return {
+            ...detail,
+            roomServices: (detail.roomServices || []).filter(
+              (rs) => String(rs.roomServiceId) !== String(item.roomServiceId)
+            ),
+          };
+        }
+        return {
+          ...detail,
+          devices: (detail.devices || []).filter(
+            (d) => String(d.deviceId) !== String(item.deviceId)
+          ),
+        };
+      }),
+    [applyRoomDetailPatch]
+  );
+
+  const addRoomAssignmentOptimistic = useCallback(
+    (roomId, catalogItem) =>
+      applyRoomDetailPatch(roomId, (detail) => {
+        if (catalogItem.category === 'service') {
+          return {
+            ...detail,
+            roomServices: [
+              ...(detail.roomServices || []),
+              {
+                roomServiceId: `temp-${Date.now()}`,
+                roomId,
+                serviceId: catalogItem.serviceId ?? catalogItem.id,
+                serviceName: catalogItem.name,
+                unitPrice: catalogItem.price ?? 0,
+                billingCycle: catalogItem.billingCycle ?? 'Monthly',
+                icon: catalogItem.icon ?? null,
+              },
+            ],
+          };
+        }
+        return {
+          ...detail,
+          devices: [
+            ...(detail.devices || []),
+            {
+              deviceId: `temp-${Date.now()}`,
+              roomId,
+              deviceCatalogId: catalogItem.deviceCatalogId ?? catalogItem.id,
+              deviceName: catalogItem.name,
+              quantity: 1,
+              status: 'Working',
+              imageUrl: null,
+              icon: catalogItem.icon ?? null,
+            },
+          ],
+        };
+      }),
+    [applyRoomDetailPatch]
+  );
+
+  const runMutation = useCallback(
+    async ({ key, applyOptimistic, mutate, sync }) => {
+      setPendingKey(key ?? null);
+      setSaving(true);
+      setError(null);
+
+      const rollbacks = [];
+      if (applyOptimistic) {
+        const rollback = applyOptimistic();
+        if (rollback) rollbacks.push(rollback);
+      }
+
+      try {
+        const result = await mutate();
+        if (sync) await sync(result);
+        return result;
+      } catch (err) {
+        rollbacks.reverse().forEach((rollback) => rollback());
+        setError(err.response?.data?.message || err.message || 'Có lỗi xảy ra');
+        throw err;
+      } finally {
+        setPendingKey(null);
+        setSaving(false);
+      }
+    },
+    []
+  );
 
   const addCatalogItem = useCallback(
     async ({ name, category, price = '', billingCycle = 'Monthly', icon }) => {
@@ -231,20 +367,29 @@ export const useDevices = () => {
       if (!trimmed) return;
       const guessedIcon = icon || guessIconFromName(trimmed);
 
-      await runMutation(async () => {
-        if (category === 'service') {
-          await roomMgmtApi.createService({
-            serviceName: trimmed,
-            unitPrice: parseMoneyInputNumber(price),
-            billingCycle,
-            icon: guessedIcon,
-          });
-        } else {
-          await roomMgmtApi.createDeviceCatalog({
+      await runMutation({
+        key: `catalog-add-${category}`,
+        mutate: async () => {
+          if (category === 'service') {
+            const created = await roomMgmtApi.createService({
+              serviceName: trimmed,
+              unitPrice: parseMoneyInputNumber(price),
+              billingCycle,
+              icon: guessedIcon,
+            });
+            const mapped = mapServiceCatalogItem(unwrapApiData(created));
+            setServiceCatalog((prev) => [...prev, mapped]);
+            return mapped;
+          }
+
+          const created = await roomMgmtApi.createDeviceCatalog({
             name: trimmed,
             icon: guessedIcon,
           });
-        }
+          const mapped = mapDeviceCatalogItem(unwrapApiData(created));
+          setDeviceCatalog((prev) => [...prev, mapped]);
+          return mapped;
+        },
       });
     },
     [runMutation]
@@ -252,93 +397,152 @@ export const useDevices = () => {
 
   const removeCatalogItem = useCallback(
     async (catalogItem) => {
-      await runMutation(async () => {
-        if (catalogItem.category === 'service') {
-          await roomMgmtApi.deleteService(catalogItem.serviceId ?? catalogItem.id);
-        } else {
-          await roomMgmtApi.deleteDeviceCatalog(catalogItem.deviceCatalogId ?? catalogItem.id);
-        }
+      const catalogId = catalogItem.serviceId ?? catalogItem.deviceCatalogId ?? catalogItem.id;
+
+      await runMutation({
+        key: `catalog-remove-${catalogItem.category}-${catalogId}`,
+        applyOptimistic: () => {
+          const rollbackCatalog = applyCatalogPatch(catalogItem.category, (prev) =>
+            prev.filter((item) => String(item.id) !== String(catalogId))
+          );
+          const rollbackRooms = applyRemoveCatalogFromRooms(catalogItem);
+          return () => {
+            rollbackRooms();
+            rollbackCatalog();
+          };
+        },
+        mutate: async () => {
+          if (catalogItem.category === 'service') {
+            await roomMgmtApi.deleteService(catalogId);
+          } else {
+            await roomMgmtApi.deleteDeviceCatalog(catalogId);
+          }
+        },
       });
     },
-    [runMutation]
+    [applyCatalogPatch, applyRemoveCatalogFromRooms, runMutation]
   );
 
   const toggleCatalogItem = useCallback(
     async (roomId, catalogItem) => {
+      const catalogId = catalogItem.id;
       const existing = items.find(
         (it) =>
           String(it.roomId) === String(roomId) &&
-          String(it.catalogId) === String(catalogItem.id) &&
+          String(it.catalogId) === String(catalogId) &&
           it.category === catalogItem.category
       );
+      const key = `toggle-${roomId}-${catalogItem.category}-${catalogId}`;
 
-      await runMutation(async () => {
-        if (existing) {
-          if (existing.category === 'service') {
-            await roomMgmtApi.deleteRoomService(roomId, existing.roomServiceId);
-          } else {
-            await roomMgmtApi.deleteDevice(roomId, existing.deviceId);
+      await runMutation({
+        key,
+        applyOptimistic: () => {
+          if (existing) return removeRoomAssignment(roomId, existing);
+          return addRoomAssignmentOptimistic(roomId, catalogItem);
+        },
+        mutate: async () => {
+          if (existing) {
+            if (existing.category === 'service') {
+              await roomMgmtApi.deleteRoomService(roomId, existing.roomServiceId);
+            } else {
+              await roomMgmtApi.deleteDevice(roomId, existing.deviceId);
+            }
+            return;
           }
-          return;
-        }
 
-        if (catalogItem.category === 'service') {
-          await roomMgmtApi.assignRoomService(roomId, {
-            serviceId: catalogItem.serviceId ?? catalogItem.id,
-          });
-        } else {
-          await roomMgmtApi.addDevice(roomId, {
-            deviceCatalogId: catalogItem.deviceCatalogId ?? catalogItem.id,
-            deviceName: catalogItem.name,
-            quantity: 1,
-            status: 'Working',
-          });
-        }
+          if (catalogItem.category === 'service') {
+            await roomMgmtApi.assignRoomService(roomId, {
+              serviceId: catalogItem.serviceId ?? catalogItem.id,
+            });
+          } else {
+            await roomMgmtApi.addDevice(roomId, {
+              deviceCatalogId: catalogItem.deviceCatalogId ?? catalogItem.id,
+              deviceName: catalogItem.name,
+              quantity: 1,
+              status: 'Working',
+            });
+          }
+        },
+        sync: existing
+          ? undefined
+          : async () => {
+              await refreshRoomDetail(roomId);
+            },
       });
     },
-    [items, runMutation]
+    [
+      addRoomAssignmentOptimistic,
+      items,
+      refreshRoomDetail,
+      removeRoomAssignment,
+      runMutation,
+    ]
   );
 
   const removeItem = useCallback(
     async (item) => {
-      await runMutation(async () => {
-        if (item.category === 'service') {
-          await roomMgmtApi.deleteRoomService(item.roomId, item.roomServiceId);
-        } else {
-          await roomMgmtApi.deleteDevice(item.roomId, item.deviceId);
-        }
+      await runMutation({
+        key: `remove-${item.id}`,
+        applyOptimistic: () => removeRoomAssignment(item.roomId, item),
+        mutate: async () => {
+          if (item.category === 'service') {
+            await roomMgmtApi.deleteRoomService(item.roomId, item.roomServiceId);
+          } else {
+            await roomMgmtApi.deleteDevice(item.roomId, item.deviceId);
+          }
+        },
       });
     },
-    [runMutation]
+    [removeRoomAssignment, runMutation]
   );
 
   const changeStatus = useCallback(
     async (item, status) => {
       if (item.category !== 'device') return;
-      await runMutation(async () => {
-        await roomMgmtApi.updateDevice(item.roomId, item.deviceId, {
-          deviceCatalogId:
-            typeof item.catalogId === 'number' || /^\d+$/.test(String(item.catalogId))
-              ? Number(item.catalogId)
-              : undefined,
-          deviceName: item.name,
-          quantity: 1,
-          status: mapDeviceStatusToApi(status),
-          imageUrl: item.image?.startsWith('http') ? item.image : undefined,
-        });
+
+      await runMutation({
+        key: `status-${item.id}`,
+        applyOptimistic: () =>
+          applyRoomDetailPatch(item.roomId, (detail) => ({
+            ...detail,
+            devices: (detail.devices || []).map((device) =>
+              String(device.deviceId) === String(item.deviceId)
+                ? { ...device, status: mapDeviceStatusToApi(status) }
+                : device
+            ),
+          })),
+        mutate: async () => {
+          await roomMgmtApi.updateDevice(item.roomId, item.deviceId, {
+            deviceCatalogId:
+              typeof item.catalogId === 'number' || /^\d+$/.test(String(item.catalogId))
+                ? Number(item.catalogId)
+                : undefined,
+            deviceName: item.name,
+            quantity: 1,
+            status: mapDeviceStatusToApi(status),
+            imageUrl: item.image?.startsWith('http') ? item.image : undefined,
+          });
+        },
       });
     },
-    [runMutation]
+    [applyRoomDetailPatch, runMutation]
   );
 
   const setItemImage = useCallback(
     async (item, file) => {
       if (!file || item.category !== 'device') return;
-      await runMutation(async () => {
-        await roomMgmtApi.uploadDeviceImage(item.roomId, item.deviceId, file);
+
+      await runMutation({
+        key: `image-${item.id}`,
+        mutate: async () => {
+          await roomMgmtApi.uploadDeviceImage(item.roomId, item.deviceId, file);
+        },
+        sync: async () => {
+          await refreshRoomDetail(item.roomId);
+        },
       });
     },
-    [runMutation]
+    [refreshRoomDetail, runMutation]
   );
 
   const roomsByBuilding = useMemo(() => {
@@ -380,6 +584,8 @@ export const useDevices = () => {
     items,
     loading,
     saving,
+    pendingKey,
+    isPending,
     error,
     isAssigned,
     toggleCatalogItem,
