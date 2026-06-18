@@ -9,7 +9,7 @@ export default function AuthIllustration({ title, highlight, icon = '🏠', logo
             className="hidden flex-col items-center justify-center text-on-primary md:flex"
         >
             <p className="eyebrow mb-4 text-on-dark-muted">Trọ EZ</p>
-            <h1 className="font-display text-center text-5xl font-bold leading-[1.1] lg:text-6xl">
+            <h1 className="font-display text-center text-5xl font-bold leading-[1.1] text-on-primary lg:text-6xl">
                 {title}{' '}
                 {highlight && <span className="chip-lime">{highlight}</span>}
             </h1>

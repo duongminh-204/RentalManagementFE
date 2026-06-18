@@ -1107,6 +1107,18 @@
     overflow: hidden;
   }
 
+  .auth-canvas h1,
+  .auth-canvas h2,
+  .auth-canvas h3 {
+    color: var(--color-on-primary);
+  }
+
+  .auth-canvas h1:hover,
+  .auth-canvas h2:hover,
+  .auth-canvas h3:hover {
+    transform: none;
+  }
+
   .auth-canvas::before {
     content: "";
     position: absolute;
