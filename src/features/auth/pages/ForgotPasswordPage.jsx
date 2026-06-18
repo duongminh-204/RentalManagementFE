@@ -71,15 +71,15 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="auth-canvas flex min-h-screen items-center justify-center p-4">
-      <div className="relative z-10 grid w-full max-w-5xl items-center gap-10 md:grid-cols-2">
+    <div className="auth-canvas flex min-h-screen items-center justify-center px-4 py-6 sm:p-4">
+      <div className="relative z-10 grid w-full max-w-5xl items-center gap-8 md:grid-cols-2 md:gap-10">
         <AuthIllustration title="Quên mật khẩu" highlight="Quên mật khẩu" icon="🔑" />
 
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="card-light w-full p-8 md:p-10"
+          className="card-light w-full p-5 sm:p-8 md:p-10"
         >
           <div className="mb-8 text-center">
             <p className="eyebrow mb-2 text-accent-violet-mid">Khôi phục tài khoản</p>

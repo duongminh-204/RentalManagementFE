@@ -114,7 +114,7 @@ export default function HomeFooter() {
         </div>
       </div>
 
-      <div className="border-t border-white/10 px-5 py-5 lg:px-8">
+      <div className="safe-bottom border-t border-white/10 px-4 py-5 sm:px-5 lg:px-8">
         <p className="mx-auto max-w-6xl text-center text-sm text-on-dark-muted">
           © {year} Trọ EZ. Quản lý phòng trọ thông minh.
         </p>

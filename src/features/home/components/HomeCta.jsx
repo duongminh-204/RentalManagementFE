@@ -22,12 +22,12 @@ export default function HomeCta() {
         <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-on-dark-muted">
           Tham gia Trọ EZ hôm nay — tập trung vào phát triển dãy trọ, để hệ thống lo phần còn lại.
         </p>
-        <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Link to="/register" className="btn-primary px-8 py-3.5 text-sm no-underline">
+        <div className="mt-8 flex w-full flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+          <Link to="/register" className="btn-primary w-full px-8 py-3.5 text-center text-sm no-underline sm:w-auto">
             Đăng ký miễn phí
             <ArrowRight size={16} />
           </Link>
-          <Link to="/login" className="btn-ghost-dark px-8 py-3.5 text-sm no-underline">
+          <Link to="/login" className="btn-ghost-dark w-full px-8 py-3.5 text-center text-sm no-underline sm:w-auto">
             Đăng nhập
           </Link>
         </div>

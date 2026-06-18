@@ -23,7 +23,7 @@ const TRUST_POINTS = [
 
 export default function HomeHero() {
   return (
-    <section className="home-hero relative overflow-hidden px-5 pb-20 pt-16 lg:px-8 lg:pb-28 lg:pt-24">
+    <section className="home-hero relative overflow-hidden px-4 pb-16 pt-12 sm:px-5 sm:pb-20 sm:pt-16 lg:px-8 lg:pb-28 lg:pt-24">
       <div className="home-hero-glow pointer-events-none absolute inset-0" aria-hidden />
 
       <div className="relative mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1.05fr_0.95fr] lg:gap-12">
@@ -33,7 +33,7 @@ export default function HomeHero() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           <p className="eyebrow mb-5 text-accent-lime">Nền tảng quản lý phòng trọ</p>
-          <h1 className="font-display text-4xl font-bold leading-[1.08] text-on-primary sm:text-5xl lg:text-[3.4rem]">
+          <h1 className="font-display text-[clamp(1.75rem,7vw,3.4rem)] font-bold leading-[1.08] text-on-primary">
             Quản lý trọ{' '}
             <span className="relative inline-block">
               <span className="chip-lime">dễ hơn</span>
@@ -41,7 +41,7 @@ export default function HomeHero() {
             <br />
             mỗi ngày
           </h1>
-          <p className="mt-6 max-w-xl text-lg leading-relaxed text-on-dark-muted">
+          <p className="mt-6 max-w-xl text-base leading-relaxed text-on-dark-muted sm:text-lg">
             Trọ EZ giúp chủ trọ theo dõi phòng, khách thuê, hợp đồng, hóa đơn và doanh thu — tất cả trên
             một bảng điều khiển gọn gàng, trực quan.
           </p>
@@ -55,12 +55,12 @@ export default function HomeHero() {
             ))}
           </ul>
 
-          <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-            <Link to="/register" className="btn-primary px-7 py-3.5 text-sm no-underline">
+          <div className="mt-10 flex w-full flex-col gap-3 sm:flex-row sm:items-center">
+            <Link to="/register" className="btn-primary w-full px-7 py-3.5 text-sm no-underline sm:w-auto">
               Bắt đầu ngay
               <ArrowRight size={16} />
             </Link>
-            <Link to="/login" className="btn-ghost-dark px-7 py-3.5 text-sm no-underline">
+            <Link to="/login" className="btn-ghost-dark w-full px-7 py-3.5 text-center text-sm no-underline sm:w-auto">
               Tôi đã có tài khoản
             </Link>
           </div>
@@ -114,13 +114,13 @@ export default function HomeHero() {
                 ].map((row) => (
                   <div
                     key={row.room}
-                    className="flex items-center justify-between rounded-xl bg-white/[0.05] px-3 py-2.5"
+                    className="flex flex-col gap-1 rounded-xl bg-white/[0.05] px-3 py-2.5 sm:flex-row sm:items-center sm:justify-between"
                   >
-                    <div>
+                    <div className="min-w-0">
                       <p className="text-sm font-semibold text-on-primary">{row.room}</p>
                       <p className="text-xs text-accent-pink">{row.status}</p>
                     </div>
-                    <p className="text-sm font-bold text-accent-lime">{row.amount}</p>
+                    <p className="shrink-0 text-sm font-bold text-accent-lime">{row.amount}</p>
                   </div>
                 ))}
               </div>

@@ -198,18 +198,8 @@ export default function HomeHowItWorks() {
 
   return (
     <div id="how-it-works" className="select-none">
-      <style>{`
-        .hide-scrollbar::-webkit-scrollbar {
-          display: none;
-        }
-        .hide-scrollbar {
-          -ms-overflow-style: none;
-          scrollbar-width: none;
-        }
-      `}</style>
-
       {/* Luồng 1: Vận hành cốt lõi */}
-      <section className="min-h-screen flex flex-col justify-center bg-surface-light px-5 py-16 lg:px-8 overflow-hidden border-b border-hairline-cloud animate-fade-in">
+      <section className="flex min-h-0 flex-col justify-center overflow-hidden border-b border-hairline-cloud bg-surface-light px-4 py-12 sm:min-h-screen sm:px-5 sm:py-16 lg:px-8">
         <div className="mx-auto w-full max-w-7xl">
           
           {/* Header */}
@@ -254,7 +244,7 @@ export default function HomeHowItWorks() {
               >
                 <div className="flex gap-6 items-center">
                   {/* Introduction Card */}
-                  <div className="w-[300px] h-[320px] shrink-0 p-6 rounded-2xl bg-gradient-to-br from-accent-violet/10 to-accent-violet/20 border border-accent-violet/20 flex flex-col justify-between">
+                  <div className="home-flow-intro-card p-6 rounded-2xl bg-gradient-to-br from-accent-violet/10 to-accent-violet/20 border border-accent-violet/20 flex flex-col justify-between">
                     <div>
                       <h3 className="font-display text-lg font-bold text-ink-deep">Vận Hành Ký Thuê</h3>
                       <p className="mt-4 text-xs leading-relaxed text-muted">
@@ -273,7 +263,7 @@ export default function HomeHowItWorks() {
                     return (
                       <div key={index} className="flex items-center gap-6">
                         <div 
-                          className={`w-[300px] h-[320px] shrink-0 bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col justify-between ${
+                          className={`home-flow-step-card bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col justify-between ${
                             isActive 
                               ? 'border-accent-violet ring-4 ring-accent-violet/10 opacity-100 scale-102 shadow-md' 
                               : 'border-hairline-cloud opacity-40 scale-98 hover:opacity-60'
@@ -302,15 +292,15 @@ export default function HomeHowItWorks() {
           </div>
 
           {/* Help Tip */}
-          <div className="mt-8 flex justify-center items-center gap-2 text-xs text-muted/60">
-            <span>💡 Di chuột vào vùng thẻ chữ bên phải và lăn con lăn chuột để xem các bước</span>
+          <div className="mt-6 flex justify-center px-2 text-center text-xs text-muted/60 sm:mt-8">
+            <span>💡 Vuốt ngang hoặc lăn chuột ở vùng thẻ bên phải để xem các bước</span>
           </div>
 
         </div>
       </section>
 
       {/* Luồng 2: Trang trí AI */}
-      <section className="min-h-screen flex flex-col justify-center bg-surface-light px-5 py-16 lg:px-8 overflow-hidden">
+      <section className="flex min-h-0 flex-col justify-center overflow-hidden bg-surface-light px-4 py-12 sm:min-h-screen sm:px-5 sm:py-16 lg:px-8">
         <div className="mx-auto w-full max-w-7xl">
           
           {/* Header */}
@@ -355,7 +345,7 @@ export default function HomeHowItWorks() {
               >
                 <div className="flex gap-6 items-center">
                   {/* Introduction Card */}
-                  <div className="w-[300px] h-[320px] shrink-0 p-6 rounded-2xl bg-gradient-to-br from-accent-lime/10 to-accent-lime/20 border border-accent-lime/20 flex flex-col justify-between">
+                  <div className="home-flow-intro-card p-6 rounded-2xl bg-gradient-to-br from-accent-lime/10 to-accent-lime/20 border border-accent-lime/20 flex flex-col justify-between">
                     <div>
                       <h3 className="font-display text-lg font-bold text-ink-deep">AI ComfyUI Decor</h3>
                       <p className="mt-4 text-xs leading-relaxed text-muted">
@@ -374,7 +364,7 @@ export default function HomeHowItWorks() {
                     return (
                       <div key={index} className="flex items-center gap-6">
                         <div 
-                          className={`w-[300px] h-[320px] shrink-0 bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col justify-between ${
+                          className={`home-flow-step-card bg-white border rounded-2xl p-6 shadow-sm transition-all duration-300 flex flex-col justify-between ${
                             isActive 
                               ? 'border-accent-lime ring-4 ring-accent-lime/15 opacity-100 scale-102 shadow-md' 
                               : 'border-hairline-cloud opacity-40 scale-98 hover:opacity-60'
@@ -403,8 +393,8 @@ export default function HomeHowItWorks() {
           </div>
 
           {/* Help Tip */}
-          <div className="mt-8 flex justify-center items-center gap-2 text-xs text-muted/60">
-            <span>💡 Di chuột vào vùng thẻ chữ bên phải và lăn con lăn chuột để xem các bước</span>
+          <div className="mt-6 flex justify-center px-2 text-center text-xs text-muted/60 sm:mt-8">
+            <span>💡 Vuốt ngang hoặc lăn chuột ở vùng thẻ bên phải để xem các bước</span>
           </div>
 
         </div>

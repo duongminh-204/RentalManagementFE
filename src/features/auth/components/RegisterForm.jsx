@@ -42,7 +42,7 @@ export default function RegisterForm() {
             initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="card-light w-full p-8 md:p-10"
+            className="card-light w-full p-5 sm:p-8 md:p-10"
         >
             <div className="mb-8 text-center">
                 <p className="eyebrow mb-2 text-accent-violet-mid">Tài khoản mới</p>

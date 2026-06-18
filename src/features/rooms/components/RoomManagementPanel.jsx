@@ -482,7 +482,7 @@ const RoomManagementPanel = ({
 
   if (!room && !isCreate) {
     return (
-      <aside className="flex h-full min-h-[520px] flex-col items-center justify-center rounded-2xl border border-dashed border-hairline-cloud bg-surface-press/50 p-8 text-center lg:min-h-[600px]">
+      <aside className="flex h-full min-h-[280px] flex-col items-center justify-center rounded-2xl border border-dashed border-hairline-cloud bg-surface-press/50 p-6 text-center sm:min-h-[400px] sm:p-8 lg:min-h-[600px]">
         <Home className="mb-4 text-accent-violet-mid" size={40} />
         <p className="font-display text-lg font-semibold text-ink-deep">Chọn một phòng</p>
         <p className="mt-2 text-sm text-muted">
@@ -493,7 +493,7 @@ const RoomManagementPanel = ({
   }
 
   return (
-    <aside className="relative flex h-full max-h-[calc(100vh-10rem)] min-h-[520px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] lg:min-h-[600px] xl:min-h-[640px]">
+    <aside className="relative flex h-full max-h-[calc(100dvh-8rem)] min-h-[280px] flex-col overflow-hidden rounded-2xl border border-hairline-cloud bg-surface-light shadow-[var(--shadow-card)] sm:min-h-[400px] lg:min-h-[600px] xl:min-h-[640px]">
       <div className="border-b border-hairline-cloud bg-ink-deep px-5 py-4 text-on-primary">
         <div className="flex items-start justify-between gap-3">
           <div>

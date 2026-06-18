@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
@@ -18,11 +18,20 @@ export default function HomeNavbar() {
 
   const closeMobile = () => setMobileOpen(false);
 
+  useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [mobileOpen]);
+
   return (
     <header className="home-nav sticky top-0 z-50 border-b border-white/10 bg-surface-night/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 lg:px-8">
-        <Link to="/" className="flex items-center no-underline" onClick={closeMobile}>
-          <AppLogo className="h-14 w-auto rounded-lg bg-white object-contain px-1.5 py-0.5" />
+      <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4 lg:px-8">
+        <Link to="/" className="flex min-w-0 shrink items-center no-underline" onClick={closeMobile}>
+          <AppLogo className="h-10 w-auto max-w-[140px] rounded-lg bg-white object-contain px-1.5 py-0.5 sm:h-12 sm:max-w-none" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">
@@ -65,9 +74,9 @@ export default function HomeNavbar() {
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="overflow-hidden border-t border-white/10 md:hidden"
+            className="mobile-nav-scroll overflow-hidden border-t border-white/10 md:hidden"
           >
-            <div className="flex flex-col gap-1 px-5 py-4">
+            <div className="safe-bottom flex flex-col gap-1 px-4 py-4 sm:px-5">
               {NAV_LINKS.map((link) => (
                 <a
                   key={link.href}

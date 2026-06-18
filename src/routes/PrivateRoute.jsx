@@ -60,10 +60,10 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   return (
-    <div className="min-h-screen bg-surface-light">
+    <div className="min-h-screen min-w-0 overflow-x-clip bg-surface-light">
       <Sidebar />
-      <div className="lg:pl-64">
-        <main className="min-h-screen">{children}</main>
+      <div className="min-w-0 lg:pl-64">
+        <main className="min-h-screen min-w-0">{children}</main>
       </div>
     </div>
   );

@@ -145,7 +145,7 @@ const Dashboard = () => {
           <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
             <div className="min-w-0">
               <span className="dashboard-hero-badge">Tổng quan {currentMonthLabel}</span>
-              <h1 className="mt-4 text-3xl font-bold leading-tight text-ink-deep sm:text-4xl">
+              <h1 className="mt-4 text-[clamp(1.5rem,5.5vw,2.25rem)] font-bold leading-tight text-ink-deep">
                 Dashboard nhà trọ
               </h1>
               <p className="dashboard-hero-tagline" aria-label="Quản lý thông minh – Vận hành dễ dàng – Tăng trưởng bền vững">

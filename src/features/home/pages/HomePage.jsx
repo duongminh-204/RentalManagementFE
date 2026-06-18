@@ -22,7 +22,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="home-page min-h-screen bg-surface-night">
+    <div className="home-page min-h-screen min-w-0 overflow-x-clip bg-surface-night">
       <HomeNavbar />
       <main>
         <HomeHero />

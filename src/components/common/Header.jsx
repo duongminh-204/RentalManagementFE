@@ -38,6 +38,20 @@ const Header = () => {
     };
   }, []);
 
+  useEffect(() => {
+    setIsOpen(false);
+    setIsProfileOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   const role = user?.role || '';
   const isAdmin = isAdminRole(role);
   const roleLabel = getRoleLabel(role);
@@ -68,9 +82,9 @@ const Header = () => {
   const homePath = isAdmin ? '/admin/excel-template' : '/dashboard';
 
   return (
-    <header className="sticky top-0 z-50 border-b border-hairline-cloud bg-surface-light">
-      <div className="w-full px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
+    <header className="safe-top sticky top-0 z-50 border-b border-hairline-cloud bg-surface-light">
+      <div className="w-full px-3 sm:px-6 lg:px-8">
+        <div className="flex h-14 items-center justify-between sm:h-16">
           <Link to={homePath} className="group flex items-center gap-3">
             <AppLogo variant="icon" className="transition-transform group-hover:scale-105" />
             <div className="hidden sm:block">
@@ -162,7 +176,7 @@ const Header = () => {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
-              className="space-y-1 border-t border-hairline-cloud pb-4 pt-2 lg:hidden"
+              className="mobile-nav-scroll space-y-1 border-t border-hairline-cloud pb-4 pt-2 lg:hidden"
             >
               {menuItems.map((item) => {
                 const Icon = item.icon;

@@ -318,14 +318,14 @@ const RoomsList = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="flex gap-2 mb-6"
+          className="mb-6 flex flex-wrap gap-2"
         >
           <button
             onClick={() => {
               setViewMode('floorplan');
               updateRoomQuery('floorplan', statusFilter);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition sm:flex-none sm:px-4 ${
               viewMode === 'floorplan'
                 ? 'bg-primary text-on-primary'
                 : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
@@ -339,7 +339,7 @@ const RoomsList = () => {
               setViewMode('table');
               updateRoomQuery('table', statusFilter);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${
+            className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium transition sm:flex-none sm:px-4 ${
               viewMode === 'table'
                 ? 'bg-primary text-on-primary'
                 : 'border border-hairline-cloud bg-surface-light text-ink-deep hover:bg-surface-press'
@@ -360,7 +360,7 @@ const RoomsList = () => {
           >
             <RoomStatusGuide />
             <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(440px,520px)] lg:items-stretch xl:gap-6 xl:grid-cols-[minmax(0,1.15fr)_minmax(480px,560px)]">
-              <div className="min-h-[520px] overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light p-3 lg:min-h-[600px] xl:min-h-[640px]">
+              <div className="min-h-[280px] overflow-hidden rounded-xl border border-hairline-cloud bg-surface-light p-2 sm:min-h-[400px] sm:p-3 lg:min-h-[600px] xl:min-h-[640px]">
                 <FloorPlanCanvas
                   rooms={roomsForBuilding}
                   selectedRoomId={selectedRoomId}

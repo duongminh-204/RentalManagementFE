@@ -58,6 +58,15 @@ const Sidebar = () => {
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
+
   const close = () => setIsOpen(false);
 
   const handleLogout = () => {
@@ -71,9 +80,9 @@ const Sidebar = () => {
       <Link
         to="/dashboard"
         onClick={close}
-        className="flex items-center gap-4 border-b border-hairline-cloud px-5 py-6"
+        className="flex items-center gap-3 border-b border-hairline-cloud px-4 py-4 sm:gap-4 sm:px-5 sm:py-6"
       >
-        <AppLogo variant="icon" className="h-24 w-24" />
+        <AppLogo variant="icon" className="h-12 w-12 sm:h-14 sm:w-14" />
         <div className="min-w-0">
           <p className="font-display text-base font-semibold tracking-tight text-ink-deep">
             TROEZ
@@ -122,7 +131,7 @@ const Sidebar = () => {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="sticky top-0 z-40 flex items-center justify-between border-b border-hairline-cloud bg-surface-light px-4 py-3 lg:hidden">
+      <div className="safe-top sticky top-0 z-40 flex items-center justify-between border-b border-hairline-cloud bg-surface-light px-3 py-2.5 sm:px-4 sm:py-3 lg:hidden">
         <Link to="/profile" className="flex min-w-0 items-center gap-2.5">
           <UserAvatar user={user} size="sm" />
           <div className="min-w-0">
@@ -151,7 +160,7 @@ const Sidebar = () => {
       {isOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-ink-deep/40" onClick={close} aria-hidden="true" />
-          <aside className="absolute inset-y-0 left-0 w-72 max-w-[80%] bg-surface-light shadow-[var(--shadow-card)]">
+          <aside className="safe-top safe-bottom absolute inset-y-0 left-0 flex w-[min(18rem,calc(100vw-2rem))] max-w-[85%] flex-col bg-surface-light shadow-[var(--shadow-card)]">
             <button
               type="button"
               onClick={close}
