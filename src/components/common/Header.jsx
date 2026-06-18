@@ -9,6 +9,7 @@ import {
   Home,
   LogOut,
   Menu,
+  Sparkles,
   User,
   Users,
   X,
@@ -49,6 +50,7 @@ const Header = () => {
     : [
         { label: 'Tổng quan', path: '/dashboard', icon: Home },
         { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+        { label: 'AI Decor', path: '/rooms/decor', icon: Sparkles },
         { label: 'Hoá đơn', path: '/invoices', icon: FileText },
         { label: 'Công nợ', path: '/debts', icon: HandCoins },
         { label: 'Khách thuê', path: '/tenants', icon: Users },

@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
+import { Link } from 'react-router-dom';
 import {
   X,
   Home,
@@ -15,6 +16,7 @@ import {
   Pencil,
   RefreshCw,
   Eye,
+  Sparkles,
 } from 'lucide-react';
 import RoomStatusBadge from '../../../components/common/RoomStatusBadge';
 import ImageModal from '../../../components/common/ImageModal';
@@ -1025,6 +1027,13 @@ const RoomManagementPanel = ({
 
             {activeTab === 'images' && canManageExtras && (
               <div className="space-y-4">
+                <Link
+                  to={`/rooms/decor?roomId=${roomId}`}
+                  className="flex items-center justify-center gap-2 rounded-xl border border-primary/30 bg-primary/5 px-4 py-3 text-sm font-semibold text-primary transition hover:bg-primary/10"
+                >
+                  <Sparkles size={18} />
+                  AI Decor phòng — tạo concept trang trí
+                </Link>
                 <div className="space-y-3 rounded-xl border border-hairline-cloud bg-surface-press/40 p-3">
                   <label className="flex cursor-pointer flex-col items-center gap-2 rounded-xl border-2 border-dashed border-hairline-cloud p-6 transition hover:border-accent-violet">
                     <ImageIcon className="text-accent-violet-mid" size={28} />

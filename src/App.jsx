@@ -10,6 +10,7 @@ import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
 import DevicesPage from "./features/devices/pages/DevicesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
+import { RoomDecorPage } from './features/room-decor';
 
 import { PrivateRoute } from './routes/PrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
@@ -45,6 +46,14 @@ function App() {
           element={
             <PrivateRoute>
               <RoomsPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/rooms/decor"
+          element={
+            <PrivateRoute>
+              <RoomDecorPage />
             </PrivateRoute>
           }
         />
