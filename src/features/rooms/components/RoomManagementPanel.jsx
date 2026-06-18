@@ -28,6 +28,8 @@ import {
 import * as roomMgmtApi from '../api/roomManagementApi';
 import * as buildingApi from '../../buildings/api/buildingsApi';
 import BuildingManager from '../../buildings/components/BuildingManager';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 import CurrencyInput from '../../../components/common/CurrencyInput';
 import { parseMoneyInputNumber, toMoneyInputValue } from '../../../utils/currencyInput';
 import {
@@ -97,6 +99,7 @@ const RoomManagementPanel = ({
   saveLoading = false,
   saveError = null,
 }) => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [activeTab, setActiveTab] = useState('info');
   const [info, setInfo] = useState(emptyInfo());
   const [roomImageFile, setRoomImageFile] = useState(null);
@@ -353,7 +356,9 @@ const RoomManagementPanel = ({
   };
 
   const handleContractDelete = async (contractId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa hợp đồng này?')) return;
+    const contract = roomContracts.find((item) => String(item.id) === String(contractId));
+    const confirmed = await confirmDelete(deleteConfirmPresets.contract(contract));
+    if (!confirmed) return;
     await runAction(async () => {
       await deleteContract(contractId);
       await loadRoomContracts();
@@ -464,14 +469,9 @@ const RoomManagementPanel = ({
     });
   };
 
-  const handleRemoveRoomTenant = async (contractId) => {
-    if (
-      !window.confirm(
-        'Hủy hợp đồng của khách thuê với phòng này? Khách vẫn còn trong danh sách quản lý khách thuê.'
-      )
-    ) {
-      return;
-    }
+  const handleRemoveRoomTenant = async (contractId, tenant) => {
+    const confirmed = await confirmDelete(deleteConfirmPresets.roomTenant(tenant));
+    if (!confirmed) return;
     await runAction(async () => {
       await roomMgmtApi.removeTenant(roomId, contractId);
       await loadRoomContracts();
@@ -1069,9 +1069,11 @@ const RoomManagementPanel = ({
                       />
                       <button
                         type="button"
-                        onClick={() =>
-                          runAction(() => roomMgmtApi.deleteRoomImage(roomId, img.id))
-                        }
+                        onClick={async () => {
+                          const confirmed = await confirmDelete(deleteConfirmPresets.roomImage());
+                          if (!confirmed) return;
+                          runAction(() => roomMgmtApi.deleteRoomImage(roomId, img.id));
+                        }}
                         className="absolute right-2 top-2 rounded-full bg-primary/90 p-1.5 text-on-primary opacity-0 transition group-hover:opacity-100"
                       >
                         <Trash2 size={14} />
@@ -1142,7 +1144,7 @@ const RoomManagementPanel = ({
                           )}
                           <button
                             type="button"
-                            onClick={() => handleRemoveRoomTenant(u.contractId)}
+                            onClick={() => handleRemoveRoomTenant(u.contractId, u)}
                             disabled={busy}
                             className="rounded-md p-1.5 text-accent-pink hover:bg-on-dark-faint"
                             aria-label="Hủy hợp đồng"
@@ -1285,6 +1287,7 @@ const RoomManagementPanel = ({
         onClose={() => setPreviewImage(null)}
         src={previewImage}
       />
+      <ConfirmDeleteDialog />
     </aside>
   );
 };

@@ -5,6 +5,8 @@ import { Building, PlusLg, PencilSquare, Trash, ArrowRepeat, GeoAlt, XLg } from 
 import { motion, AnimatePresence } from 'framer-motion';
 import * as buildingsApi from '../api/buildingsApi';
 import BuildingMapRoutes from '../components/BuildingMapRoutes';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -15,6 +17,7 @@ const formatDate = (value) => {
 
 const BuildingPage = () => {
   const navigate = useNavigate();
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [buildings, setBuildings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -53,7 +56,8 @@ const BuildingPage = () => {
   }, [loadBuildings]);
 
   const handleDelete = async (building) => {
-    if (!window.confirm(`Bạn có chắc muốn xóa tòa nhà "${building.buildingName}"?`)) return;
+    const confirmed = await confirmDelete(deleteConfirmPresets.building(building));
+    if (!confirmed) return;
     setDeletingId(building.buildingId);
     setError(null);
     try {
@@ -262,6 +266,7 @@ const BuildingPage = () => {
           document.body
         )}
       </div>
+      <ConfirmDeleteDialog />
     </div>
   );
 };

@@ -26,6 +26,8 @@ import { formatCount, formatCurrency } from '../utils/dashboardFormat';
 import { parseWalletAccountFromQrPayload } from '../../../utils/qrPayload';
 import { buildPaymentMethodPreviewQrUrl } from '../../../utils/vietqr';
 import { getPaymentMethodWalletAccount, getPaymentMethodIdentifier, isWalletVirtualAccountNumber } from '../../../utils/paymentMethods';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const QR_STORAGE_KEY = 'rentalDebtBankQr';
 const PAYMENT_METHODS_STORAGE_KEY = 'rentalDebtPaymentMethods';
@@ -623,6 +625,7 @@ const getDebtItems = (debtMonth) => {
 };
 
 const DebtDetailsPage = () => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const { debtInfo, loading, error, refetch } = useDashboard();
   const [payingTarget, setPayingTarget] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
@@ -761,6 +764,26 @@ const DebtDetailsPage = () => {
 
   const handleRemovePaymentMethod = (methodId) => {
     handleRemovePaymentMethods([methodId]);
+  };
+
+  const confirmRemovePaymentMethods = async (methodIds) => {
+    const methods = paymentMethods.filter((method) => methodIds.includes(method.id));
+    const confirmed = await confirmDelete(
+      deleteConfirmPresets.paymentMethod(methods[0], methodIds.length)
+    );
+    if (!confirmed) return;
+    handleRemovePaymentMethods(methodIds);
+  };
+
+  const confirmRemovePaymentMethod = async (methodId) => {
+    await confirmRemovePaymentMethods([methodId]);
+  };
+
+  const confirmClearQrImage = async (methodId) => {
+    const method = paymentMethods.find((item) => item.id === methodId);
+    const confirmed = await confirmDelete(deleteConfirmPresets.paymentQrImage(method));
+    if (!confirmed) return;
+    handleClearQrImage(methodId);
   };
 
   const handleTogglePaymentMethodSelection = (methodId, checked) => {
@@ -1244,7 +1267,7 @@ const DebtDetailsPage = () => {
                     {activePaymentMethod.qrImageUrl ? (
                       <button
                         type="button"
-                        onClick={() => handleClearQrImage(activePaymentMethod.id)}
+                        onClick={() => confirmClearQrImage(activePaymentMethod.id)}
                         className="absolute left-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full border border-[#eadff2] bg-white/95 text-ink-deep shadow-sm transition hover:bg-[#fff1f6] hover:text-accent-pink"
                         aria-label="Xóa ảnh QR"
                         title="Xóa ảnh QR"
@@ -1308,7 +1331,7 @@ const DebtDetailsPage = () => {
                     {multiSelectPaymentMode && selectedPaymentMethodCount > 0 ? (
                       <button
                         type="button"
-                        onClick={() => handleRemovePaymentMethods(selectedPaymentMethodIds)}
+                        onClick={() => confirmRemovePaymentMethods(selectedPaymentMethodIds)}
                         className="flex h-9 items-center justify-center gap-1.5 rounded-xl border border-[#f3c3d3] bg-[#fff6f9] px-3 text-xs font-bold text-accent-pink transition hover:bg-[#fff1f6]"
                         title={`Xóa ${selectedPaymentMethodCount} tài khoản đã chọn`}
                       >
@@ -1402,7 +1425,7 @@ const DebtDetailsPage = () => {
                     <Star className="h-4 w-4" />
                     Đặt làm tài khoản mặc định
                   </button>
-                  <button type="button" onClick={() => handleRemovePaymentMethod(activePaymentMethod.id)} className="dashboard-action-button justify-center">
+                  <button type="button" onClick={() => confirmRemovePaymentMethod(activePaymentMethod.id)} className="dashboard-action-button justify-center">
                     <Trash2 className="h-4 w-4" />
                     Xóa tài khoản
                   </button>
@@ -1606,6 +1629,7 @@ const DebtDetailsPage = () => {
           </section>
         )}
       </div>
+      <ConfirmDeleteDialog />
     </div>
   );
 };

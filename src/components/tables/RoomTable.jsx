@@ -81,11 +81,7 @@ const RoomTable = ({
                     Sửa
                   </button>
                   <button
-                    onClick={() => {
-                      if (window.confirm('Bạn có chắc muốn xóa phòng này?')) {
-                        onDelete(room.id);
-                      }
-                    }}
+                    onClick={() => onDelete(room.id)}
                     className="inline-flex items-center gap-1 px-3 py-2 bg-red-50 text-red-600 hover:bg-red-100 rounded-lg transition-colors text-sm font-medium"
                   >
                     <Trash size={16} />

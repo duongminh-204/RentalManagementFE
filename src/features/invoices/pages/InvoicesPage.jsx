@@ -20,6 +20,7 @@ import {
   ArrowRight, 
   Eye, 
   X,
+  Trash2,
   Printer,
   TrendingUp,
   Percent,
@@ -50,6 +51,8 @@ import {
 } from '../../../utils/vietqr';
 import { resolveWalletAccountFromPaymentMethod } from '../../../utils/qrPayload';
 import { buildInvoiceExportFileName } from '../utils/invoiceHelpers';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -71,6 +74,7 @@ const formatNumberField = (value) => {
 
 const InvoicesPage = () => {
   const { rooms, loading: roomsLoading, error: roomsError } = useRooms();
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const storedUser = getStoredUser();
   const currentUserId = getCurrentUserId(storedUser);
 
@@ -243,6 +247,29 @@ const InvoicesPage = () => {
       setInvoiceResult(historyItem);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDeleteInvoice = async (invoice) => {
+    const invoiceId = invoice?.invoiceId ?? invoice?.InvoiceId;
+    if (!invoiceId) return;
+
+    const confirmed = await confirmDelete({
+      ...deleteConfirmPresets.invoice(invoice),
+    });
+    if (!confirmed) return;
+
+    setError('');
+    setSuccessMessage('');
+    try {
+      await invoicesApi.deleteInvoice(invoiceId);
+      if (invoiceResult?.invoiceId === invoiceId) {
+        setInvoiceResult(null);
+      }
+      setSuccessMessage('Đã xóa hóa đơn thành công.');
+      await loadInvoiceHistory();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể xóa hóa đơn.');
     }
   };
 
@@ -870,7 +897,7 @@ const InvoicesPage = () => {
                   <th className="px-6 py-4">Tổng tiền</th>
                   <th className="px-6 py-4">Trạng thái</th>
                   <th className="px-6 py-4">Ngày tạo</th>
-                  <th className="px-6 py-4 text-center">Biên lai</th>
+                  <th className="px-6 py-4 text-center">Thao tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-hairline-cloud bg-white text-sm">
@@ -891,12 +918,21 @@ const InvoicesPage = () => {
                       {historyItem.createdAt ? new Date(historyItem.createdAt).toLocaleDateString('vi-VN') : '-'}
                     </td>
                     <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleViewInvoiceDetails(historyItem)}
-                        className="btn-inverted !py-1.5 !px-3 text-xs inline-flex items-center gap-1 hover:!border-accent-violet hover:!text-accent-violet transition"
-                      >
-                        <Eye className="w-3.5 h-3.5" /> Xem
-                      </button>
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handleViewInvoiceDetails(historyItem)}
+                          className="btn-inverted !py-1.5 !px-3 text-xs inline-flex items-center gap-1 hover:!border-accent-violet hover:!text-accent-violet transition"
+                        >
+                          <Eye className="w-3.5 h-3.5" /> Xem
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteInvoice(historyItem)}
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" /> Xóa
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -938,6 +974,17 @@ const InvoicesPage = () => {
                     className="invoice-print-close rounded-full bg-surface-press p-2 hover:bg-surface-press-strong transition md:hidden"
                   >
                     <X className="w-5 h-5 text-ink-deep" />
+                  </button>
+                </div>
+
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteInvoice(invoiceResult)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600 transition hover:bg-red-100"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    Xóa hóa đơn
                   </button>
                 </div>
 
@@ -1137,6 +1184,8 @@ const InvoicesPage = () => {
           </div>
         )}
       </AnimatePresence>
+
+      <ConfirmDeleteDialog />
     </div>
   );
 };

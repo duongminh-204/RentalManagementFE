@@ -12,11 +12,14 @@ import { getRoomById } from '../api/roomsApi';
 import { normalizeRoomFromApi } from '../utils/roomHelpers';
 import * as buildingsApi from '../../buildings/api/buildingsApi';
 import * as roomMgmtApi from '../api/roomManagementApi';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const RoomsList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { rooms, loading, error, addRoom, editRoom, changeRoomStatus, removeRoom, refetch } =
     useRooms();
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
 
   const [buildings, setBuildings] = useState([]);
   const [selectedBuildingId, setSelectedBuildingId] = useState('all');
@@ -185,7 +188,11 @@ const RoomsList = () => {
   };
 
   const handleDelete = async (roomId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa phòng này?')) return;
+    const room =
+      rooms.find((item) => String(item.id ?? item.roomId) === String(roomId)) ??
+      managementRoom;
+    const confirmed = await confirmDelete(deleteConfirmPresets.room(room));
+    if (!confirmed) return;
     try {
       await removeRoom(roomId);
       const currentId = managementRoom?.id ?? managementRoom?.roomId;
@@ -460,6 +467,7 @@ const RoomsList = () => {
         )}
       </AnimatePresence>
 
+      <ConfirmDeleteDialog />
     </div>
   );
 };

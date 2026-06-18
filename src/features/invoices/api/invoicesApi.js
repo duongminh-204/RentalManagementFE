@@ -23,3 +23,7 @@ export const searchInvoices = async (filters) => {
   const response = await api.get(`/invoices/history?${params.toString()}`);
   return response.data;
 };
+
+export const deleteInvoice = async (invoiceId) => {
+  await api.delete(`/invoices/${invoiceId}`);
+};

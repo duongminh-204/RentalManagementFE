@@ -18,6 +18,8 @@ import { DEVICE_STATUS_OPTIONS, getStatusConfig } from '../constants';
 import { resolveItemIcon } from '../utils/itemIcons';
 import CurrencyInput from '../../../components/common/CurrencyInput';
 import { parseMoneyInputNumber } from '../../../utils/currencyInput';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const STATUS_ICONS = {
   active: { Icon: CheckCircle2, className: 'text-green-500' },
@@ -173,6 +175,7 @@ const BuildingRoomGroup = ({ buildingName, address, rooms, selectedRoomId, count
 };
 
 const DevicesList = () => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const {
     buildings,
     rooms,
@@ -250,15 +253,20 @@ const DevicesList = () => {
   };
 
   const handleRemoveCatalog = async (item) => {
-    if (
-      !window.confirm(
-        `Xóa "${item.name}" khỏi danh sách? Mọi phòng đang dùng mục này cũng sẽ bị gỡ.`
-      )
-    ) {
-      return;
-    }
+    const confirmed = await confirmDelete(deleteConfirmPresets.catalogItem(item));
+    if (!confirmed) return;
     try {
       await removeCatalogItem(item);
+    } catch {
+      // error shown via hook
+    }
+  };
+
+  const handleRemoveFromRoom = async (item) => {
+    const confirmed = await confirmDelete(deleteConfirmPresets.roomAssignment(item));
+    if (!confirmed) return;
+    try {
+      await removeItem(item);
     } catch {
       // error shown via hook
     }
@@ -382,7 +390,7 @@ const DevicesList = () => {
         {/* Gỡ khỏi phòng */}
         <button
           type="button"
-          onClick={() => removeItem(item)}
+          onClick={() => handleRemoveFromRoom(item)}
           title="Gỡ khỏi phòng"
           className="shrink-0 rounded-lg border border-red-200 p-2 text-accent-pink transition-colors hover:bg-red-50"
         >
@@ -594,6 +602,7 @@ const DevicesList = () => {
           </div>
         </section>
       </div>
+      <ConfirmDeleteDialog />
     </div>
   );
 };

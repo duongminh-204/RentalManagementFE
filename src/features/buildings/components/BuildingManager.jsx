@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Plus, Edit3, Trash2, Save, X, Loader2 } from 'lucide-react';
 import * as buildingsApi from '../api/buildingsApi';
 import AddressAutocomplete from './AddressAutocomplete';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const initialForm = {
   buildingName: '',
@@ -18,6 +20,7 @@ const BuildingManager = ({
   onSelectBuilding,
   onBuildingsUpdated,
 }) => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [editId, setEditId] = useState(null);
@@ -42,7 +45,9 @@ const BuildingManager = ({
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm('Bạn có chắc muốn xóa tòa nhà này?')) return;
+    const building = buildings?.find((item) => String(item.buildingId) === String(id));
+    const confirmed = await confirmDelete(deleteConfirmPresets.building(building));
+    if (!confirmed) return;
     setSaving(true);
     setError(null);
     try {
@@ -207,6 +212,7 @@ const BuildingManager = ({
           )}
         </div>
       </form>
+      <ConfirmDeleteDialog />
     </div>
   );
 };

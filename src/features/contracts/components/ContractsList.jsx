@@ -5,8 +5,11 @@ import ContractCard from './ContractCard';
 import ContractForm from './ContractForm';
 import { useContracts } from '../hooks/useContracts';
 import { getContractStatus, prepareContractPayload } from '../utils/contractHelpers';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const ContractsList = ({ tenants = [], rooms = [] }) => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const {
     contracts,
     expiringContracts,
@@ -95,7 +98,9 @@ const ContractsList = ({ tenants = [], rooms = [] }) => {
   };
 
   const handleDelete = async (contractId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa hợp đồng này?')) return;
+    const contract = contracts.find((item) => String(item.id) === String(contractId));
+    const confirmed = await confirmDelete(deleteConfirmPresets.contract(contract));
+    if (!confirmed) return;
     try {
       await removeContract(contractId);
     } catch (err) {
@@ -331,6 +336,7 @@ const ContractsList = ({ tenants = [], rooms = [] }) => {
           error={formError}
         />
       )}
+      <ConfirmDeleteDialog />
     </div>
   );
 };

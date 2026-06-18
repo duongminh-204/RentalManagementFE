@@ -14,6 +14,8 @@ import VehicleListItem from './VehicleListItem';
 import VehicleManagementPanel from './VehicleManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
 import { useVehicles } from '../hooks/useVehicles';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const VEHICLE_STATUS_OPTIONS = [
   { value: 'all', label: 'Mọi trạng thái' },
@@ -35,6 +37,7 @@ import { useRooms } from '../../rooms';
 import { formatCurrency } from '../utils/vehicleHelpers';
 
 const VehiclesList = () => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const { tenants } = useTenants();
   const { rooms } = useRooms();
   const {
@@ -199,7 +202,9 @@ const VehiclesList = () => {
   };
 
   const handleDelete = async (vehicleId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa xe này?')) return;
+    const vehicle = vehicles.find((item) => String(item.id) === String(vehicleId)) ?? selectedVehicle;
+    const confirmed = await confirmDelete(deleteConfirmPresets.vehicle(vehicle));
+    if (!confirmed) return;
     try {
       await removeVehicle(vehicleId);
       if (String(selectedVehicle?.id) === String(vehicleId)) handleClosePanel();
@@ -424,6 +429,7 @@ const VehiclesList = () => {
           </div>
         )}
       </div>
+      <ConfirmDeleteDialog />
     </div>
   );
 };

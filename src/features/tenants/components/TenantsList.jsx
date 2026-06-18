@@ -5,6 +5,8 @@ import TenantManagementPanel from './TenantManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
 import { useTenants } from '../hooks/useTenants';
 import * as buildingsApi from '../../buildings/api/buildingsApi';
+import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
+import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
 
 const TENANT_STATUS_OPTIONS = [
   { value: 'all', label: 'Tất cả trạng thái' },
@@ -14,6 +16,7 @@ const TENANT_STATUS_OPTIONS = [
 ];
 
 const TenantsList = () => {
+  const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const {
     tenants,
     loading,
@@ -157,7 +160,9 @@ const TenantsList = () => {
   };
 
   const handleDelete = async (tenantId) => {
-    if (!window.confirm('Bạn có chắc muốn xóa vĩnh viễn khách thuê này? Toàn bộ hợp đồng liên quan cũng sẽ bị xóa.')) return;
+    const tenant = tenants.find((item) => String(item.id) === String(tenantId)) ?? selectedTenant;
+    const confirmed = await confirmDelete(deleteConfirmPresets.tenant(tenant));
+    if (!confirmed) return;
     try {
       await removeTenant(tenantId);
       if (String(selectedTenant?.id) === String(tenantId)) handleClosePanel();
@@ -180,7 +185,9 @@ const TenantsList = () => {
   };
 
   const handleDeleteIdCard = async (tenantId) => {
-    if (!window.confirm('Xóa ảnh CCCD của khách này? Khách thuê vẫn được giữ trong hệ thống.')) return;
+    const tenant = tenants.find((item) => String(item.id) === String(tenantId)) ?? selectedTenant;
+    const confirmed = await confirmDelete(deleteConfirmPresets.tenantIdCard(tenant));
+    if (!confirmed) return;
     try {
       setSaveError(null);
       await removeIdCardImage(tenantId);
@@ -345,6 +352,7 @@ const TenantsList = () => {
           </div>
         )}
       </div>
+      <ConfirmDeleteDialog />
     </div>
   );
 };
