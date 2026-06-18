@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { getRoleLabel, getStoredUser } from '../../hooks/useAuth';
 import UserAvatar from './UserAvatar';
+import AppLogo from './AppLogo';
 
 const navItems = [
   { label: 'Tổng quan', path: '/dashboard', icon: Home },
@@ -72,12 +73,10 @@ const Sidebar = () => {
         onClick={close}
         className="flex items-center gap-3 border-b border-hairline-cloud px-5 py-5"
       >
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-          <Building2 className="text-on-primary" size={22} />
-        </div>
+        <AppLogo variant="icon" className="h-10 w-10 shrink-0 rounded-lg object-contain" />
         <div className="min-w-0">
           <p className="font-display text-sm font-semibold tracking-tight text-ink-deep">
-            RentalManagement
+            TROEZ
           </p>
           <p className="text-[10px] font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
             Quản lý phòng trọ

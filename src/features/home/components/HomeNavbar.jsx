@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
-import logo from '../../../assets/LOGOEXE.png';
+import AppLogo from '../../../components/common/AppLogo';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Tính năng' },
@@ -21,11 +21,8 @@ export default function HomeNavbar() {
   return (
     <header className="home-nav sticky top-0 z-50 border-b border-white/10 bg-surface-night/80 backdrop-blur-xl">
       <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 lg:px-8">
-        <Link to="/" className="flex items-center gap-3 no-underline" onClick={closeMobile}>
-          <img src={logo} alt="Trọ EZ" className="h-9 w-9 rounded-lg object-contain" />
-          <span className="font-display text-xl font-bold text-on-primary">
-            Trọ <span className="text-accent-lime">EZ</span>
-          </span>
+        <Link to="/" className="flex items-center no-underline" onClick={closeMobile}>
+          <AppLogo className="h-14 w-auto rounded-lg bg-white object-contain px-1.5 py-0.5" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

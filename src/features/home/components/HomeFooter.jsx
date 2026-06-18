@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail, Phone } from 'lucide-react';
-import logo from '../../../assets/LOGOEXE.png';
+import AppLogo from '../../../components/common/AppLogo';
 import { CONTACT_INFO } from '../constants/contact';
 
 const FacebookIcon = ({ size = 20 }) => (
@@ -22,11 +22,8 @@ export default function HomeFooter() {
     <footer id="contact" className="border-t border-white/10 bg-surface-night">
       <div className="mx-auto max-w-6xl px-5 py-10 lg:px-8">
         <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-          <Link to="/" className="flex items-center gap-3 no-underline">
-            <img src={logo} alt="Trọ EZ" className="h-8 w-8 rounded-lg object-contain" />
-            <span className="font-display text-lg font-bold text-on-primary">
-              Trọ <span className="text-accent-lime">EZ</span>
-            </span>
+          <Link to="/" className="flex items-center no-underline">
+            <AppLogo className="h-12 w-auto rounded-lg bg-white object-contain px-1 py-0.5" />
           </Link>
 
           <div className="flex flex-wrap items-center justify-center gap-5 text-sm">

@@ -8,7 +8,7 @@ export default function AuthIllustration({ title, highlight, icon = '🏠', logo
             transition={{ duration: 0.7 }}
             className="hidden flex-col items-center justify-center text-on-primary md:flex"
         >
-            <p className="eyebrow mb-4 text-on-dark-muted">Trọ EZ</p>
+            <p className="eyebrow mb-4 text-on-dark-muted">TROEZ</p>
             <h1 className="font-display text-center text-5xl font-bold leading-[1.1] text-on-primary lg:text-6xl">
                 {title}{' '}
                 {highlight && <span className="chip-lime">{highlight}</span>}
@@ -19,7 +19,7 @@ export default function AuthIllustration({ title, highlight, icon = '🏠', logo
             {logoSrc ? (
                 <motion.img
                     src={logoSrc}
-                    alt="Trọ EZ"
+                    alt="TROEZ"
                     animate={{ y: [0, -8, 0] }}
                     transition={{ repeat: Infinity, duration: 6, ease: 'easeInOut' }}
                     className="mt-12 w-full max-w-xs object-contain drop-shadow-lg"

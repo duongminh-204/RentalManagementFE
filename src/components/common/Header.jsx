@@ -17,6 +17,7 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { getRoleLabel, getStoredUser, isAdminRole } from '../../hooks/useAuth';
 import UserAvatar from './UserAvatar';
+import AppLogo from './AppLogo';
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -71,12 +72,10 @@ const Header = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to={homePath} className="group flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-105">
-              <Building2 className="text-on-primary" size={22} />
-            </div>
+            <AppLogo variant="icon" className="h-10 w-10 rounded-lg object-contain transition-transform group-hover:scale-105" />
             <div className="hidden sm:block">
               <p className="font-display text-sm font-semibold tracking-tight text-ink-deep">
-                RentalManagement
+                TROEZ
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
                 {isAdmin ? 'Quản trị hệ thống' : 'Quản lý phòng trọ'}

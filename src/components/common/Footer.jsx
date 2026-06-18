@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Phone, Mail, MapPin, ExternalLink } from 'lucide-react';
+import { Phone, Mail, MapPin, ExternalLink } from 'lucide-react';
+import AppLogo from './AppLogo';
 
 const SquiggleDivider = () => (
   <svg
@@ -29,11 +30,9 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
-                <Building2 className="text-on-primary" size={22} />
-              </div>
+              <AppLogo variant="icon" className="h-10 w-10 rounded-lg object-contain" />
               <div>
-                <h3 className="font-display text-lg font-semibold">RentalManagement</h3>
+                <h3 className="font-display text-lg font-semibold">TROEZ</h3>
                 <p className="text-sm text-muted">Quản lý phòng trọ</p>
               </div>
             </div>
@@ -102,7 +101,7 @@ const Footer = () => {
 
       <div className="border-t border-hairline-cloud">
         <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-6 text-sm text-muted md:flex-row">
-          <p>© {currentYear} RentalManagement. Tất cả quyền được bảo lưu.</p>
+          <p>© {currentYear} TROEZ. Tất cả quyền được bảo lưu.</p>
           <div className="flex gap-6">
             <a href="#" className="underline-offset-2 hover:underline">Chính sách bảo mật</a>
             <a href="#" className="underline-offset-2 hover:underline">Điều khoản dịch vụ</a>
