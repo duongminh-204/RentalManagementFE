@@ -22,6 +22,16 @@ import { formatCount, formatMonthLabel } from '../utils/dashboardFormat';
 const DOWNLOAD_ERROR_MESSAGE =
   'Chưa tải được file mẫu. Nếu backend vừa được cập nhật, hãy khởi động lại backend rồi thử lại.';
 
+const getApiErrorMessage = (err, fallbackMessage) => {
+  const data = err.response?.data;
+
+  if (typeof data === 'string' && data.trim()) {
+    return data;
+  }
+
+  return data?.message || data?.title || data?.detail || fallbackMessage;
+};
+
 const Dashboard = () => {
   const { stats, roomStats, debtInfo, revenue, loading, error, refetch } = useDashboard();
   const fileInputRef = useRef(null);
@@ -93,7 +103,7 @@ const Dashboard = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setImportError(err.response?.data?.message || 'Không thể xuất file Excel lúc này. Vui lòng thử lại.');
+      setImportError(getApiErrorMessage(err, 'Không thể xuất file Excel lúc này. Vui lòng thử lại.'));
     } finally {
       setIsExporting(false);
     }
@@ -117,7 +127,7 @@ const Dashboard = () => {
       if (err.response?.status === 404) {
         setImportError('Backend hiện chưa có API import Excel. Hãy khởi động lại backend rồi thử nhập lại.');
       } else {
-        setImportError(err.response?.data?.message || 'Không thể nhập file Excel. Vui lòng kiểm tra lại mẫu file.');
+        setImportError(getApiErrorMessage(err, 'Không thể nhập file Excel. Vui lòng kiểm tra lại mẫu file.'));
       }
     } finally {
       setIsImporting(false);
