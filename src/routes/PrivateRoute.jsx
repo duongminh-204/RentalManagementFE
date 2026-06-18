@@ -41,7 +41,7 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const normalizedRole = role?.trim().toLowerCase();
@@ -53,7 +53,7 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
     if (!fallbackPath) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      return <Navigate to="/login" replace />;
+      return <Navigate to="/" replace />;
     }
 
     return <Navigate to={fallbackPath} replace />;
