@@ -72,7 +72,7 @@ const Header = () => {
       <div className="w-full px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between">
           <Link to={homePath} className="group flex items-center gap-3">
-            <AppLogo variant="icon" className="h-10 w-auto rounded-lg bg-white object-contain p-1 transition-transform group-hover:scale-105" />
+            <AppLogo variant="icon" className="transition-transform group-hover:scale-105" />
             <div className="hidden sm:block">
               <p className="font-display text-sm font-semibold tracking-tight text-ink-deep">
                 TROEZ

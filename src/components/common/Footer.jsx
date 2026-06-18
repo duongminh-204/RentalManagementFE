@@ -30,7 +30,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 gap-10 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-4">
             <div className="flex items-center gap-3">
-              <AppLogo variant="icon" className="h-10 w-auto rounded-lg bg-white object-contain p-1" />
+              <AppLogo variant="icon" />
               <div>
                 <h3 className="font-display text-lg font-semibold">TROEZ</h3>
                 <p className="text-sm text-muted">Quản lý phòng trọ</p>

@@ -73,7 +73,7 @@ const Sidebar = () => {
         onClick={close}
         className="flex items-center gap-3 border-b border-hairline-cloud px-5 py-5"
       >
-        <AppLogo variant="icon" className="h-10 w-auto shrink-0 rounded-lg bg-white object-contain p-1" />
+        <AppLogo variant="icon" />
         <div className="min-w-0">
           <p className="font-display text-sm font-semibold tracking-tight text-ink-deep">
             TROEZ
