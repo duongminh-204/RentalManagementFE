@@ -1,26 +1,70 @@
 import { motion } from 'framer-motion';
-import { Heart, Users } from 'lucide-react';
+import { Code2, Heart, Megaphone, Users } from 'lucide-react';
 
-const TEAM_MEMBERS = [
-  { name: 'Thành Vinh', role: 'Thành viên nhóm phát triển', tone: 'violet' },
-  { name: 'Ngọc Diễm', role: 'Thành viên nhóm phát triển', tone: 'pink' },
-  { name: 'Danh Khoa', role: 'Thành viên nhóm phát triển', tone: 'lime' },
-  { name: 'Ngô Hoàng', role: 'Thành viên nhóm phát triển', tone: 'violet' },
-  { name: 'Minh Hoàng', role: 'Thành viên nhóm phát triển', tone: 'pink' },
-  { name: 'Quang Minh', role: 'Thành viên nhóm phát triển', tone: 'lime' },
+const TEAM_GROUPS = [
+  {
+    title: 'Marketing',
+    icon: Megaphone,
+    tone: 'pink',
+    members: [
+      {
+        name: 'Nguyễn Thành Vinh',
+        role: 'Marketing Executive',
+        bio: 'Phụ trách các hoạt động marketing của dự án Rental Management, tập trung vào nghiên cứu thị trường, xây dựng chiến lược truyền thông và quảng bá sản phẩm nhằm tiếp cận khách hàng mục tiêu một cách hiệu quả.',
+        tone: 'violet',
+      },
+      {
+        name: 'Nguyễn Ngọc Diễm',
+        role: 'Marketing Executive',
+        bio: 'Tham gia xây dựng nội dung truyền thông và phát triển hình ảnh thương hiệu cho dự án. Luôn hướng đến việc giúp Rental Management tiếp cận nhiều người dùng hơn và tạo dựng sự tin tưởng từ khách hàng.',
+        tone: 'pink',
+      },
+      {
+        name: 'Nguyễn Danh Khoa',
+        role: 'Marketing Executive',
+        bio: 'Đảm nhiệm nghiên cứu nhu cầu khách hàng và hỗ trợ triển khai các chiến dịch marketing. Mong muốn góp phần đưa sản phẩm đến gần hơn với thị trường và người dùng thực tế.',
+        tone: 'lime',
+      },
+      {
+        name: 'Ngô Văn Hoàng',
+        role: 'Marketing Executive',
+        bio: 'Tham gia các hoạt động marketing và phát triển thương hiệu của dự án. Công việc bao gồm phân tích thị trường, hỗ trợ truyền thông và đóng góp các ý tưởng nhằm nâng cao giá trị sản phẩm.',
+        tone: 'violet',
+      },
+    ],
+  },
+  {
+    title: 'Phát triển phần mềm',
+    icon: Code2,
+    tone: 'lime',
+    members: [
+      {
+        name: 'Nguyễn Minh Hoàng',
+        role: 'Full Stack Developer',
+        bio: 'Phụ trách phát triển các chức năng hệ thống, xây dựng cơ sở dữ liệu và tối ưu hiệu năng ứng dụng. Luôn hướng đến việc tạo ra một nền tảng ổn định, bảo mật và dễ mở rộng để đáp ứng nhu cầu quản lý cho thuê hiện đại.',
+        tone: 'lime',
+      },
+      {
+        name: 'Dương Quang Minh',
+        role: 'Full Stack Developer',
+        bio: 'Sinh viên ngành Công nghệ Thông tin với niềm đam mê phát triển phần mềm và xây dựng các giải pháp công nghệ thực tiễn. Tham gia thiết kế cơ sở dữ liệu, phát triển backend, xây dựng giao diện người dùng và triển khai các chức năng nghiệp vụ. Mong muốn mang đến một hệ thống quản lý cho thuê thông minh, hiệu quả và thân thiện với người dùng.',
+        tone: 'violet',
+      },
+    ],
+  },
 ];
 
-const getInitials = (name) =>
-  name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .slice(0, 2)
-    .toUpperCase();
+const getInitials = (name) => {
+  const parts = name.split(' ').filter(Boolean);
+  if (parts.length >= 2) {
+    return (parts[parts.length - 2][0] + parts[parts.length - 1][0]).toUpperCase();
+  }
+  return parts[0]?.slice(0, 2).toUpperCase() || '';
+};
 
 const container = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.08 } },
+  show: { transition: { staggerChildren: 0.07 } },
 };
 
 const item = {
@@ -39,10 +83,9 @@ export default function HomeAboutUs() {
             <span className="text-accent-violet">Trọ EZ</span>
           </h2>
           <p className="mt-4 text-base leading-relaxed text-muted">
-            Chúng tôi là nhóm sinh viên đam mê công nghệ, cùng nhau xây dựng giải pháp giúp chủ trọ
-            Việt Nam quản lý phòng trọ dễ dàng và hiệu quả hơn mỗi ngày. Dự án được phát triển trong
-            khuôn khổ môn học thực tập doanh nghiệp (EXE), kết hợp kiến thức lập trình với nhu cầu vận
-            hành thực tế của ngành cho thuê phòng trọ.
+            Chúng tôi là nhóm sinh viên đam mê công nghệ, cùng nhau xây dựng giải pháp Rental
+            Management giúp chủ trọ Việt Nam quản lý phòng trọ dễ dàng và hiệu quả hơn. Dự án được
+            phát triển trong khuôn khổ môn học thực tập doanh nghiệp (EXE).
           </p>
         </div>
 
@@ -51,35 +94,58 @@ export default function HomeAboutUs() {
             { label: 'Tầm nhìn', text: 'Trở thành nền tảng quản lý trọ hàng đầu cho chủ trọ Việt Nam.' },
             { label: 'Giá trị', text: 'Đơn giản, minh bạch, tiết kiệm thời gian — công nghệ phục vụ con người.' },
             { label: 'Cam kết', text: 'Liên tục cải tiến tính năng dựa trên phản hồi thực tế từ người dùng.' },
-          ].map((item) => (
-            <div key={item.label} className="home-about-pillar rounded-2xl border border-hairline-cloud bg-white p-5 text-center">
-              <p className="eyebrow text-accent-violet">{item.label}</p>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{item.text}</p>
+          ].map((pillar) => (
+            <div
+              key={pillar.label}
+              className="home-about-pillar rounded-2xl border border-hairline-cloud bg-white p-5 text-center"
+            >
+              <p className="eyebrow text-accent-violet">{pillar.label}</p>
+              <p className="mt-2 text-sm leading-relaxed text-muted">{pillar.text}</p>
             </div>
           ))}
         </div>
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: '-60px' }}
-          className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
-        >
-          {TEAM_MEMBERS.map((member) => (
-            <motion.article
-              key={member.name}
-              variants={item}
-              className="home-team-card group text-center"
-            >
-              <div className={`home-team-avatar home-team-avatar--${member.tone}`}>
-                <span className="font-display text-xl font-bold">{getInitials(member.name)}</span>
+        <div className="mt-16 space-y-14">
+          {TEAM_GROUPS.map((group) => (
+            <div key={group.title}>
+              <div className="mb-8 flex items-center gap-3">
+                <span className={`home-team-group-icon home-team-group-icon--${group.tone}`}>
+                  <group.icon size={20} />
+                </span>
+                <h3 className="font-display text-xl font-bold text-ink-deep">{group.title}</h3>
               </div>
-              <h3 className="mt-5 font-display text-lg font-bold text-ink-deep">{member.name}</h3>
-              <p className="mt-1.5 text-sm text-muted">{member.role}</p>
-            </motion.article>
+
+              <motion.div
+                variants={container}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: '-40px' }}
+                className={`grid gap-5 ${group.members.length === 2 ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-2'}`}
+              >
+                {group.members.map((member) => (
+                  <motion.article
+                    key={member.name}
+                    variants={item}
+                    className="home-team-card home-team-card--detailed"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`home-team-avatar home-team-avatar--${member.tone} shrink-0`}>
+                        <span className="font-display text-lg font-bold">{getInitials(member.name)}</span>
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-display text-lg font-bold text-ink-deep">{member.name}</h4>
+                        <span className={`home-team-role home-team-role--${member.tone}`}>
+                          {member.role}
+                        </span>
+                        <p className="mt-3 text-sm leading-relaxed text-muted">{member.bio}</p>
+                      </div>
+                    </div>
+                  </motion.article>
+                ))}
+              </motion.div>
+            </div>
           ))}
-        </motion.div>
+        </div>
 
         <motion.div
           initial={{ opacity: 0, y: 16 }}

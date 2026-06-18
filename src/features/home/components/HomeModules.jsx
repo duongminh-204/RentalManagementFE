@@ -1,12 +1,37 @@
 import { motion } from 'framer-motion';
 import {
+  BarChartLine,
+  Bell,
+  BoxArrowInDown,
+  BoxArrowUp,
+  BuildingAdd,
+  Calculator,
+  CarFront,
+  CashCoin,
+  ClockHistory,
+  Cursor,
+  DoorOpen,
+  Download,
+  FileEarmarkPdf,
+  FileEarmarkText,
+  Grid3x3Gap,
+  Hammer,
+  Link45deg,
+  Palette,
+  PersonLinesFill,
+  PieChart,
+  QrCode,
+  Receipt,
+  Tools,
+  Trophy,
+} from 'react-bootstrap-icons';
+import {
   BarChart3,
   Building2,
   Car,
   FileSpreadsheet,
   FileText,
   LayoutGrid,
-  MapPin,
   Users,
   Wrench,
 } from 'lucide-react';
@@ -15,57 +40,90 @@ const MODULES = [
   {
     icon: Building2,
     title: 'Tòa nhà & phòng trọ',
-    description: 'Quản lý nhiều tòa nhà, từng phòng với trạng thái trống/đang thuê, giá thuê và sơ đồ mặt bằng.',
-    bullets: ['Thêm/sửa tòa nhà, địa chỉ trên bản đồ', 'Theo dõi phòng trống theo thời gian thực', 'Xem chi tiết phòng và người đang thuê'],
+    description:
+      'Quản lý nhiều tòa nhà, từng phòng với trạng thái trống/đang thuê, giá thuê và sơ đồ mặt bằng.',
+    bullets: [
+      { text: 'Thêm/sửa tòa nhà, địa chỉ trên bản đồ', icon: BuildingAdd },
+      { text: 'Theo dõi phòng trống theo thời gian thực', icon: DoorOpen },
+      { text: 'Xem chi tiết phòng và người đang thuê', icon: PersonLinesFill },
+    ],
     tone: 'violet',
   },
   {
     icon: Users,
     title: 'Khách thuê & hợp đồng',
     description: 'Lưu trữ hồ sơ người thuê, CCCD, liên hệ và quản lý vòng đời hợp đồng thuê.',
-    bullets: ['Tạo hợp đồng mới, gia hạn hoặc chấm dứt', 'Lịch sử thanh toán và tiền cọc', 'Nhắc hạn hợp đồng sắp hết'],
+    bullets: [
+      { text: 'Tạo hợp đồng mới, gia hạn hoặc chấm dứt', icon: FileEarmarkText },
+      { text: 'Lịch sử thanh toán và tiền cọc', icon: ClockHistory },
+      { text: 'Nhắc hạn hợp đồng sắp hết', icon: Bell },
+    ],
     tone: 'pink',
   },
   {
     icon: FileText,
     title: 'Hóa đơn & thu tiền',
     description: 'Lập hóa đơn tiền phòng, điện nước, dịch vụ — in phiếu thu hoặc tạo mã VietQR.',
-    bullets: ['Tính tiền theo tháng, theo phòng', 'In hóa đơn chuẩn A4', 'Tích hợp VietQR cho chuyển khoản nhanh'],
+    bullets: [
+      { text: 'Tính tiền theo tháng, theo phòng', icon: Calculator },
+      { text: 'In hóa đơn chuẩn A4', icon: FileEarmarkPdf },
+      { text: 'Tích hợp VietQR cho chuyển khoản nhanh', icon: QrCode },
+    ],
     tone: 'lime',
   },
   {
     icon: BarChart3,
     title: 'Dashboard & công nợ',
     description: 'Tổng quan doanh thu, tỷ lệ lấp đầy phòng và danh sách khách thuê còn nợ.',
-    bullets: ['Biểu đồ doanh thu theo tháng', 'Top khách nợ nhiều nhất', 'Báo cáo trạng thái phòng trực quan'],
+    bullets: [
+      { text: 'Biểu đồ doanh thu theo tháng', icon: BarChartLine },
+      { text: 'Top khách nợ nhiều nhất', icon: Trophy },
+      { text: 'Báo cáo trạng thái phòng trực quan', icon: PieChart },
+    ],
     tone: 'violet',
   },
   {
     icon: Wrench,
     title: 'Thiết bị & dịch vụ',
     description: 'Theo dõi đồ đạc, thiết bị trong phòng và các khoản phí dịch vụ kèm theo.',
-    bullets: ['Danh sách thiết bị theo phòng', 'Ghi nhận hư hỏng, bảo trì', 'Tính phí dịch vụ vào hóa đơn'],
+    bullets: [
+      { text: 'Danh sách thiết bị theo phòng', icon: Tools },
+      { text: 'Ghi nhận hư hỏng, bảo trì', icon: Hammer },
+      { text: 'Tính phí dịch vụ vào hóa đơn', icon: Receipt },
+    ],
     tone: 'pink',
   },
   {
     icon: Car,
     title: 'Quản lý xe',
     description: 'Đăng ký phương tiện của khách thuê, gắn với phòng và hợp đồng tương ứng.',
-    bullets: ['Biển số, loại xe, chủ xe', 'Liên kết xe với phòng đang thuê', 'Theo dõi phí gửi xe hàng tháng'],
+    bullets: [
+      { text: 'Biển số, loại xe, chủ xe', icon: CarFront },
+      { text: 'Liên kết xe với phòng đang thuê', icon: Link45deg },
+      { text: 'Theo dõi phí gửi xe hàng tháng', icon: CashCoin },
+    ],
     tone: 'lime',
   },
   {
     icon: FileSpreadsheet,
     title: 'Import / Export Excel',
     description: 'Nhập dữ liệu hàng loạt từ file mẫu hoặc xuất báo cáo cho kế toán.',
-    bullets: ['Tải file mẫu chuẩn từ hệ thống', 'Import phòng, khách thuê nhanh', 'Export báo cáo tổng hợp'],
+    bullets: [
+      { text: 'Tải file mẫu chuẩn từ hệ thống', icon: Download },
+      { text: 'Import phòng, khách thuê nhanh', icon: BoxArrowInDown },
+      { text: 'Export báo cáo tổng hợp', icon: BoxArrowUp },
+    ],
     tone: 'violet',
   },
   {
     icon: LayoutGrid,
     title: 'Sơ đồ mặt bằng',
     description: 'Xem trực quan bố cục tòa nhà, trạng thái từng phòng ngay trên sơ đồ.',
-    bullets: ['Floor plan tương tác', 'Màu sắc theo trạng thái phòng', 'Click xem chi tiết nhanh'],
+    bullets: [
+      { text: 'Floor plan tương tác', icon: Grid3x3Gap },
+      { text: 'Màu sắc theo trạng thái phòng', icon: Palette },
+      { text: 'Click xem chi tiết nhanh', icon: Cursor },
+    ],
     tone: 'pink',
   },
 ];
@@ -112,11 +170,13 @@ export default function HomeModules() {
                 <div className="min-w-0 flex-1">
                   <h3 className="font-display text-lg font-bold text-ink-deep">{mod.title}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{mod.description}</p>
-                  <ul className="mt-4 space-y-2">
+                  <ul className="mt-4 space-y-2.5">
                     {mod.bullets.map((bullet) => (
-                      <li key={bullet} className="flex items-start gap-2 text-sm text-ink-deep/80">
-                        <MapPin size={12} className="mt-1 shrink-0 text-accent-violet" />
-                        {bullet}
+                      <li key={bullet.text} className="flex items-start gap-2.5 text-sm text-ink-deep/80">
+                        <span className={`home-module-bullet-icon home-module-bullet-icon--${mod.tone}`}>
+                          <bullet.icon size={13} />
+                        </span>
+                        {bullet.text}
                       </li>
                     ))}
                   </ul>
