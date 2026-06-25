@@ -12,6 +12,7 @@ export const getAdminOwnerById = (id) => api.get(`${adminBase}/owners/${id}`).th
 export const createAdminOwner = (data) => api.post(`${adminBase}/owners`, data).then((r) => r.data);
 export const updateAdminOwner = (id, data) => api.put(`${adminBase}/owners/${id}`, data).then((r) => r.data);
 export const deleteAdminOwner = (id) => api.delete(`${adminBase}/owners/${id}`);
+export const deleteAdminUser = (id) => api.delete(`${adminBase}/users/${id}`);
 export const suspendAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/suspend`).then((r) => r.data);
 export const activateAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/activate`).then((r) => r.data);
 export const lockAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/lock`).then((r) => r.data);

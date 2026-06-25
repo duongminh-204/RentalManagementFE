@@ -17,6 +17,7 @@ import {
   normalizeVehiclesList,
 } from '../utils/vehicleHelpers';
 import { resolveMediaUrl } from '../../rooms/utils/roomHelpers';
+import { isForbiddenError, resolveForbiddenNotice, getApiErrorMessage, getOwnerSubscriptionNotice } from '../../../utils/apiError';
 
 export const useVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -24,15 +25,31 @@ export const useVehicles = () => {
   const [parkingFeeSummary, setParkingFeeSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => getOwnerSubscriptionNotice());
 
   const fetchVehicles = useCallback(async (params = {}) => {
+    const subscriptionNotice = getOwnerSubscriptionNotice();
+    if (subscriptionNotice) {
+      setAccessNotice(subscriptionNotice);
+      setVehicles([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
+      setAccessNotice(null);
       const data = await getVehicles(params);
       setVehicles(normalizeVehiclesList(data));
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi tải dữ liệu xe');
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/vehicles' }));
+        setError(null);
+      } else {
+        setError(getApiErrorMessage(err, 'Lỗi khi tải dữ liệu xe'));
+      }
       console.error('Error fetching vehicles:', err);
     } finally {
       setLoading(false);
@@ -161,6 +178,7 @@ export const useVehicles = () => {
     parkingFeeSummary,
     loading,
     error,
+    accessNotice,
     fetchVehicles,
     getVehicle,
     addVehicle,

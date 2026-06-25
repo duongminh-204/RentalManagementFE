@@ -9,7 +9,6 @@ import {
   Menu,
   Package,
   RefreshCw,
-  ShieldCheck,
   Users,
   X,
 } from 'lucide-react';
@@ -19,11 +18,10 @@ import AppLogo from '../../../components/common/AppLogo';
 
 const navItems = [
   { label: 'Tổng quan', path: '/admin/dashboard', icon: LayoutDashboard },
-  { label: 'Chủ trọ', path: '/admin/owners', icon: Users },
+  { label: 'Người dùng', path: '/admin/users', icon: Users },
   { label: 'Gói dịch vụ', path: '/admin/packages', icon: Package },
   { label: 'Đăng ký', path: '/admin/subscriptions', icon: RefreshCw },
   { label: 'Thanh toán', path: '/admin/payments', icon: CreditCard },
-  { label: 'Người dùng', path: '/admin/users', icon: ShieldCheck },
   { label: 'Nhật ký', path: '/admin/audit-logs', icon: ClipboardList },
   { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
 ];

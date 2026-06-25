@@ -3,10 +3,12 @@ import { Plus, Search, Loader2, Users, Building2 } from 'lucide-react';
 import TenantListItem from './TenantListItem';
 import TenantManagementPanel from './TenantManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 import { useTenants } from '../hooks/useTenants';
 import * as buildingsApi from '../../buildings/api/buildingsApi';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
+import { isForbiddenError, resolveForbiddenNotice } from '../../../utils/apiError';
 
 const TENANT_STATUS_OPTIONS = [
   { value: 'all', label: 'Tất cả trạng thái' },
@@ -21,6 +23,7 @@ const TenantsList = () => {
     tenants,
     loading,
     error,
+    accessNotice,
     fetchTenants,
     getTenant,
     addTenant,
@@ -153,7 +156,11 @@ const TenantsList = () => {
       }
       await fetchTenants({ status: statusFilter !== 'all' ? statusFilter : undefined, search: searchTerm || undefined });
     } catch (err) {
-      setSaveError(err.response?.data?.message || 'Lỗi khi lưu khách thuê');
+      if (isForbiddenError(err)) {
+        setSaveError(resolveForbiddenNotice(err, { path: '/tenants' }).message);
+      } else {
+        setSaveError(err.response?.data?.message || 'Lỗi khi lưu khách thuê');
+      }
     } finally {
       setSaveLoading(false);
     }
@@ -198,7 +205,7 @@ const TenantsList = () => {
     }
   };
 
-  if (loading && tenants.length === 0) {
+  if (loading && !accessNotice && tenants.length === 0) {
     return (
       <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-light">
         <Loader2 className="animate-spin text-accent-violet" size={36} />
@@ -209,6 +216,10 @@ const TenantsList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
+        {accessNotice ? (
+          <FeatureLockedNotice {...accessNotice} />
+        ) : (
+        <>
         <div className="mb-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">
           <p className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-deep">
             <Building2 size={18} className="text-accent-violet-mid" />
@@ -346,10 +357,12 @@ const TenantsList = () => {
           />
         </div>
 
-        {error && (
-          <div className="mt-4 rounded-lg border border-accent-pink/40 bg-accent-pink/10 px-4 py-3 text-sm text-ink-deep">
+        {error ? (
+          <div className="mt-4 rounded-lg border border-[#f3c3d3] bg-[#fff6f9] px-4 py-3 text-sm text-ink-deep">
             {error}
           </div>
+        ) : null}
+        </>
         )}
       </div>
       <ConfirmDeleteDialog />

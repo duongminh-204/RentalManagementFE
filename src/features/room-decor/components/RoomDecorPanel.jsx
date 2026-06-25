@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 import { useRoomDecor } from '../hooks/useRoomDecor';
 import { resolveMediaUrl } from '../api/roomDecorApi';
 import { useRooms } from '../../rooms/hooks/useRooms';
@@ -29,6 +30,7 @@ const RoomDecorPanel = () => {
     loading,
     generating,
     error,
+    accessNotice,
     result,
     generate,
     refreshStatus,
@@ -133,6 +135,14 @@ const RoomDecorPanel = () => {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <Loader2 className="h-10 w-10 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (accessNotice) {
+    return (
+      <div className="page-content page-content--wide">
+        <FeatureLockedNotice {...accessNotice} />
       </div>
     );
   }

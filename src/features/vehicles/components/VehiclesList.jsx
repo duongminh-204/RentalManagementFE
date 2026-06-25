@@ -13,6 +13,7 @@ import * as buildingsApi from '../../buildings/api/buildingsApi';
 import VehicleListItem from './VehicleListItem';
 import VehicleManagementPanel from './VehicleManagementPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 import { useVehicles } from '../hooks/useVehicles';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
@@ -46,6 +47,7 @@ const VehiclesList = () => {
     parkingFeeSummary,
     loading,
     error,
+    accessNotice,
     fetchVehicles,
     getVehicle,
     addVehicle,
@@ -231,6 +233,10 @@ const VehiclesList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
+        {accessNotice ? (
+          <FeatureLockedNotice {...accessNotice} />
+        ) : (
+        <>
         <div className="mb-6">
           {/* <p className="eyebrow">An ninh & phí gửi xe</p>
           <h1 className="font-display text-2xl font-semibold text-ink-deep sm:text-3xl">
@@ -427,6 +433,8 @@ const VehiclesList = () => {
           <div className="mt-4 rounded-lg border border-accent-pink/40 bg-accent-pink/10 px-4 py-3 text-sm text-ink-deep">
             {error}
           </div>
+        )}
+        </>
         )}
       </div>
       <ConfirmDeleteDialog />

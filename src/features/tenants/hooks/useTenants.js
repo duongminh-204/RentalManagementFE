@@ -5,20 +5,42 @@ import {
   normalizeTenantsList,
   resolveMediaUrl,
 } from '../utils/tenantHelpers';
+import {
+  getOwnerSubscriptionNotice,
+  isForbiddenError,
+  resolveForbiddenNotice,
+  getApiErrorMessage,
+} from '../../../utils/apiError';
 
 export const useTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => getOwnerSubscriptionNotice());
 
   const fetchTenants = useCallback(async (params = {}) => {
+    const subscriptionNotice = getOwnerSubscriptionNotice();
+    if (subscriptionNotice) {
+      setAccessNotice(subscriptionNotice);
+      setTenants([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
+      setAccessNotice(null);
       const data = await tenantsApi.getTenants(params);
       setTenants(normalizeTenantsList(data));
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi tải dữ liệu khách thuê');
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/tenants' }));
+        setError(null);
+      } else {
+        setError(getApiErrorMessage(err, 'Lỗi khi tải dữ liệu khách thuê'));
+      }
       console.error('Error fetching tenants:', err);
     } finally {
       setLoading(false);
@@ -94,6 +116,7 @@ export const useTenants = () => {
     tenants,
     loading,
     error,
+    accessNotice,
     fetchTenants,
     getTenant,
     addTenant,

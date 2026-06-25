@@ -17,11 +17,16 @@ export const isOwnerRole = (role) => normalizeRole(role) === 'owner';
 export const isOwnerSubscriptionActive = (user) =>
   isOwnerRole(user?.role) && normalizeRole(user?.subscriptionStatus) === 'active';
 
+export const isOwnerSubscriptionPending = (user) =>
+  isOwnerRole(user?.role) && normalizeRole(user?.subscriptionStatus) === 'pending';
+
+export const isOwnerSubscriptionReady = (user) =>
+  isOwnerSubscriptionActive(user) || isOwnerSubscriptionPending(user);
+
 export const getOwnerAccessPath = (user) => {
   if (!isOwnerRole(user?.role)) return '/dashboard';
   const status = normalizeRole(user?.subscriptionStatus);
-  if (status === 'active') return '/dashboard';
-  if (status === 'pending') return '/subscription/pending';
+  if (status === 'active' || status === 'pending') return '/dashboard';
   return '/register/select-plan';
 };
 

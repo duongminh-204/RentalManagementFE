@@ -23,6 +23,8 @@ import { Link } from 'react-router-dom';
 import { recordDebtPayment, restoreDebtItem } from '../api/dashboardApi';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCount, formatCurrency } from '../utils/dashboardFormat';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
+import { resolveForbiddenNotice } from '../../../utils/apiError';
 import { parseWalletAccountFromQrPayload } from '../../../utils/qrPayload';
 import { buildPaymentMethodPreviewQrUrl } from '../../../utils/vietqr';
 import { getPaymentMethodWalletAccount, getPaymentMethodIdentifier, isWalletVirtualAccountNumber } from '../../../utils/paymentMethods';
@@ -626,7 +628,7 @@ const getDebtItems = (debtMonth) => {
 
 const DebtDetailsPage = () => {
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
-  const { debtInfo, loading, error, refetch } = useDashboard();
+  const { debtInfo, loading, error, lockedFeatures, refetch } = useDashboard();
   const [payingTarget, setPayingTarget] = useState(null);
   const [paymentMessage, setPaymentMessage] = useState('');
   const [paymentError, setPaymentError] = useState('');
@@ -640,6 +642,14 @@ const DebtDetailsPage = () => {
   const [selectedPaymentMethodIds, setSelectedPaymentMethodIds] = useState([]);
   const [multiSelectPaymentMode, setMultiSelectPaymentMode] = useState(false);
   const [sortPaymentMode, setSortPaymentMode] = useState(false);
+
+  const debtLocked = lockedFeatures.includes('debtReports');
+  const debtNotice = debtLocked
+    ? resolveForbiddenNotice(
+        { response: { status: 403 } },
+        { path: '/debts', featureLabel: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO' },
+      )
+    : null;
 
   const debtors = useMemo(() => {
     const allDebtors = Array.isArray(debtInfo?.debtors) ? debtInfo.debtors : [];
@@ -1452,13 +1462,17 @@ const DebtDetailsPage = () => {
             <div className="h-12 w-12 animate-spin rounded-full border-2 border-hairline-cloud border-t-primary" />
             <p className="mt-4 text-base font-semibold text-muted">Đang tải công nợ...</p>
           </div>
+        ) : debtNotice ? (
+          <section className="mt-8">
+            <FeatureLockedNotice {...debtNotice} />
+          </section>
         ) : (
           <section className="mt-8">
             {error ? (
               <div className="mb-5 rounded-2xl border border-[#f3c3d3] bg-[#fff6f9] px-4 py-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-accent-pink" />
-                  <p className="text-sm font-semibold text-ink-deep">Không tải được dữ liệu công nợ: {error}</p>
+                  <p className="text-sm font-semibold text-ink-deep">{error}</p>
                 </div>
               </div>
             ) : null}

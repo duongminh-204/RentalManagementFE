@@ -88,17 +88,43 @@ export const exportDashboardExcel = async (month, year) => {
 };
 
 export const getAllDashboardData = async (month, year) => {
-  const [stats, roomStats, debtInfo, revenue] = await Promise.all([
-    getDashboardStats(),
-    getRoomStats(),
-    getDebtInfo(),
-    getMonthlyRevenue(month, year),
-  ]);
+  const requests = [
+    { key: 'stats', fn: () => getDashboardStats() },
+    { key: 'roomStats', fn: () => getRoomStats() },
+    { key: 'debtInfo', fn: () => getDebtInfo(), lockedKey: 'debtReports' },
+    { key: 'revenue', fn: () => getMonthlyRevenue(month, year), lockedKey: 'revenueReports' },
+  ];
 
-  return {
-    stats,
-    roomStats,
-    debtInfo,
-    revenue,
+  const results = await Promise.all(
+    requests.map(async ({ key, fn, lockedKey }) => {
+      try {
+        return { key, data: await fn(), lockedKey: null, error: null };
+      } catch (error) {
+        return { key, data: null, lockedKey: error?.response?.status === 403 ? lockedKey : null, error };
+      }
+    }),
+  );
+
+  const payload = {
+    stats: null,
+    roomStats: null,
+    debtInfo: null,
+    revenue: null,
+    lockedFeatures: [],
+    errors: [],
   };
+
+  for (const result of results) {
+    payload[result.key] = result.data;
+    if (result.lockedKey) payload.lockedFeatures.push(result.lockedKey);
+    if (result.error && result.error?.response?.status !== 403) {
+      payload.errors.push(result.error);
+    }
+  }
+
+  if (payload.errors.length > 0) {
+    throw payload.errors[0];
+  }
+
+  return payload;
 };

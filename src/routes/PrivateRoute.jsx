@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Sidebar from '../components/common/Sidebar';
+import PendingSubscriptionBanner from '../components/common/PendingSubscriptionBanner';
 import { getStoredRole, getRoleHomePath, getStoredUser } from '../hooks/useAuth';
 
-export const PrivateRoute = ({ children, allowedRoles }) => {
+export const PrivateRoute = ({ children, allowedRoles, hideSidebar = false }) => {
   const [isChecking, setIsChecking] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [role, setRole] = useState('');
@@ -63,10 +64,15 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
     return <Navigate to={fallbackPath} replace />;
   }
 
+  if (hideSidebar) {
+    return <div className="min-h-screen bg-surface-light">{children}</div>;
+  }
+
   return (
     <div className="min-h-screen min-w-0 overflow-x-clip bg-surface-light">
       <Sidebar />
       <div className="min-w-0 lg:pl-64">
+        <PendingSubscriptionBanner />
         <main className="min-h-screen min-w-0">{children}</main>
       </div>
     </div>

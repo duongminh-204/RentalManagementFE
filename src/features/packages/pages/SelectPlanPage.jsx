@@ -26,7 +26,7 @@ export default function SelectPlanPage() {
       return;
     }
     if (user?.subscriptionStatus === 'Pending') {
-      navigate('/subscription/pending', { replace: true });
+      navigate('/dashboard', { replace: true });
       return;
     }
 
@@ -51,7 +51,7 @@ export default function SelectPlanPage() {
           packageName: subscription.packageName,
         }),
       );
-      navigate('/subscription/pending', { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể gửi yêu cầu gói.');
     } finally {

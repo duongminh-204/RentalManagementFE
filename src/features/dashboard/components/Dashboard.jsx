@@ -21,6 +21,8 @@ import {
   importDashboardExcel,
 } from '../api/dashboardApi';
 import { formatCount, formatMonthLabel } from '../utils/dashboardFormat';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
+import { resolveForbiddenNotice } from '../../../utils/apiError';
 
 const DOWNLOAD_ERROR_MESSAGE =
   'Chưa tải được file mẫu. Nếu backend vừa được cập nhật, hãy khởi động lại backend rồi thử lại.';
@@ -32,7 +34,7 @@ const TAGLINE_ITEMS = [
 ];
 
 const Dashboard = () => {
-  const { stats, roomStats, debtInfo, revenue, loading, error, refetch } = useDashboard();
+  const { stats, roomStats, debtInfo, revenue, lockedFeatures, loading, error, refetch } = useDashboard();
   const fileInputRef = useRef(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isDownloadingTemplate, setIsDownloadingTemplate] = useState(false);
@@ -47,6 +49,23 @@ const Dashboard = () => {
   const unpaidTenantsCount = Number(debtInfo?.unpaidTenantsCount ?? stats?.unpaidTenantsCount ?? 0);
   const totalDebt = Number(debtInfo?.totalDebt ?? stats?.totalDebt ?? 0);
   const topDebtors = Array.isArray(debtInfo?.topDebtors) ? debtInfo.topDebtors : [];
+
+  const hasLockedReports =
+    lockedFeatures.includes('debtReports') || lockedFeatures.includes('revenueReports');
+  const debtNotice =
+    lockedFeatures.includes('debtReports')
+      ? resolveForbiddenNotice(
+          { response: { status: 403 } },
+          { featureLabel: 'Báo cáo công nợ', requiredPackage: 'PRO' },
+        )
+      : null;
+  const revenueNotice =
+    lockedFeatures.includes('revenueReports')
+      ? resolveForbiddenNotice(
+          { response: { status: 403 } },
+          { featureLabel: 'Báo cáo doanh thu', requiredPackage: 'PRO' },
+        )
+      : null;
 
   const currentDate = new Date();
   const currentMonthLabel = formatMonthLabel(currentDate);
@@ -246,13 +265,24 @@ const Dashboard = () => {
           </div>
         ) : (
           <>
+            {hasLockedReports ? (
+              <div className="mt-8 space-y-4">
+                {debtNotice ? <FeatureLockedNotice {...debtNotice} compact /> : null}
+                {revenueNotice ? <FeatureLockedNotice {...revenueNotice} compact /> : null}
+              </div>
+            ) : null}
+
             <section className="mt-8 grid grid-cols-1 gap-5 xl:grid-cols-2 2xl:grid-cols-3">
-              <RevenueChart monthlyRevenue={monthlyRevenue} totalDebt={totalDebt} />
-              <DebtOverview
-                unpaidTenantsCount={unpaidTenantsCount}
-                totalDebt={totalDebt}
-                topDebtors={topDebtors}
-              />
+              {!lockedFeatures.includes('revenueReports') ? (
+                <RevenueChart monthlyRevenue={monthlyRevenue} totalDebt={totalDebt} />
+              ) : null}
+              {!lockedFeatures.includes('debtReports') ? (
+                <DebtOverview
+                  unpaidTenantsCount={unpaidTenantsCount}
+                  totalDebt={totalDebt}
+                  topDebtors={topDebtors}
+                />
+              ) : null}
               <RoomStatusChart
                 totalRooms={totalRooms}
                 occupiedRooms={occupiedRooms}
@@ -260,6 +290,7 @@ const Dashboard = () => {
               />
             </section>
 
+            {!lockedFeatures.includes('revenueReports') ? (
             <section className="mt-8">
               {importError ? (
                 <div className="mb-5 rounded-2xl border border-[#f3c3d3] bg-[#fff6f9] px-4 py-3 text-sm text-ink-deep">
@@ -292,6 +323,7 @@ const Dashboard = () => {
 
               <MonthlyRevenueReport />
             </section>
+            ) : null}
 
             {!hasAnyData ? (
               <section className="dashboard-empty-state mt-8">

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import * as dashboardApi from '../api/dashboardApi';
+import { getApiErrorMessage } from '../../../utils/apiError';
 
 const emptyDashboardData = {
   stats: {
@@ -32,25 +33,36 @@ export const useDashboard = () => {
     roomStats: null,
     debtInfo: null,
     revenue: null,
+    lockedFeatures: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const loadDashboard = async () => {
+    const currentDate = new Date();
+    const month = currentDate.getMonth() + 1;
+    const year = currentDate.getFullYear();
+
+    const dashboardData = await dashboardApi.getAllDashboardData(month, year);
+    setData({
+      stats: dashboardData.stats ?? emptyDashboardData.stats,
+      roomStats: dashboardData.roomStats ?? emptyDashboardData.roomStats,
+      debtInfo: dashboardData.debtInfo ?? emptyDashboardData.debtInfo,
+      revenue: dashboardData.revenue ?? emptyDashboardData.revenue,
+      lockedFeatures: dashboardData.lockedFeatures ?? [],
+    });
+    setError(null);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        const currentDate = new Date();
-        const month = currentDate.getMonth() + 1;
-        const year = currentDate.getFullYear();
-
-        const dashboardData = await dashboardApi.getAllDashboardData(month, year);
-        setData(dashboardData);
-        setError(null);
+        await loadDashboard();
       } catch (err) {
         console.error('Error fetching dashboard data:', err);
-        setError(err.message || 'Lỗi khi tải dữ liệu dashboard');
-        setData(emptyDashboardData);
+        setError(getApiErrorMessage(err, 'Lỗi khi tải dữ liệu dashboard'));
+        setData({ ...emptyDashboardData, lockedFeatures: [] });
       } finally {
         setLoading(false);
       }
@@ -60,17 +72,11 @@ export const useDashboard = () => {
   }, []);
 
   const refetch = async () => {
-    const currentDate = new Date();
-    const month = currentDate.getMonth() + 1;
-    const year = currentDate.getFullYear();
-
     try {
-      const dashboardData = await dashboardApi.getAllDashboardData(month, year);
-      setData(dashboardData);
-      setError(null);
+      await loadDashboard();
     } catch (err) {
       console.error('Error refetching dashboard data:', err);
-      setError(err.message || 'Lỗi khi tải lại dữ liệu dashboard');
+      setError(getApiErrorMessage(err, 'Lỗi khi tải lại dữ liệu dashboard'));
     }
   };
 

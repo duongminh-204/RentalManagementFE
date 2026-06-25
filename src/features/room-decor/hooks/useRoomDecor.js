@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { generateRoomDecor, getDecorStatus, getDecorStyles } from '../api/roomDecorApi';
+import { isForbiddenError, resolveForbiddenNotice, getApiErrorMessage } from '../../../utils/apiError';
 
 export const useRoomDecor = () => {
   const [styles, setStyles] = useState([]);
@@ -7,6 +8,7 @@ export const useRoomDecor = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(null);
   const [result, setResult] = useState(null);
 
   const refreshStatus = useCallback(async () => {
@@ -24,6 +26,7 @@ export const useRoomDecor = () => {
     const load = async () => {
       setLoading(true);
       setError(null);
+      setAccessNotice(null);
       try {
         const [stylesData, statusData] = await Promise.all([getDecorStyles(), getDecorStatus()]);
         if (!active) return;
@@ -31,7 +34,12 @@ export const useRoomDecor = () => {
         setStatus(statusData);
       } catch (err) {
         if (!active) return;
-        setError(err.response?.data?.message || 'Không tải được cấu hình AI decor.');
+        if (isForbiddenError(err)) {
+          setAccessNotice(resolveForbiddenNotice(err, { path: '/rooms/decor' }));
+          setError(null);
+        } else {
+          setError(getApiErrorMessage(err, 'Không tải được cấu hình AI decor.'));
+        }
       } finally {
         if (active) setLoading(false);
       }
@@ -52,12 +60,19 @@ export const useRoomDecor = () => {
       setResult(data);
       return data;
     } catch (err) {
-      const message =
-        err.response?.data?.message ||
-        (err.code === 'ECONNABORTED'
-          ? 'AI xử lý quá lâu. Hãy thử lại hoặc kiểm tra ComfyUI.'
-          : 'Không tạo được ảnh decor.');
-      setError(message);
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/rooms/decor' }));
+        setError(null);
+      } else {
+        setError(
+          getApiErrorMessage(
+            err,
+            err.code === 'ECONNABORTED'
+              ? 'AI xử lý quá lâu. Hãy thử lại hoặc kiểm tra ComfyUI.'
+              : 'Không tạo được ảnh decor.',
+          ),
+        );
+      }
       throw err;
     } finally {
       setGenerating(false);
@@ -70,6 +85,7 @@ export const useRoomDecor = () => {
     loading,
     generating,
     error,
+    accessNotice,
     result,
     generate,
     refreshStatus,

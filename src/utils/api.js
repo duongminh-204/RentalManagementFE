@@ -37,8 +37,16 @@ instance.interceptors.response.use(
             window.dispatchEvent(new CustomEvent('unauthorized'));
         }
 
-        if (error.response?.status === 403) {
-            window.dispatchEvent(new CustomEvent('forbidden'));
+        if (error.response?.status === 403 && String(error.config?.method || 'get').toLowerCase() !== 'get') {
+            window.dispatchEvent(
+                new CustomEvent('forbidden', {
+                    detail: {
+                        message: error.response?.data?.message,
+                        url: error.config?.url,
+                        status: 403,
+                    },
+                }),
+            );
         }
         return Promise.reject(error);
     }

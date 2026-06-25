@@ -23,23 +23,17 @@ import {
 } from './features/admin';
 
 import { PrivateRoute } from './routes/PrivateRoute';
+import { OwnerRoute } from './routes/OwnerRoute';
 import { AdminPrivateRoute } from './routes/AdminPrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
 import SelectPlanPage from './features/packages/pages/SelectPlanPage';
 import SubscriptionPendingPage from './features/packages/pages/SubscriptionPendingPage';
-import { getOwnerAccessPath, getStoredUser, isOwnerSubscriptionActive } from './hooks/useAuth';
-
-const OwnerRoute = ({ children }) => {
-  const user = getStoredUser();
-  if (!isOwnerSubscriptionActive(user)) {
-    return <Navigate to={getOwnerAccessPath(user)} replace />;
-  }
-  return <PrivateRoute allowedRoles={['owner']}>{children}</PrivateRoute>;
-};
+import ForbiddenNotifier from './components/common/ForbiddenNotifier';
 
 function App() {
   return (
     <Router>
+      <ForbiddenNotifier />
       <Routes>
         {/* Public Routes */}
         <Route path="/" element={<HomePage />} />
@@ -48,7 +42,7 @@ function App() {
         <Route
           path="/register/select-plan"
           element={
-            <PrivateRoute allowedRoles={['owner']}>
+            <PrivateRoute allowedRoles={['owner']} hideSidebar>
               <SelectPlanPage />
             </PrivateRoute>
           }

@@ -1848,3 +1848,394 @@
     page-break-inside: avoid;
   }
 }
+
+.subscription-pending-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top right, rgba(124, 92, 255, 0.12), transparent 32%),
+    linear-gradient(180deg, #faf9ff 0%, #f5f4fa 100%);
+}
+
+.subscription-pending-page__header {
+  display: flex;
+  justify-content: center;
+  padding: 24px 20px 0;
+}
+
+.subscription-pending-page__main {
+  display: flex;
+  justify-content: center;
+  padding: 32px 20px 48px;
+}
+
+.subscription-pending-page__card {
+  width: 100%;
+  max-width: 760px;
+  padding: clamp(24px, 4vw, 40px);
+  border-radius: 28px;
+  border: 1px solid #e9e7ef;
+  background: #ffffff;
+  box-shadow: 0 24px 60px rgba(31, 22, 51, 0.08);
+}
+
+.subscription-pending-page__hero {
+  display: flex;
+  gap: 20px;
+  align-items: flex-start;
+}
+
+.subscription-pending-page__icon {
+  display: inline-flex;
+  height: 64px;
+  width: 64px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: rgba(124, 92, 255, 0.12);
+  color: #7c5cff;
+}
+
+.subscription-pending-page__eyebrow {
+  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #7c5cff;
+}
+
+.subscription-pending-page__title {
+  font-family: var(--font-display);
+  font-size: clamp(1.75rem, 4vw, 2.25rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: #1f1633;
+}
+
+.subscription-pending-page__subtitle {
+  margin-top: 12px;
+  max-width: 620px;
+  font-size: 15px;
+  line-height: 1.7;
+  color: #6b6780;
+}
+
+.subscription-pending-page__summary {
+  display: grid;
+  gap: 16px;
+  margin-top: 28px;
+}
+
+@media (min-width: 640px) {
+  .subscription-pending-page__summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.subscription-pending-page__summary-item {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: #f9f9fc;
+  border: 1px solid #ebe9f2;
+}
+
+.subscription-pending-page__features,
+.subscription-pending-page__steps,
+.subscription-pending-page__notice {
+  margin-top: 28px;
+  padding-top: 28px;
+  border-top: 1px solid #ebe9f2;
+}
+
+.subscription-pending-page__feature-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #f9f9fc;
+  font-size: 14px;
+  color: #1f1633;
+}
+
+.subscription-pending-page__step {
+  display: flex;
+  gap: 14px;
+}
+
+.subscription-pending-page__step-index {
+  display: inline-flex;
+  height: 32px;
+  width: 32px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #f1eff8;
+  font-size: 13px;
+  font-weight: 700;
+  color: #7c5cff;
+}
+
+.subscription-pending-page__step-index--done {
+  background: rgba(124, 92, 255, 0.12);
+  color: #7c5cff;
+}
+
+.subscription-pending-page__notice {
+  display: flex;
+  gap: 12px;
+  padding: 18px 20px;
+  border-radius: 18px;
+  background: rgba(124, 92, 255, 0.06);
+  border: 1px solid rgba(124, 92, 255, 0.12);
+}
+
+.subscription-pending-page__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.feature-locked-notice {
+  display: grid;
+  gap: 20px;
+  width: 100%;
+  padding: 24px;
+  border-radius: 22px;
+  border: 1px solid #ebe9f2;
+  background: linear-gradient(180deg, #ffffff 0%, #faf9ff 100%);
+  box-shadow: 0 12px 30px rgba(31, 22, 51, 0.06);
+}
+
+@media (min-width: 768px) {
+  .feature-locked-notice {
+    grid-template-columns: auto 1fr;
+    align-items: start;
+  }
+}
+
+.feature-locked-notice--compact {
+  padding: 18px 20px;
+}
+
+.feature-locked-notice--pending {
+  border-color: rgba(91, 63, 214, 0.18);
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.07) 0%, rgba(255, 249, 235, 0.92) 52%, #ffffff 100%);
+  box-shadow: 0 14px 36px rgba(91, 63, 214, 0.08);
+}
+
+.feature-locked-notice--pending .feature-locked-notice__title {
+  color: #4338a8;
+}
+
+.feature-locked-notice--pending .feature-locked-notice__action {
+  background: linear-gradient(135deg, #7c5cff 0%, #5b3fd6 100%);
+}
+
+.feature-locked-notice--no_plan {
+  border-color: rgba(91, 63, 214, 0.18);
+  background: linear-gradient(135deg, rgba(124, 92, 255, 0.07) 0%, rgba(255, 249, 235, 0.92) 52%, #ffffff 100%);
+  box-shadow: 0 14px 36px rgba(91, 63, 214, 0.08);
+}
+
+.feature-locked-notice--no_plan .feature-locked-notice__title {
+  color: #4338a8;
+}
+
+.feature-locked-notice--no_plan .feature-locked-notice__action {
+  background: linear-gradient(135deg, #7c5cff 0%, #5b3fd6 100%);
+}
+
+.feature-locked-notice--upgrade {
+  border-color: rgba(124, 92, 255, 0.14);
+}
+
+.feature-locked-notice__icon--pending {
+  background: linear-gradient(145deg, rgba(124, 92, 255, 0.16), rgba(255, 236, 179, 0.55));
+  color: #5b3fd6;
+}
+
+.feature-locked-notice__badge--pending {
+  background: rgba(255, 236, 179, 0.72);
+  color: #9a6700;
+}
+
+.feature-locked-notice__icon {
+  display: inline-flex;
+  height: 56px;
+  width: 56px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 18px;
+}
+
+.feature-locked-notice__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.feature-locked-notice__badge {
+  display: inline-flex;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.feature-locked-notice__feature {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7c5cff;
+}
+
+.feature-locked-notice__title {
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #1f1633;
+}
+
+.feature-locked-notice__message {
+  margin-top: 8px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #6b6780;
+}
+
+.feature-locked-notice__packages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+  margin-top: 14px;
+  font-size: 13px;
+  color: #6b6780;
+}
+
+.feature-locked-notice__packages strong {
+  color: #1f1633;
+}
+
+.feature-locked-notice__action {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 18px;
+  padding: 10px 16px;
+  border-radius: 12px;
+  background: #1f1633;
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: opacity 0.2s ease;
+}
+
+.feature-locked-notice__action:hover {
+  opacity: 0.92;
+  color: #ffffff;
+}
+
+.forbidden-notifier {
+  position: fixed;
+  inset: 16px 16px auto;
+  z-index: 120;
+  pointer-events: none;
+}
+
+.forbidden-notifier__panel {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  pointer-events: auto;
+}
+
+.forbidden-notifier__close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  display: inline-flex;
+  height: 32px;
+  width: 32px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #1f1633;
+  box-shadow: 0 4px 14px rgba(31, 22, 51, 0.08);
+}
+
+.pending-subscription-banner {
+  border-bottom: 1px solid rgba(91, 63, 214, 0.14);
+  background: linear-gradient(90deg, rgba(124, 92, 255, 0.08), rgba(255, 249, 235, 0.95));
+}
+
+.pending-subscription-banner__content {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+  max-width: 1480px;
+  margin: 0 auto;
+  padding: 16px clamp(12px, 3.5vw, 28px);
+}
+
+.pending-subscription-banner__icon {
+  display: inline-flex;
+  height: 40px;
+  width: 40px;
+  shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: linear-gradient(145deg, rgba(124, 92, 255, 0.16), rgba(255, 236, 179, 0.55));
+  color: #5b3fd6;
+}
+
+.pending-subscription-banner__eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9a6700;
+}
+
+.pending-subscription-banner__title {
+  margin-top: 4px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #4338a8;
+}
+
+.pending-subscription-banner__text {
+  margin-top: 4px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #6b6780;
+}
+
+.pending-subscription-banner__link {
+  display: inline-flex;
+  shrink: 0;
+  gap: 6px;
+  align-items: center;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(91, 63, 214, 0.12);
+  color: #4338a8;
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: 0 4px 14px rgba(91, 63, 214, 0.08);
+}

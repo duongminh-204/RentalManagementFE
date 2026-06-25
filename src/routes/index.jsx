@@ -1,5 +1,5 @@
 import { Route } from 'react-router-dom';
-import { PrivateRoute } from './PrivateRoute';
+import { OwnerRoute } from './OwnerRoute';
 import ContractsPage from '../features/contracts/pages/ContractsPage';
 import CreateContractPage from '../features/contracts/pages/CreateContractPage';
 import ContractDetailPage from '../features/contracts/pages/ContractDetailPage';
@@ -10,25 +10,25 @@ export const contractRoutes = (
     <Route
       path="/contracts/create"
       element={
-        <PrivateRoute allowedRoles={['owner']}>
+        <OwnerRoute>
           <CreateContractPage />
-        </PrivateRoute>
+        </OwnerRoute>
       }
     />
     <Route
       path="/contracts/:id"
       element={
-        <PrivateRoute allowedRoles={['owner']}>
+        <OwnerRoute>
           <ContractDetailPage />
-        </PrivateRoute>
+        </OwnerRoute>
       }
     />
     <Route
       path="/contracts"
       element={
-        <PrivateRoute allowedRoles={['owner']}>
+        <OwnerRoute>
           <ContractsPage />
-        </PrivateRoute>
+        </OwnerRoute>
       }
     />
   </>
