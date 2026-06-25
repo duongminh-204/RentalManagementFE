@@ -64,31 +64,12 @@ const sortGroups = (groups) =>
     return score(a) - score(b);
   });
 
-const computePageStats = (groups) => {
-  let pending = 0;
-  let active = 0;
-  let overLimit = 0;
-  let totalSubs = 0;
-
-  groups.forEach((group) => {
-    (group.subscriptions || []).forEach((sub) => {
-      totalSubs += 1;
-      if (sub.status === 'Pending') pending += 1;
-      if (sub.status === 'Active') active += 1;
-      if (sub.ownerRoomCount > sub.maxRooms) overLimit += 1;
-    });
-  });
-
-  return { owners: groups.length, pending, active, overLimit, totalSubs };
-};
-
 const AdminSubscriptionsPage = () => {
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [groups, setGroups] = useState([]);
   const [packages, setPackages] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -104,7 +85,6 @@ const AdminSubscriptionsPage = () => {
       const data = await getAdminSubscriptionsGrouped({ status, search, page, pageSize: 8 });
       setGroups(sortGroups((data.items || []).map(normalizeGroup)));
       setTotalPages(data.totalPages || 1);
-      setTotalCount(data.totalCount ?? data.total ?? 0);
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải đăng ký.');
     } finally {
@@ -118,8 +98,6 @@ const AdminSubscriptionsPage = () => {
       .then((data) => setPackages(data.items || []))
       .catch(() => {});
   }, [load]);
-
-  const pageStats = useMemo(() => computePageStats(groups), [groups]);
 
   const changeTargetSub = useMemo(() => {
     if (!changeTarget) return null;
@@ -199,41 +177,6 @@ const AdminSubscriptionsPage = () => {
         </button>
       </AdminPageHeader>
 
-      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="dashboard-mini-card">
-          <p className="text-sm text-muted">Chủ trọ (tổng)</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-ink-deep">
-            <Users className="h-5 w-5 text-accent-violet" />
-            {totalCount || pageStats.owners}
-          </p>
-          <p className="mt-1 text-xs text-muted">Trang {page}/{totalPages}</p>
-        </div>
-        <div className="dashboard-mini-card">
-          <p className="text-sm text-muted">Chờ duyệt</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#b26a00]">
-            <Clock3 className="h-5 w-5" />
-            {pageStats.pending}
-          </p>
-          <p className="mt-1 text-xs text-muted">Trên trang hiện tại</p>
-        </div>
-        <div className="dashboard-mini-card">
-          <p className="text-sm text-muted">Đang hoạt động</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#1f7a45]">
-            <CheckCircle2 className="h-5 w-5" />
-            {pageStats.active}
-          </p>
-          <p className="mt-1 text-xs text-muted">{pageStats.totalSubs} đăng ký trên trang</p>
-        </div>
-        <div className="dashboard-mini-card">
-          <p className="text-sm text-muted">Vượt giới hạn phòng</p>
-          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#b4234a]">
-            <AlertTriangle className="h-5 w-5" />
-            {pageStats.overLimit}
-          </p>
-          <p className="mt-1 text-xs text-muted">Cần nâng cấp gói</p>
-        </div>
-      </div>
-
       <div className="dashboard-section-card">
         <div className="mb-5 space-y-4">
           <div className="relative">
@@ -299,12 +242,6 @@ const AdminSubscriptionsPage = () => {
           </div>
         ) : (
           <div className="space-y-5">
-            {pageStats.pending > 0 && !status ? (
-              <div className="rounded-xl border border-[#f0d9a8] bg-[#fffaf0] px-4 py-3 text-sm text-[#8a5a00]">
-                <strong>{pageStats.pending}</strong> đăng ký đang chờ duyệt trên trang này — ưu tiên kích hoạt để chủ trọ sử dụng hệ thống.
-              </div>
-            ) : null}
-
             {groups.map((group) => (
               <AdminOwnerSubscriptionsCard
                 key={group.ownerId}
