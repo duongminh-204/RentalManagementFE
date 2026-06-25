@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Check, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { getPublicPackages } from '../../features/packages/api/packagesApi';
@@ -69,9 +70,9 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
 
   if (!open) return null;
 
-  return (
+  return createPortal(
     <div
-      className="fixed inset-0 z-[130] flex items-center justify-center bg-ink-deep/60 p-4 backdrop-blur-sm"
+      className="package-pricing-modal__overlay"
       onClick={onClose}
       role="presentation"
     >
@@ -176,7 +177,8 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
           </p>
         ) : null}
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };
 
