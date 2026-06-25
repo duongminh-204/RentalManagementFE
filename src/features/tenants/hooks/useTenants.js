@@ -6,7 +6,6 @@ import {
   resolveMediaUrl,
 } from '../utils/tenantHelpers';
 import {
-  getOwnerSubscriptionNotice,
   isForbiddenError,
   resolveForbiddenNotice,
   getApiErrorMessage,
@@ -16,18 +15,9 @@ export const useTenants = () => {
   const [tenants, setTenants] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [accessNotice, setAccessNotice] = useState(() => getOwnerSubscriptionNotice());
+  const [accessNotice, setAccessNotice] = useState(null);
 
   const fetchTenants = useCallback(async (params = {}) => {
-    const subscriptionNotice = getOwnerSubscriptionNotice();
-    if (subscriptionNotice) {
-      setAccessNotice(subscriptionNotice);
-      setTenants([]);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-
     try {
       setLoading(true);
       setError(null);

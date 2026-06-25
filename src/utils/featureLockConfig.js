@@ -1,14 +1,79 @@
 import {
+  Building2,
   Car,
   Clock3,
+  Cpu,
+  DoorOpen,
+  FileText,
   LockKeyhole,
   Palette,
   PieChart,
+  Receipt,
   TrendingUp,
   Wallet,
 } from 'lucide-react';
 
 export const FEATURE_LOCK_CONFIGS = {
+  buildings: {
+    key: 'buildings',
+    label: 'Quản lý tòa nhà',
+    title: 'Quản lý tòa nhà',
+    subtitle: 'Tạo và quản lý các tòa nhà, địa chỉ và bản đồ — tính năng có trong gói Starter.',
+    description:
+      'Gom phòng theo từng tòa nhà, lưu địa chỉ chính xác và xem vị trí trên bản đồ để vận hành nhiều khu trọ.',
+    icon: Building2,
+    requiredPackage: 'Starter',
+    previewItems: ['Danh sách tòa nhà', 'Địa chỉ & mô tả', 'Bản đồ & tuyến đường', 'Thêm / sửa / xóa tòa'],
+    accent: 'teal',
+  },
+  rooms: {
+    key: 'rooms',
+    label: 'Quản lý phòng trọ',
+    title: 'Quản lý phòng trọ',
+    subtitle: 'Sơ đồ phòng, trạng thái và thiết bị — tính năng có trong gói Starter.',
+    description:
+      'Xem sơ đồ tầng, theo dõi phòng trống/đã thuê, quản lý giá thuê, thiết bị và dịch vụ từng phòng.',
+    icon: DoorOpen,
+    requiredPackage: 'Starter',
+    previewItems: ['Sơ đồ phòng theo tầng', 'Trạng thái trống / đã thuê', 'Giá thuê & diện tích', 'Thiết bị & dịch vụ phòng'],
+    accent: 'indigo',
+  },
+  contracts: {
+    key: 'contracts',
+    label: 'Quản lý hợp đồng',
+    title: 'Quản lý hợp đồng thuê',
+    subtitle: 'Theo dõi hợp đồng, gia hạn và chấm dứt — tính năng có trong gói Starter.',
+    description:
+      'Lưu hợp đồng theo phòng & khách thuê, nhắc hết hạn, gia hạn hoặc chấm dứt và quản lý tiền cọc.',
+    icon: FileText,
+    requiredPackage: 'Starter',
+    previewItems: ['Danh sách hợp đồng', 'Nhắc sắp hết hạn', 'Gia hạn & chấm dứt', 'Tiền cọc & file đính kèm'],
+    accent: 'rose',
+  },
+  devices: {
+    key: 'devices',
+    label: 'Thiết bị & Dịch vụ',
+    title: 'Quản lý thiết bị & dịch vụ',
+    subtitle: 'Danh mục thiết bị, dịch vụ và gán theo phòng — tính năng có trong gói Starter.',
+    description:
+      'Tạo danh mục máy lạnh, wifi, giặt ủi… gán vào từng phòng và theo dõi trạng thái thiết bị.',
+    icon: Cpu,
+    requiredPackage: 'Starter',
+    previewItems: ['Danh mục thiết bị & dịch vụ', 'Gán theo từng phòng', 'Trạng thái hoạt động', 'Giá dịch vụ hàng tháng'],
+    accent: 'orange',
+  },
+  invoices: {
+    key: 'invoices',
+    label: 'Quản lý hoá đơn',
+    title: 'Lập & quản lý hoá đơn',
+    subtitle: 'Tạo hoá đơn điện nước, theo dõi thanh toán — tính năng có trong gói Starter.',
+    description:
+      'Nhập chỉ số điện nước, xem trước tổng tiền, tạo hoá đơn và theo dõi trạng thái thanh toán theo phòng.',
+    icon: Receipt,
+    requiredPackage: 'Starter',
+    previewItems: ['Nhập chỉ số điện nước', 'Xem trước tổng tiền', 'Lịch sử hoá đơn', 'Mã QR thanh toán'],
+    accent: 'emerald',
+  },
   vehicles: {
     key: 'vehicles',
     label: 'Quản lý phương tiện',
@@ -96,12 +161,27 @@ export const FEATURE_LOCK_CONFIGS = {
 };
 
 const PATH_FEATURE_KEYS = {
+  '/buildings': 'buildings',
+  '/rooms': 'rooms',
+  '/contracts': 'contracts',
+  '/devices': 'devices',
+  '/invoices': 'invoices',
   '/vehicles': 'vehicles',
   '/rooms/decor': 'roomDecor',
   '/debts': 'debtPage',
 };
 
+const PATH_PREFIX_FEATURE_KEYS = [
+  { prefix: '/buildings', key: 'buildings' },
+  { prefix: '/contracts', key: 'contracts' },
+];
+
 const API_FEATURE_KEYS = [
+  { pattern: /\/buildings/i, key: 'buildings' },
+  { pattern: /\/room(?!-decor|s\/decor)/i, key: 'rooms' },
+  { pattern: /\/contracts/i, key: 'contracts' },
+  { pattern: /\/room-management|\/device-catalog|\/devices/i, key: 'devices' },
+  { pattern: /\/invoices/i, key: 'invoices' },
   { pattern: /\/dashboard\/debt/i, key: 'debtReports' },
   { pattern: /\/dashboard\/revenue/i, key: 'revenueReports' },
   { pattern: /\/vehicles/i, key: 'vehicles' },
@@ -115,6 +195,11 @@ export const resolveFeatureKey = ({ path, requestUrl, featureLabel, lockedKey } 
 
   if (path && PATH_FEATURE_KEYS[path]) {
     return PATH_FEATURE_KEYS[path];
+  }
+
+  if (path) {
+    const prefixMatch = PATH_PREFIX_FEATURE_KEYS.find(({ prefix }) => path.startsWith(prefix));
+    if (prefixMatch) return prefixMatch.key;
   }
 
   if (requestUrl) {

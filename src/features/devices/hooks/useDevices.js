@@ -4,6 +4,11 @@ import * as roomMgmtApi from '../../rooms/api/roomManagementApi';
 import { getAllRooms, getRoomById } from '../../rooms/api/roomsApi';
 import { normalizeRoomFromApi, normalizeRoomsList } from '../../rooms/utils/roomHelpers';
 import { parseMoneyInputNumber } from '../../../utils/currencyInput';
+import {
+  isForbiddenError,
+  resolveForbiddenNotice,
+  resolveFeatureRouteNotice,
+} from '../../../utils/apiError';
 
 const normalizeBuilding = (building) => ({
   buildingId: building.buildingId ?? building.id,
@@ -136,6 +141,7 @@ export const useDevices = () => {
   const [saving, setSaving] = useState(false);
   const [pendingKey, setPendingKey] = useState(null);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/devices'));
 
   const refreshRoomDetail = useCallback(async (roomId) => {
     if (!roomId) return;
@@ -169,8 +175,22 @@ export const useDevices = () => {
   }, []);
 
   const refresh = useCallback(async () => {
+    const routeNotice = resolveFeatureRouteNotice('/devices');
+    if (routeNotice) {
+      setAccessNotice(routeNotice);
+      setBuildings([]);
+      setRooms([]);
+      setDeviceCatalog([]);
+      setServiceCatalog([]);
+      setRoomDetails({});
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setAccessNotice(null);
     try {
       const [rawRooms, rawBuildings] = await Promise.all([
         getAllRooms(),
@@ -188,7 +208,12 @@ export const useDevices = () => {
         return normalizedRooms[0]?.id ?? null;
       });
     } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Không tải được dữ liệu');
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/devices' }));
+        setError(null);
+      } else {
+        setError(err.response?.data?.message || err.message || 'Không tải được dữ liệu');
+      }
     } finally {
       setLoading(false);
     }
@@ -587,6 +612,7 @@ export const useDevices = () => {
     pendingKey,
     isPending,
     error,
+    accessNotice,
     isAssigned,
     toggleCatalogItem,
     removeItem,

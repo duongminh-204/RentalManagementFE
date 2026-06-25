@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { generateRoomDecor, getDecorStatus, getDecorStyles } from '../api/roomDecorApi';
-import { isForbiddenError, resolveForbiddenNotice, getApiErrorMessage } from '../../../utils/apiError';
+import { isForbiddenError, resolveForbiddenNotice, resolveFeatureRouteNotice, getApiErrorMessage } from '../../../utils/apiError';
 
 export const useRoomDecor = () => {
   const [styles, setStyles] = useState([]);
@@ -8,7 +8,7 @@ export const useRoomDecor = () => {
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState(null);
-  const [accessNotice, setAccessNotice] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/rooms/decor'));
   const [result, setResult] = useState(null);
 
   const refreshStatus = useCallback(async () => {
@@ -24,6 +24,14 @@ export const useRoomDecor = () => {
     let active = true;
 
     const load = async () => {
+      const routeNotice = resolveFeatureRouteNotice('/rooms/decor');
+      if (routeNotice) {
+        if (!active) return;
+        setAccessNotice(routeNotice);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       setError(null);
       setAccessNotice(null);

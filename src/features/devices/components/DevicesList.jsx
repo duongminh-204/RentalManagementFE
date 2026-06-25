@@ -19,6 +19,7 @@ import CurrencyInput from '../../../components/common/CurrencyInput';
 import { parseMoneyInputNumber } from '../../../utils/currencyInput';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 
 const STATUS_ICONS = {
   active: { Icon: CheckCircle2, className: 'text-green-500' },
@@ -189,6 +190,7 @@ const DevicesList = () => {
     saving,
     isPending,
     error,
+    accessNotice,
     isAssigned,
     toggleCatalogItem,
     removeItem,
@@ -422,6 +424,9 @@ const DevicesList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
+        {accessNotice ? (
+          <FeatureLockedNotice {...accessNotice} fullPage />
+        ) : (
         <section
           className="bg-white p-8"
           style={{ borderRadius: '20px', border: '1px solid #E5E7EB' }}
@@ -601,6 +606,7 @@ const DevicesList = () => {
             </div>
           </div>
         </section>
+        )}
       </div>
       <ConfirmDeleteDialog />
     </div>

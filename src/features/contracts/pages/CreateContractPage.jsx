@@ -6,6 +6,7 @@ import { useTenants } from '../../tenants';
 import { useRooms } from '../../rooms';
 import { useContracts } from '../hooks/useContracts';
 import { prepareContractPayload } from '../utils/contractHelpers';
+import FeatureRouteLock from '../../../components/common/FeatureRouteLock';
 
 const DEFAULT_TERMS = `1. Bên thuê thanh toán tiền phòng đúng hạn theo chu kỳ đã thỏa thuận.
 2. Bên thuê giữ gìn tài sản, vệ sinh phòng và tuân thủ nội quy tòa nhà.
@@ -42,6 +43,7 @@ const CreateContractPage = () => {
   };
 
   return (
+    <FeatureRouteLock path="/contracts">
     <div className="min-h-screen bg-surface-light px-4 py-8 sm:px-6 lg:px-8">
       <button
         type="button"
@@ -63,6 +65,7 @@ const CreateContractPage = () => {
         />
       </div>
     </div>
+    </FeatureRouteLock>
   );
 };
 

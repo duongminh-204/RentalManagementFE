@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import FeatureLockedNotice from './FeatureLockedNotice';
 import { resolveForbiddenNotice } from '../../utils/apiError';
-import { getStoredUser, isOwnerSubscriptionPending } from '../../hooks/useAuth';
+import { getStoredUser } from '../../hooks/useAuth';
 
 const ForbiddenNotifier = () => {
   const [notice, setNotice] = useState(null);
@@ -10,10 +10,6 @@ const ForbiddenNotifier = () => {
   useEffect(() => {
     const handleForbidden = (event) => {
       const user = getStoredUser();
-      if (isOwnerSubscriptionPending(user)) {
-        return;
-      }
-
       const detail = event.detail || {};
       setNotice(
         resolveForbiddenNotice(

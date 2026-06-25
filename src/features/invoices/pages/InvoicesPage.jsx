@@ -53,6 +53,8 @@ import { resolveWalletAccountFromPaymentMethod } from '../../../utils/qrPayload'
 import { buildInvoiceExportFileName } from '../utils/invoiceHelpers';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
+import { resolveFeatureRouteNotice } from '../../../utils/apiError';
 
 const getCurrentUserId = (user) => {
   if (!user) return null;
@@ -73,7 +75,8 @@ const formatNumberField = (value) => {
 };
 
 const InvoicesPage = () => {
-  const { rooms, loading: roomsLoading, error: roomsError } = useRooms();
+  const accessNotice = resolveFeatureRouteNotice('/invoices');
+  const { rooms, loading: roomsLoading, error: roomsError, accessNotice: roomsAccessNotice } = useRooms();
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const storedUser = getStoredUser();
   const currentUserId = getCurrentUserId(storedUser);
@@ -419,6 +422,18 @@ const InvoicesPage = () => {
     window.addEventListener('afterprint', cleanup);
     requestAnimationFrame(() => window.print());
   }, [invoiceResult]);
+
+  const lockNotice = accessNotice || roomsAccessNotice;
+
+  if (lockNotice) {
+    return (
+      <div className="min-h-screen w-full flex-1 bg-surface-light">
+        <div className="page-content page-content--wide py-8">
+          <FeatureLockedNotice {...lockNotice} fullPage />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="page-content page-content--wide invoice-page-content">

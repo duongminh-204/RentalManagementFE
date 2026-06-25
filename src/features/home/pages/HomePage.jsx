@@ -1,5 +1,5 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth, getRoleHomePath, getStoredUser } from '../../../hooks/useAuth';
+import { useAuth, getRoleHomePath, getStoredUser, isOwnerRole, isOwnerSubscriptionReady } from '../../../hooks/useAuth';
 import HomeNavbar from '../components/HomeNavbar';
 import HomeHero from '../components/HomeHero';
 import HomeStats from '../components/HomeStats';
@@ -17,9 +17,13 @@ import HomeFooter from '../components/HomeFooter';
 
 export default function HomePage() {
   const { isAuthenticated, role } = useAuth();
+  const user = getStoredUser();
 
   if (isAuthenticated) {
-    return <Navigate to={getRoleHomePath(role, getStoredUser())} replace />;
+    const canBrowseHomeWithoutPlan = isOwnerRole(role) && !isOwnerSubscriptionReady(user);
+    if (!canBrowseHomeWithoutPlan) {
+      return <Navigate to={getRoleHomePath(role, user)} replace />;
+    }
   }
 
   return (

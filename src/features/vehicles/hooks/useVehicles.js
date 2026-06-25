@@ -17,7 +17,7 @@ import {
   normalizeVehiclesList,
 } from '../utils/vehicleHelpers';
 import { resolveMediaUrl } from '../../rooms/utils/roomHelpers';
-import { isForbiddenError, resolveForbiddenNotice, getApiErrorMessage, getOwnerSubscriptionNotice } from '../../../utils/apiError';
+import { isForbiddenError, resolveForbiddenNotice, resolveFeatureRouteNotice, getApiErrorMessage } from '../../../utils/apiError';
 
 export const useVehicles = () => {
   const [vehicles, setVehicles] = useState([]);
@@ -25,12 +25,12 @@ export const useVehicles = () => {
   const [parkingFeeSummary, setParkingFeeSummary] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [accessNotice, setAccessNotice] = useState(() => getOwnerSubscriptionNotice());
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/vehicles'));
 
   const fetchVehicles = useCallback(async (params = {}) => {
-    const subscriptionNotice = getOwnerSubscriptionNotice();
-    if (subscriptionNotice) {
-      setAccessNotice(subscriptionNotice);
+    const routeNotice = resolveFeatureRouteNotice('/vehicles');
+    if (routeNotice) {
+      setAccessNotice(routeNotice);
       setVehicles([]);
       setError(null);
       setLoading(false);

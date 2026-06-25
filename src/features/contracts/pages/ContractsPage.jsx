@@ -5,6 +5,7 @@ import { useTenants } from '../../tenants';
 import { useRooms } from '../../rooms';
 import { useContracts } from '../hooks/useContracts';
 import ContractReminders from '../components/ContractReminders';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 import {
   getContractStatusLabel,
   getContractStatusColor,
@@ -26,7 +27,7 @@ const ContractsPage = () => {
   const navigate = useNavigate();
   const { tenants } = useTenants();
   const { rooms } = useRooms();
-  const { contracts, reminders, loading, error, fetchContracts } = useContracts();
+  const { contracts, reminders, loading, error, accessNotice, fetchContracts } = useContracts();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -71,10 +72,20 @@ const ContractsPage = () => {
     }
   };
 
-  if (loading && contracts.length === 0) {
+  if (loading && !accessNotice && contracts.length === 0) {
     return (
       <div className="flex min-h-screen flex-1 items-center justify-center bg-surface-light">
         <Loader className="animate-spin text-accent-violet" size={32} />
+      </div>
+    );
+  }
+
+  if (accessNotice) {
+    return (
+      <div className="min-h-screen w-full flex-1 bg-surface-light">
+        <div className="page-content page-content--wide py-8">
+          <FeatureLockedNotice {...accessNotice} fullPage />
+        </div>
       </div>
     );
   }

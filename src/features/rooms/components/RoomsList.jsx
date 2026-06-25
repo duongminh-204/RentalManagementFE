@@ -14,10 +14,11 @@ import * as buildingsApi from '../../buildings/api/buildingsApi';
 import * as roomMgmtApi from '../api/roomManagementApi';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 
 const RoomsList = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { rooms, loading, error, addRoom, editRoom, changeRoomStatus, removeRoom, refetch } =
+  const { rooms, loading, error, accessNotice, addRoom, editRoom, changeRoomStatus, removeRoom, refetch } =
     useRooms();
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
 
@@ -256,8 +257,10 @@ const RoomsList = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
-
-        {/* Building Selector */}
+        {accessNotice ? (
+          <FeatureLockedNotice {...accessNotice} fullPage />
+        ) : (
+        <>
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -449,7 +452,6 @@ const RoomsList = () => {
             </motion.div>
           </motion.div>
         )}
-      </div>
 
       {/* Room Detail Modal */}
       <AnimatePresence>
@@ -466,6 +468,9 @@ const RoomsList = () => {
           />
         )}
       </AnimatePresence>
+        </>
+        )}
+      </div>
 
       <ConfirmDeleteDialog />
     </div>

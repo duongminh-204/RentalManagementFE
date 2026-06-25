@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { LayoutDashboard, LogIn, Menu, UserPlus, X } from 'lucide-react';
 import AppLogo from '../../../components/common/AppLogo';
+import { getStoredUser, isOwnerRole, isOwnerSubscriptionReady } from '../../../hooks/useAuth';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Tính năng' },
@@ -16,6 +17,10 @@ const NAV_LINKS = [
 
 export default function HomeNavbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const user = getStoredUser();
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+  const isLoggedIn = Boolean(token);
+  const isOwnerWithoutPlan = isLoggedIn && isOwnerRole(user?.role) && !isOwnerSubscriptionReady(user);
 
   const closeMobile = () => setMobileOpen(false);
 
@@ -48,15 +53,39 @@ export default function HomeNavbar() {
         </nav>
 
         <div className="hidden items-center gap-3 md:flex">
-          <Link
-            to="/login"
-            className="rounded-xl px-4 py-2.5 text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
-          >
-            Đăng nhập
-          </Link>
-          <Link to="/register" className="btn-primary px-5 py-2.5 text-sm no-underline">
-            Dùng thử miễn phí
-          </Link>
+          {isOwnerWithoutPlan ? (
+            <>
+              <Link
+                to="/register/select-plan"
+                className="rounded-xl px-4 py-2.5 text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
+              >
+                Chọn gói
+              </Link>
+              <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm no-underline">
+                <LayoutDashboard className="h-4 w-4" />
+                Vào hệ thống
+              </Link>
+            </>
+          ) : isLoggedIn ? (
+            <Link to="/dashboard" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm no-underline">
+              <LayoutDashboard className="h-4 w-4" />
+              Vào hệ thống
+            </Link>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
+              >
+                <LogIn className="h-4 w-4" />
+                Đăng nhập
+              </Link>
+              <Link to="/register" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm no-underline">
+                <UserPlus className="h-4 w-4" />
+                Dùng thử miễn phí
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -89,20 +118,53 @@ export default function HomeNavbar() {
                 </a>
               ))}
               <div className="mt-3 flex flex-col gap-2 border-t border-white/10 pt-4">
-                <Link
-                  to="/login"
-                  onClick={closeMobile}
-                  className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
-                >
-                  Đăng nhập
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={closeMobile}
-                  className="btn-primary py-3 text-center text-sm no-underline"
-                >
-                  Dùng thử miễn phí
-                </Link>
+                {isOwnerWithoutPlan ? (
+                  <>
+                    <Link
+                      to="/register/select-plan"
+                      onClick={closeMobile}
+                      className="rounded-xl px-4 py-3 text-center text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
+                    >
+                      Chọn gói
+                    </Link>
+                    <Link
+                      to="/dashboard"
+                      onClick={closeMobile}
+                      className="btn-primary inline-flex items-center justify-center gap-2 py-3 text-center text-sm no-underline"
+                    >
+                      <LayoutDashboard className="h-4 w-4" />
+                      Vào hệ thống
+                    </Link>
+                  </>
+                ) : isLoggedIn ? (
+                  <Link
+                    to="/dashboard"
+                    onClick={closeMobile}
+                    className="btn-primary inline-flex items-center justify-center gap-2 py-3 text-center text-sm no-underline"
+                  >
+                    <LayoutDashboard className="h-4 w-4" />
+                    Vào hệ thống
+                  </Link>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={closeMobile}
+                      className="inline-flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-center text-sm font-semibold text-on-primary no-underline transition hover:bg-white/10"
+                    >
+                      <LogIn className="h-4 w-4" />
+                      Đăng nhập
+                    </Link>
+                    <Link
+                      to="/register"
+                      onClick={closeMobile}
+                      className="btn-primary inline-flex items-center justify-center gap-2 py-3 text-center text-sm no-underline"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Dùng thử miễn phí
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>

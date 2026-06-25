@@ -16,6 +16,12 @@ import {
 } from '../api/contractService';
 import { normalizeContractFromApi, normalizeContractsList } from '../utils/contractHelpers';
 import { openOrDownloadContractFile } from '../utils/contractFileHelpers';
+import {
+  isForbiddenError,
+  resolveForbiddenNotice,
+  resolveFeatureRouteNotice,
+  getApiErrorMessage,
+} from '../../../utils/apiError';
 
 export const useContracts = () => {
   const [contracts, setContracts] = useState([]);
@@ -23,15 +29,31 @@ export const useContracts = () => {
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/contracts'));
 
   const fetchContracts = useCallback(async (params = {}) => {
+    const routeNotice = resolveFeatureRouteNotice('/contracts');
+    if (routeNotice) {
+      setAccessNotice(routeNotice);
+      setContracts([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
+      setAccessNotice(null);
       const data = await getContracts(params);
       setContracts(normalizeContractsList(data));
     } catch (err) {
-      setError(err.response?.data?.message || 'Lỗi khi tải dữ liệu hợp đồng');
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/contracts' }));
+        setError(null);
+      } else {
+        setError(getApiErrorMessage(err, 'Lỗi khi tải dữ liệu hợp đồng'));
+      }
     } finally {
       setLoading(false);
     }
@@ -80,6 +102,7 @@ export const useContracts = () => {
   }, []);
 
   const fetchExpiringContracts = useCallback(async (days = 30) => {
+    if (resolveFeatureRouteNotice('/contracts')) return [];
     const data = await getExpiringContracts(days);
     const normalized = normalizeContractsList(data);
     setExpiringContracts(normalized);
@@ -87,6 +110,7 @@ export const useContracts = () => {
   }, []);
 
   const fetchReminders = useCallback(async () => {
+    if (resolveFeatureRouteNotice('/contracts')) return [];
     const data = await getContractReminders();
     setReminders(Array.isArray(data) ? data : []);
     return data;
@@ -138,6 +162,7 @@ export const useContracts = () => {
     reminders,
     loading,
     error,
+    accessNotice,
     fetchContracts,
     getContract,
     getDetail,

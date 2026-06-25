@@ -14,6 +14,7 @@ import {
   resolveContractStatus,
   getPaymentCycleLabel,
 } from '../utils/contractHelpers';
+import FeatureRouteLock from '../../../components/common/FeatureRouteLock';
 
 const ContractDetailPage = () => {
   const { id } = useParams();
@@ -89,27 +90,22 @@ const ContractDetailPage = () => {
     }
   };
 
-  if (loading) {
-    return (
+  return (
+    <FeatureRouteLock path="/contracts">
+    {loading ? (
       <div className="flex min-h-screen items-center justify-center bg-surface-light">
         <Loader className="animate-spin text-accent-violet" size={32} />
       </div>
-    );
-  }
-
-  if (!contract) {
-    return (
+    ) : !contract ? (
       <div className="p-8 text-center">
         <p className="text-gray-600">{error || 'Không tìm thấy hợp đồng'}</p>
         <Link to="/contracts" className="mt-4 inline-block text-primary">Quay lại</Link>
       </div>
-    );
-  }
-
-  const status = resolveContractStatus(contract);
-  const canTerminate = !contract.isTerminated && status !== 'cancelled';
-
-  return (
+    ) : (
+    (() => {
+      const status = resolveContractStatus(contract);
+      const canTerminate = !contract.isTerminated && status !== 'cancelled';
+      return (
     <div className="min-h-screen bg-surface-light px-4 py-8 sm:px-6 lg:px-8">
       <button
         type="button"
@@ -247,6 +243,10 @@ const ContractDetailPage = () => {
         />
       )}
     </div>
+      );
+    })()
+    )}
+    </FeatureRouteLock>
   );
 };
 

@@ -5,19 +5,33 @@ import {
   normalizeRoomsList,
   mapRoomStatusToApi,
 } from '../utils/roomHelpers';
+import {
+  isForbiddenError,
+  resolveForbiddenNotice,
+  resolveFeatureRouteNotice,
+  getApiErrorMessage,
+} from '../../../utils/apiError';
 
 export const useRooms = () => {
   const [rooms, setRooms] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/rooms'));
 
   const fetchRooms = async () => {
-  console.log("=== FETCH ROOMS ĐANG CHẠY ===");
-  console.log("Current time:", new Date().toLocaleTimeString());
+    const routeNotice = resolveFeatureRouteNotice('/rooms');
+    if (routeNotice) {
+      setAccessNotice(routeNotice);
+      setRooms([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
 
   try {
     setLoading(true);
     setError(null);
+    setAccessNotice(null);
 
     const apiBaseUrl =
       import.meta.env.VITE_API_BASE_URL ||
@@ -37,8 +51,13 @@ export const useRooms = () => {
     console.error("LỖI KHI GỌI API:", err);
     console.error("Error response:", err.response?.data);
     console.error("Error status:", err.response?.status);
-    
-    setError(err.response?.data?.message || err.message || 'Lỗi khi tải phòng');
+
+    if (isForbiddenError(err)) {
+      setAccessNotice(resolveForbiddenNotice(err, { path: '/rooms' }));
+      setError(null);
+    } else {
+      setError(getApiErrorMessage(err, 'Lỗi khi tải phòng'));
+    }
   } finally {
     setLoading(false);
   }
@@ -110,6 +129,7 @@ export const useRooms = () => {
     rooms,
     loading,
     error,
+    accessNotice,
     refetch: fetchRooms,
     addRoom,
     editRoom,

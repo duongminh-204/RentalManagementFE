@@ -115,9 +115,13 @@ export default function SelectPlanPage() {
           </div>
         )}
 
-        <p className="mt-8 text-center text-sm text-muted">
-          <Link to="/" className="text-ink-deep underline">
+        <p className="mt-8 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-sm text-muted">
+          <Link to="/" className="font-medium text-ink-deep underline">
             Quay về trang chủ
+          </Link>
+          <span aria-hidden="true">·</span>
+          <Link to="/dashboard" className="font-medium text-ink-deep underline">
+            Vào hệ thống
           </Link>
         </p>
       </div>

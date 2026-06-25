@@ -1,15 +1,36 @@
-import { getStoredUser, isOwnerRole, isOwnerSubscriptionActive, isOwnerSubscriptionPending } from '../hooks/useAuth';
+import { getStoredUser } from '../hooks/useAuth';
 import { getFeatureLockConfig, resolveFeatureKey } from './featureLockConfig';
 
 export const PACKAGE_TIER_ORDER = ['Starter', 'PRO', 'PREMIUM'];
 
 const ROUTE_FEATURES = {
+  '/buildings': { label: 'Quản lý tòa nhà', requiredPackage: 'Starter', featureKey: 'buildings' },
+  '/rooms': { label: 'Quản lý phòng trọ', requiredPackage: 'Starter', featureKey: 'rooms' },
+  '/contracts': { label: 'Quản lý hợp đồng', requiredPackage: 'Starter', featureKey: 'contracts' },
+  '/devices': { label: 'Thiết bị & Dịch vụ', requiredPackage: 'Starter', featureKey: 'devices' },
+  '/invoices': { label: 'Quản lý hoá đơn', requiredPackage: 'Starter', featureKey: 'invoices' },
   '/vehicles': { label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
   '/rooms/decor': { label: 'AI Decor phòng', requiredPackage: 'PREMIUM', featureKey: 'roomDecor' },
   '/debts': { label: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
 };
 
+const ROUTE_PREFIX_FEATURES = [
+  { prefix: '/buildings', feature: ROUTE_FEATURES['/buildings'] },
+  { prefix: '/contracts', feature: ROUTE_FEATURES['/contracts'] },
+];
+
+export const resolveRouteFeature = (path = '') => {
+  if (ROUTE_FEATURES[path]) return ROUTE_FEATURES[path];
+  const prefixMatch = ROUTE_PREFIX_FEATURES.find(({ prefix }) => path.startsWith(prefix));
+  return prefixMatch?.feature || null;
+};
+
 const API_FEATURES = [
+  { pattern: /\/buildings/i, label: 'Quản lý tòa nhà', requiredPackage: 'Starter', featureKey: 'buildings' },
+  { pattern: /\/room(?!-decor|s\/decor)/i, label: 'Quản lý phòng trọ', requiredPackage: 'Starter', featureKey: 'rooms' },
+  { pattern: /\/contracts/i, label: 'Quản lý hợp đồng', requiredPackage: 'Starter', featureKey: 'contracts' },
+  { pattern: /\/room-management|\/device-catalog|\/devices/i, label: 'Thiết bị & Dịch vụ', requiredPackage: 'Starter', featureKey: 'devices' },
+  { pattern: /\/invoices/i, label: 'Quản lý hoá đơn', requiredPackage: 'Starter', featureKey: 'invoices' },
   { pattern: /\/dashboard\/debt/i, label: 'Báo cáo công nợ', requiredPackage: 'PRO', featureKey: 'debtReports' },
   { pattern: /\/dashboard\/revenue/i, label: 'Báo cáo doanh thu', requiredPackage: 'PRO', featureKey: 'revenueReports' },
   { pattern: /\/vehicles/i, label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
@@ -18,9 +39,58 @@ const API_FEATURES = [
 
 export const isForbiddenError = (error) => error?.response?.status === 403;
 
+const getPackageTierIndex = (packageName) => {
+  const normalized = String(packageName || '').trim().toUpperCase();
+  const index = PACKAGE_TIER_ORDER.indexOf(normalized);
+  return index >= 0 ? index : -1;
+};
+
+const hasRequiredPackageTier = (userPackage, requiredPackage) => {
+  const userTier = getPackageTierIndex(userPackage);
+  const requiredTier = getPackageTierIndex(requiredPackage);
+  if (userTier < 0 || requiredTier < 0) return false;
+  return userTier >= requiredTier;
+};
+
 const matchApiFeature = (url = '') => {
   const entry = API_FEATURES.find(({ pattern }) => pattern.test(url));
-  return entry ? { label: entry.label, requiredPackage: entry.requiredPackage } : null;
+  return entry ? { label: entry.label, requiredPackage: entry.requiredPackage, featureKey: entry.featureKey } : null;
+};
+
+const buildFeatureLockNotice = (feature, user, status) => {
+  const lockConfig = getFeatureLockConfig(feature.featureKey);
+  const tierOk = hasRequiredPackageTier(user?.packageName, feature.requiredPackage);
+
+  if (status === 'pending') {
+    return {
+      variant: tierOk ? 'pending' : 'upgrade',
+      featureKey: feature.featureKey,
+      title: lockConfig?.title,
+      message: tierOk
+        ? `Gói ${user?.packageName || 'dịch vụ'} đang chờ admin kích hoạt. Sau khi được duyệt, bạn có thể sử dụng "${feature.label}".`
+        : `"${feature.label}" cần gói ${feature.requiredPackage} trở lên. Gói ${user?.packageName || 'hiện tại'} của bạn chưa đủ để dùng tính năng này.`,
+      featureLabel: feature.label,
+      currentPackage: user?.packageName,
+      requiredPackage: feature.requiredPackage,
+      actionLabel: tierOk ? 'Theo dõi trạng thái kích hoạt' : 'Xem bảng giá',
+      actionPath: tierOk ? '/subscription/pending' : undefined,
+      actionType: tierOk ? undefined : 'pricing',
+      fullPage: true,
+    };
+  }
+
+  return {
+    variant: 'upgrade',
+    featureKey: feature.featureKey,
+    title: lockConfig?.title,
+    message: `"${feature.label}" không có trong gói ${user?.packageName || 'hiện tại'} của bạn.`,
+    featureLabel: feature.label,
+    currentPackage: user?.packageName,
+    requiredPackage: feature.requiredPackage,
+    actionLabel: 'Xem bảng giá',
+    actionType: 'pricing',
+    fullPage: true,
+  };
 };
 
 export const resolveForbiddenNotice = (error, options = {}) => {
@@ -28,6 +98,27 @@ export const resolveForbiddenNotice = (error, options = {}) => {
   const status = String(user?.subscriptionStatus || '').toLowerCase();
   const requestUrl = options.requestUrl || error?.config?.url || '';
   const path = options.path || (typeof window !== 'undefined' ? window.location.pathname : '');
+
+  const feature =
+    resolveRouteFeature(path) ||
+    matchApiFeature(requestUrl) ||
+    (options.featureLabel
+      ? {
+          label: options.featureLabel,
+          requiredPackage: options.requiredPackage || 'PRO',
+          featureKey: options.featureKey || resolveFeatureKey({ featureLabel: options.featureLabel }),
+        }
+      : null);
+
+  const featureKey =
+    options.featureKey ||
+    options.lockedKey ||
+    feature?.featureKey ||
+    resolveFeatureKey({ path, requestUrl, featureLabel: feature?.label || options.featureLabel });
+
+  if (feature && (status === 'pending' || status !== 'active')) {
+    return buildFeatureLockNotice(feature, user, status);
+  }
 
   if (status === 'pending') {
     const packageLabel = user?.packageName || 'dịch vụ';
@@ -57,27 +148,11 @@ export const resolveForbiddenNotice = (error, options = {}) => {
     };
   }
 
-  const feature =
-    ROUTE_FEATURES[path] ||
-    matchApiFeature(requestUrl) ||
-    (options.featureLabel
-      ? {
-          label: options.featureLabel,
-          requiredPackage: options.requiredPackage || 'PRO',
-          featureKey: options.featureKey || resolveFeatureKey({ featureLabel: options.featureLabel }),
-        }
-      : null);
-
-  const featureKey =
-    options.featureKey ||
-    options.lockedKey ||
-    feature?.featureKey ||
-    resolveFeatureKey({ path, requestUrl, featureLabel: feature?.label || options.featureLabel });
   const lockConfig = getFeatureLockConfig(featureKey);
 
   const backendMessage = error?.response?.data?.message;
   const requiredPackage = feature?.requiredPackage || lockConfig?.requiredPackage || 'PRO';
-  const isFullPage = Boolean(path && ROUTE_FEATURES[path]);
+  const isFullPage = Boolean(resolveRouteFeature(path));
 
   return {
     variant: 'upgrade',
@@ -98,13 +173,17 @@ export const resolveForbiddenNotice = (error, options = {}) => {
   };
 };
 
-export const getOwnerSubscriptionNotice = (user = getStoredUser()) => {
-  if (!isOwnerRole(user?.role)) return null;
-  if (isOwnerSubscriptionPending(user) || !isOwnerSubscriptionActive(user)) {
-    return resolveForbiddenNotice({ response: { status: 403 } }, { user });
-  }
-  return null;
+export const resolveFeatureRouteNotice = (path, user = getStoredUser()) => {
+  const feature = resolveRouteFeature(path);
+  if (!feature) return null;
+
+  const status = String(user?.subscriptionStatus || '').toLowerCase();
+  if (status === 'active') return null;
+
+  return buildFeatureLockNotice(feature, user, status);
 };
+
+export const getOwnerSubscriptionNotice = () => null;
 
 export const getApiErrorMessage = (error, fallback = 'Có lỗi xảy ra. Vui lòng thử lại.') => {
   if (isForbiddenError(error)) {

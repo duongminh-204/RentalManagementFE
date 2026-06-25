@@ -7,6 +7,12 @@ import * as buildingsApi from '../api/buildingsApi';
 import BuildingMapRoutes from '../components/BuildingMapRoutes';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import { deleteConfirmPresets } from '../../../utils/deleteConfirmPresets';
+import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
+import {
+  isForbiddenError,
+  resolveForbiddenNotice,
+  resolveFeatureRouteNotice,
+} from '../../../utils/apiError';
 
 const formatDate = (value) => {
   if (!value) return '—';
@@ -24,6 +30,7 @@ const BuildingPage = () => {
   const [deletingId, setDeletingId] = useState(null);
   const [mapRouteBuilding, setMapRouteBuilding] = useState(null);
   const [mapLayoutReady, setMapLayoutReady] = useState(false);
+  const [accessNotice, setAccessNotice] = useState(() => resolveFeatureRouteNotice('/buildings'));
 
   useEffect(() => {
     if (!mapRouteBuilding) {
@@ -39,13 +46,28 @@ const BuildingPage = () => {
   }, [mapRouteBuilding]);
 
   const loadBuildings = useCallback(async () => {
+    const routeNotice = resolveFeatureRouteNotice('/buildings');
+    if (routeNotice) {
+      setAccessNotice(routeNotice);
+      setBuildings([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+    setAccessNotice(null);
     try {
       const data = await buildingsApi.getAllBuildings();
       setBuildings(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tải danh sách tòa nhà');
+      if (isForbiddenError(err)) {
+        setAccessNotice(resolveForbiddenNotice(err, { path: '/buildings' }));
+        setError(null);
+      } else {
+        setError(err.response?.data?.message || 'Không thể tải danh sách tòa nhà');
+      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +95,10 @@ const BuildingPage = () => {
   return (
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
+        {accessNotice ? (
+          <FeatureLockedNotice {...accessNotice} fullPage />
+        ) : (
+        <>
         <section
           className="bg-white p-8"
           style={{ borderRadius: '20px', border: '1px solid #E5E7EB' }}
@@ -264,6 +290,8 @@ const BuildingPage = () => {
             )}
           </AnimatePresence>,
           document.body
+        )}
+        </>
         )}
       </div>
       <ConfirmDeleteDialog />

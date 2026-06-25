@@ -24,7 +24,7 @@ import { recordDebtPayment, restoreDebtItem } from '../api/dashboardApi';
 import { useDashboard } from '../hooks/useDashboard';
 import { formatCount, formatCurrency } from '../utils/dashboardFormat';
 import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
-import { resolveForbiddenNotice } from '../../../utils/apiError';
+import { resolveForbiddenNotice, resolveFeatureRouteNotice } from '../../../utils/apiError';
 import { parseWalletAccountFromQrPayload } from '../../../utils/qrPayload';
 import { buildPaymentMethodPreviewQrUrl } from '../../../utils/vietqr';
 import { getPaymentMethodWalletAccount, getPaymentMethodIdentifier, isWalletVirtualAccountNumber } from '../../../utils/paymentMethods';
@@ -643,13 +643,16 @@ const DebtDetailsPage = () => {
   const [multiSelectPaymentMode, setMultiSelectPaymentMode] = useState(false);
   const [sortPaymentMode, setSortPaymentMode] = useState(false);
 
-  const debtLocked = lockedFeatures.includes('debtReports');
-  const debtNotice = debtLocked
-    ? resolveForbiddenNotice(
-        { response: { status: 403 } },
-        { path: '/debts', featureLabel: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
-      )
-    : null;
+  const routeNotice = resolveFeatureRouteNotice('/debts');
+  const debtLocked = lockedFeatures.includes('debtReports') || Boolean(routeNotice);
+  const debtNotice =
+    routeNotice ||
+    (debtLocked
+      ? resolveForbiddenNotice(
+          { response: { status: 403 } },
+          { path: '/debts', featureLabel: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
+        )
+      : null);
 
   const debtors = useMemo(() => {
     const allDebtors = Array.isArray(debtInfo?.debtors) ? debtInfo.debtors : [];

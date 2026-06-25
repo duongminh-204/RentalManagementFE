@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import * as buildingsApi from '../api/buildingsApi';
 import BuildingForm from '../components/BuildingForm';
+import FeatureRouteLock from '../../../components/common/FeatureRouteLock';
 
 const BuildingEdit = () => {
   const { id } = useParams();
@@ -43,6 +44,7 @@ const BuildingEdit = () => {
   };
 
   return (
+    <FeatureRouteLock path="/buildings">
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content">
         <button
@@ -78,6 +80,7 @@ const BuildingEdit = () => {
         </section>
       </div>
     </div>
+    </FeatureRouteLock>
   );
 };
 
