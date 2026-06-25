@@ -17,6 +17,10 @@ export const suspendAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/sus
 export const activateAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/activate`).then((r) => r.data);
 export const lockAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/lock`).then((r) => r.data);
 export const unlockAdminOwner = (id) => api.post(`${adminBase}/owners/${id}/unlock`).then((r) => r.data);
+export const getAdminOwnerFeatureGrants = (id) =>
+  api.get(`${adminBase}/owners/${id}/feature-grants`).then((r) => r.data);
+export const updateAdminOwnerFeatureGrants = (id, data) =>
+  api.put(`${adminBase}/owners/${id}/feature-grants`, data).then((r) => r.data);
 
 // Packages
 export const getAdminPackages = (params) => api.get(`${adminBase}/packages`, { params }).then((r) => r.data);

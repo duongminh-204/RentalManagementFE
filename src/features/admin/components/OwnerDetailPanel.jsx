@@ -14,6 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import UserAvatar from '../../../components/common/UserAvatar';
+import AdminOwnerFeatureGrants from './AdminOwnerFeatureGrants';
 import { formatDate, formatDateTime, statusClass } from '../utils/adminHelpers';
 
 const InfoRow = ({ icon: Icon, label, value }) => (
@@ -118,6 +119,10 @@ const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onLock, onUn
                 <InfoRow icon={Calendar} label="Cập nhật lần cuối" value={formatDateTime(owner.updatedAt)} />
               </div>
             </div>
+
+            {String(owner.role || 'Owner').toLowerCase() === 'owner' ? (
+              <AdminOwnerFeatureGrants ownerId={owner.ownerId} packageName={owner.package} />
+            ) : null}
           </div>
         )}
 
