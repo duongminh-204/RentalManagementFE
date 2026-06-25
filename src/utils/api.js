@@ -36,6 +36,10 @@ instance.interceptors.response.use(
             // Dispatch custom event để PrivateRoute biết token không hợp lệ
             window.dispatchEvent(new CustomEvent('unauthorized'));
         }
+
+        if (error.response?.status === 403) {
+            window.dispatchEvent(new CustomEvent('forbidden'));
+        }
         return Promise.reject(error);
     }
 );

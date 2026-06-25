@@ -60,7 +60,7 @@ export default function GoogleLoginButton() {
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user || {}));
 
-        navigate(getRoleHomePath(user?.role || ''), { replace: true });
+        navigate(getRoleHomePath(user?.role || '', user), { replace: true });
       } catch (err) {
         setError(
           err.response?.data?.message ||

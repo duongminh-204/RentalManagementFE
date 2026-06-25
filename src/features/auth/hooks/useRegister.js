@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import authApi from '../api/authApi';
+import { getOwnerAccessPath, isOwnerRole } from '../../../hooks/useAuth';
 
 export const useRegister = () => {
     const [loading, setLoading] = useState(false);
@@ -13,12 +14,14 @@ export const useRegister = () => {
 
         try {
             const res = await authApi.register(userData);
-            
-            // Lưu token và thông tin user
             localStorage.setItem('token', res.token);
             localStorage.setItem('user', JSON.stringify(res.user));
 
-            navigate('/dashboard');
+            if (isOwnerRole(res.user?.role)) {
+                navigate(getOwnerAccessPath(res.user), { replace: true });
+            } else {
+                navigate('/profile', { replace: true });
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Đăng ký thất bại!');
         } finally {

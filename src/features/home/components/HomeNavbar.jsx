@@ -6,6 +6,7 @@ import AppLogo from '../../../components/common/AppLogo';
 
 const NAV_LINKS = [
   { href: '#features', label: 'Tính năng' },
+  { href: '#pricing', label: 'Bảng giá' },
   { href: '#modules', label: 'Module' },
   { href: '#how-it-works', label: 'Hướng dẫn' },
   { href: '#about-us', label: 'Về chúng tôi' },

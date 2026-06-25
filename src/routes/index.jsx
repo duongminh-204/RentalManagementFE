@@ -10,7 +10,7 @@ export const contractRoutes = (
     <Route
       path="/contracts/create"
       element={
-        <PrivateRoute>
+        <PrivateRoute allowedRoles={['owner']}>
           <CreateContractPage />
         </PrivateRoute>
       }
@@ -18,7 +18,7 @@ export const contractRoutes = (
     <Route
       path="/contracts/:id"
       element={
-        <PrivateRoute>
+        <PrivateRoute allowedRoles={['owner']}>
           <ContractDetailPage />
         </PrivateRoute>
       }
@@ -26,7 +26,7 @@ export const contractRoutes = (
     <Route
       path="/contracts"
       element={
-        <PrivateRoute>
+        <PrivateRoute allowedRoles={['owner']}>
           <ContractsPage />
         </PrivateRoute>
       }

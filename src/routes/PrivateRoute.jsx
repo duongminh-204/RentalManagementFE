@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import Sidebar from '../components/common/Sidebar';
-import { getStoredRole, getRoleHomePath } from '../hooks/useAuth';
+import { getStoredRole, getRoleHomePath, getStoredUser } from '../hooks/useAuth';
 
 export const PrivateRoute = ({ children, allowedRoles }) => {
   const [isChecking, setIsChecking] = useState(true);
@@ -52,7 +52,7 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
   }
 
   if (normalizedAllowedRoles.length && !normalizedAllowedRoles.includes(normalizedRole)) {
-    const fallbackPath = getRoleHomePath(role);
+    const fallbackPath = getRoleHomePath(role, getStoredUser());
 
     if (!fallbackPath) {
       localStorage.removeItem('token');

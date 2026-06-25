@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ArrowDown, ArrowUp, LoaderCircle, RefreshCw, XCircle } from 'lucide-react';
+import { ArrowDown, ArrowUp, CheckCircle2, LoaderCircle, RefreshCw, XCircle } from 'lucide-react';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import {
+  activateAdminSubscription,
   cancelAdminSubscription,
   downgradeAdminSubscription,
   getAdminPackages,
@@ -69,13 +70,14 @@ const AdminSubscriptionsPage = () => {
     <div className="page-content page-content--wide">
       <AdminPageHeader
         title="Quản lý đăng ký"
-        description="Nâng/hạ cấp, gia hạn, hủy gói. Tự động kiểm tra hết hạn và giới hạn phòng."
+        description="Kích hoạt gói chờ duyệt, nâng/hạ cấp, gia hạn và hủy đăng ký."
       />
 
       <div className="dashboard-section-card">
         <div className="mb-4">
           <select className="rounded-xl border border-hairline-cloud px-4 py-2.5" value={status} onChange={(e) => { setStatus(e.target.value); setPage(1); }}>
             <option value="">Tất cả trạng thái</option>
+            <option value="Pending">Pending</option>
             <option value="Active">Active</option>
             <option value="Expired">Expired</option>
             <option value="Cancelled">Cancelled</option>
@@ -121,6 +123,11 @@ const AdminSubscriptionsPage = () => {
                     </td>
                     <td className="px-3 py-3">
                       <div className="flex flex-wrap gap-1">
+                        {sub.status === 'Pending' ? (
+                          <button type="button" className="dashboard-action-button dashboard-action-button--primary" disabled={actionLoading} onClick={() => runAction(() => activateAdminSubscription(sub.subscriptionId))} title="Kích hoạt">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </button>
+                        ) : null}
                         <button type="button" className="dashboard-action-button" disabled={actionLoading} onClick={() => setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'upgrade' })} title="Upgrade"><ArrowUp className="h-4 w-4" /></button>
                         <button type="button" className="dashboard-action-button" disabled={actionLoading} onClick={() => setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'downgrade' })} title="Downgrade"><ArrowDown className="h-4 w-4" /></button>
                         <button type="button" className="dashboard-action-button" disabled={actionLoading} onClick={() => runAction(() => renewAdminSubscription(sub.subscriptionId))} title="Renew"><RefreshCw className="h-4 w-4" /></button>

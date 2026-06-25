@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Building2, Eye, EyeOff, User, UserPlus } from 'lucide-react';
 import { useRegister } from '../hooks/useRegister';
@@ -10,17 +10,24 @@ const roleOptions = [
 ];
 
 export default function RegisterForm() {
+    const [searchParams] = useSearchParams();
+    const initialRole = searchParams.get('role')?.toLowerCase() === 'tenant' ? 'Tenant' : 'Owner';
+    const initialPackageId = Number(searchParams.get('packageId')) || null;
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [formData, setFormData] = useState({
         fullName: '',
         email: '',
         phone: '',
-        role: 'Owner',
+        role: initialRole,
         password: '',
         confirmPassword: ''
     });
     const { register, loading, error } = useRegister();
+
+    useEffect(() => {
+        setFormData((prev) => ({ ...prev, role: initialRole }));
+    }, [initialRole]);
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -33,7 +40,8 @@ export default function RegisterForm() {
             email: formData.email,
             phoneNumber: formData.phone,
             role: formData.role,
-            password: formData.password
+            password: formData.password,
+            packageId: formData.role === 'Owner' ? initialPackageId : undefined,
         });
     };
 

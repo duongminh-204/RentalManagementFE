@@ -25,6 +25,17 @@ import {
 import { PrivateRoute } from './routes/PrivateRoute';
 import { AdminPrivateRoute } from './routes/AdminPrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
+import SelectPlanPage from './features/packages/pages/SelectPlanPage';
+import SubscriptionPendingPage from './features/packages/pages/SubscriptionPendingPage';
+import { getOwnerAccessPath, getStoredUser, isOwnerSubscriptionActive } from './hooks/useAuth';
+
+const OwnerRoute = ({ children }) => {
+  const user = getStoredUser();
+  if (!isOwnerSubscriptionActive(user)) {
+    return <Navigate to={getOwnerAccessPath(user)} replace />;
+  }
+  return <PrivateRoute allowedRoles={['owner']}>{children}</PrivateRoute>;
+};
 
 function App() {
   return (
@@ -34,106 +45,38 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route
+          path="/register/select-plan"
+          element={
+            <PrivateRoute allowedRoles={['owner']}>
+              <SelectPlanPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/subscription/pending"
+          element={
+            <PrivateRoute allowedRoles={['owner']}>
+              <SubscriptionPendingPage />
+            </PrivateRoute>
+          }
+        />
 
-        {/* Protected Routes */}
-        <Route
-          path="/dashboard"
-          element={
-            <PrivateRoute>
-              <Dashboard />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/debts"
-          element={
-            <PrivateRoute>
-              <DebtDetailsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/rooms"
-          element={
-            <PrivateRoute>
-              <RoomsPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/rooms/decor"
-          element={
-            <PrivateRoute>
-              <RoomDecorPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/buildings"
-          element={
-            <PrivateRoute>
-              <BuildingPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/buildings/create"
-          element={
-            <PrivateRoute>
-              <BuildingCreate />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/buildings/:id/edit"
-          element={
-            <PrivateRoute>
-              <BuildingEdit />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/invoices"
-          element={
-            <PrivateRoute>
-              <InvoicesPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/tenants"
-          element={
-            <PrivateRoute>
-              <TenantsPage />
-            </PrivateRoute>
-          }
-        />
+        {/* Protected Routes — Owner only (active subscription) */}
+        <Route path="/dashboard" element={<OwnerRoute><Dashboard /></OwnerRoute>} />
+        <Route path="/debts" element={<OwnerRoute><DebtDetailsPage /></OwnerRoute>} />
+        <Route path="/rooms" element={<OwnerRoute><RoomsPage /></OwnerRoute>} />
+        <Route path="/rooms/decor" element={<OwnerRoute><RoomDecorPage /></OwnerRoute>} />
+        <Route path="/buildings" element={<OwnerRoute><BuildingPage /></OwnerRoute>} />
+        <Route path="/buildings/create" element={<OwnerRoute><BuildingCreate /></OwnerRoute>} />
+        <Route path="/buildings/:id/edit" element={<OwnerRoute><BuildingEdit /></OwnerRoute>} />
+        <Route path="/invoices" element={<OwnerRoute><InvoicesPage /></OwnerRoute>} />
+        <Route path="/tenants" element={<OwnerRoute><TenantsPage /></OwnerRoute>} />
         {contractRoutes}
-        <Route
-          path="/vehicles"
-          element={
-            <PrivateRoute>
-              <VehiclesPage />
-            </PrivateRoute>
-          }
-        />
-        <Route
-          path="/devices"
-          element={
-            <PrivateRoute>
-              <DevicesPage />
-            </PrivateRoute>
-          }
-        />
+        <Route path="/vehicles" element={<OwnerRoute><VehiclesPage /></OwnerRoute>} />
+        <Route path="/devices" element={<OwnerRoute><DevicesPage /></OwnerRoute>} />
         <Route path="/services" element={<Navigate to="/devices" replace />} />
-        <Route
-          path="/profile"
-          element={
-            <PrivateRoute>
-              <ProfilePage />
-            </PrivateRoute>
-          }
-        />
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
         {/* Admin Routes */}
         <Route

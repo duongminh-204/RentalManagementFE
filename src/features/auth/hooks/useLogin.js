@@ -35,7 +35,7 @@ export const useLogin = () => {
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user || {}));
 
-            const redirectPath = getRoleHomePath(user?.role || '');
+            const redirectPath = getRoleHomePath(user?.role || '', user);
             navigate(redirectPath, { replace: true });
 
         } catch (err) {

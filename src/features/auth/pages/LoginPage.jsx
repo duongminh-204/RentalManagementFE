@@ -2,7 +2,7 @@ import { Navigate } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import GoogleLoginButton from '../components/GoogleLoginButton';
 import AuthIllustration from '../components/AuthIllustration';
-import { useAuth, getRoleHomePath } from '../../../hooks/useAuth';
+import { useAuth, getRoleHomePath, getStoredUser } from '../../../hooks/useAuth';
 import logo from '../../../assets/LOGOEXE.png';
 
 export default function LoginPage() {
@@ -10,7 +10,7 @@ export default function LoginPage() {
   const hasGoogleLogin = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
 
   if (isAuthenticated) {
-    return <Navigate to={getRoleHomePath(role)} replace />;
+    return <Navigate to={getRoleHomePath(role, getStoredUser())} replace />;
   }
 
   return (

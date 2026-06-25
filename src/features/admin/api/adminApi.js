@@ -31,6 +31,7 @@ export const upgradeAdminSubscription = (id, packageId) =>
 export const downgradeAdminSubscription = (id, packageId) =>
   api.post(`${adminBase}/subscriptions/${id}/downgrade`, { packageId }).then((r) => r.data);
 export const renewAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/renew`).then((r) => r.data);
+export const activateAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/activate`).then((r) => r.data);
 export const cancelAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/cancel`).then((r) => r.data);
 
 // Payments

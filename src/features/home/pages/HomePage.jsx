@@ -1,10 +1,11 @@
 import { Navigate } from 'react-router-dom';
-import { useAuth, getRoleHomePath } from '../../../hooks/useAuth';
+import { useAuth, getRoleHomePath, getStoredUser } from '../../../hooks/useAuth';
 import HomeNavbar from '../components/HomeNavbar';
 import HomeHero from '../components/HomeHero';
 import HomeStats from '../components/HomeStats';
 import HomeWhyUs from '../components/HomeWhyUs';
 import HomeFeatures from '../components/HomeFeatures';
+import HomePricing from '../components/HomePricing';
 import HomeModules from '../components/HomeModules';
 import HomeHowItWorks from '../components/HomeHowItWorks';
 import HomeUseCases from '../components/HomeUseCases';
@@ -18,7 +19,7 @@ export default function HomePage() {
   const { isAuthenticated, role } = useAuth();
 
   if (isAuthenticated) {
-    return <Navigate to={getRoleHomePath(role)} replace />;
+    return <Navigate to={getRoleHomePath(role, getStoredUser())} replace />;
   }
 
   return (
@@ -29,6 +30,7 @@ export default function HomePage() {
         <HomeStats />
         <HomeWhyUs />
         <HomeFeatures />
+        <HomePricing />
         <HomeModules />
         <HomeHowItWorks />
         <HomeUseCases />
