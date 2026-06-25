@@ -38,7 +38,8 @@ export const isOwnerSubscriptionReady = (user) =>
 export const getOwnerAccessPath = (user) => {
   if (!isOwnerRole(user?.role)) return '/dashboard';
   const status = normalizeRole(user?.subscriptionStatus);
-  if (status === 'active' || status === 'pending') return '/dashboard';
+  if (status === 'active') return '/dashboard';
+  if (status === 'pending') return '/subscription/pending';
   return '/register/select-plan';
 };
 

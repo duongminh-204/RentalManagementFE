@@ -261,3 +261,18 @@ export const buildPaymentMethodPreviewQrUrl = (paymentMethod) => {
 
   return paymentMethod.qrImageUrl || '';
 };
+
+export const buildSubscriptionVietQrImageUrl = (checkout = {}) => {
+  if (!checkout?.bankId || !checkout?.accountNumber) {
+    return '';
+  }
+
+  return buildVietQrImageUrl({
+    bankId: checkout.bankId,
+    accountNumber: checkout.accountNumber,
+    accountName: checkout.accountName,
+    amount: checkout.amount,
+    addInfo: checkout.transferContent,
+    template: 'compact',
+  });
+};

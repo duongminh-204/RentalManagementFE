@@ -3,6 +3,7 @@ import { Download, LoaderCircle } from 'lucide-react';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import { exportAdminPaymentsExcel, getAdminPayments, getAdminRevenueReport } from '../api/adminApi';
+import AdminPlatformPaymentSettings from '../components/AdminPlatformPaymentSettings';
 import { formatDate, formatDateTime, formatVnd, statusClass } from '../utils/adminHelpers';
 
 const AdminPaymentsPage = () => {
@@ -60,6 +61,8 @@ const AdminPaymentsPage = () => {
           Xuất Excel
         </button>
       </AdminPageHeader>
+
+      <AdminPlatformPaymentSettings />
 
       {report ? (
         <div className="mb-6 grid gap-4 sm:grid-cols-3">

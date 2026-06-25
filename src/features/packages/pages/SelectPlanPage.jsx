@@ -26,7 +26,7 @@ export default function SelectPlanPage() {
       return;
     }
     if (user?.subscriptionStatus === 'Pending') {
-      navigate('/dashboard', { replace: true });
+      navigate('/subscription/pending', { replace: true });
       return;
     }
 
@@ -51,7 +51,7 @@ export default function SelectPlanPage() {
           packageName: subscription.packageName,
         }),
       );
-      navigate('/dashboard', { replace: true });
+      navigate('/subscription/pending', { replace: true });
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể gửi yêu cầu gói.');
     } finally {
@@ -66,7 +66,7 @@ export default function SelectPlanPage() {
           <p className="eyebrow mb-2">Bước cuối</p>
           <h1 className="font-display text-3xl font-bold text-ink-deep">Chọn gói dịch vụ</h1>
           <p className="mt-3 text-muted">
-            Chọn gói phù hợp quy mô trọ. Admin sẽ kích hoạt trước khi bạn dùng được hệ thống.
+            Chọn gói phù hợp quy mô trọ, quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.
           </p>
         </div>
 

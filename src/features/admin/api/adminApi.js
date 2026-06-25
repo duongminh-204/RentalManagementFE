@@ -41,6 +41,8 @@ export const deleteAdminSubscription = (id) => api.delete(`${adminBase}/subscrip
 
 // Payments
 export const getAdminPayments = (params) => api.get(`${adminBase}/payments`, { params }).then((r) => r.data);
+export const getAdminPaymentSettings = () => api.get(`${adminBase}/payment-settings`).then((r) => r.data);
+export const updateAdminPaymentSettings = (data) => api.put(`${adminBase}/payment-settings`, data).then((r) => r.data);
 export const getAdminRevenueReport = (params) => api.get(`${adminBase}/payments/revenue-report`, { params }).then((r) => r.data);
 export const exportAdminPaymentsExcel = async (params = {}) => {
   const response = await api.get(`${adminBase}/payments/export-excel`, { params, responseType: 'blob' });

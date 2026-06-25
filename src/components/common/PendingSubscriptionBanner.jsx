@@ -56,10 +56,10 @@ const PendingSubscriptionBanner = () => {
         <div className="min-w-0 flex-1">
           <p className="pending-subscription-banner__eyebrow">Thông tin tài khoản</p>
           <p className="pending-subscription-banner__title">
-            Gói {user?.packageName || 'dịch vụ'} đang chờ admin kích hoạt
+            Gói {user?.packageName || 'dịch vụ'} đang chờ thanh toán
           </p>
           <p className="pending-subscription-banner__text">
-            Hệ thống tự kiểm tra trạng thái mỗi 15 giây. Tính năng sẽ mở ngay khi admin xác nhận.
+            Quét VietQR và chuyển khoản — hệ thống tự kích hoạt gói khi nhận tiền.
           </p>
         </div>
         <Link to="/subscription/pending" className="pending-subscription-banner__link">

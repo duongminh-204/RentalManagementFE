@@ -5,13 +5,13 @@ import {
   Clock3,
   Home,
   LoaderCircle,
-  Mail,
   Package,
   RefreshCw,
   ShieldCheck,
 } from 'lucide-react';
 import { getStoredUser } from '../../../hooks/useAuth';
 import { useSubscriptionSync } from '../../../hooks/useSubscriptionSync';
+import SubscriptionPaymentPanel from '../components/SubscriptionPaymentPanel';
 
 const BASE_STEPS = [
   {
@@ -19,12 +19,12 @@ const BASE_STEPS = [
     description: 'Thông tin tài khoản và gói dịch vụ đã được ghi nhận.',
   },
   {
-    title: 'Admin xem xét',
-    description: 'Quản trị viên kiểm tra và kích hoạt gói cho tài khoản của bạn.',
+    title: 'Thanh toán VietQR',
+    description: 'Quét mã QR — app ngân hàng tự điền số tiền và nội dung chuyển khoản.',
   },
   {
     title: 'Bắt đầu sử dụng',
-    description: 'Sau khi kích hoạt, bạn có thể dùng đúng tính năng trong gói đã chọn.',
+    description: 'Hệ thống tự kích hoạt gói ngay khi nhận được tiền.',
   },
 ];
 
@@ -69,12 +69,12 @@ export default function SubscriptionPendingPage() {
               <div>
                 <p className="subscription-pending-page__eyebrow">Trạng thái tài khoản</p>
                 <h1 className="subscription-pending-page__title">
-                  {isActive ? 'Gói đã được kích hoạt' : 'Đang chờ admin kích hoạt gói'}
+                  {isActive ? 'Gói đã được kích hoạt' : 'Hoàn tất thanh toán để kích hoạt gói'}
                 </h1>
                 <p className="subscription-pending-page__subtitle">
                   {isActive
                     ? 'Bạn có thể sử dụng đầy đủ tính năng trong gói đã chọn.'
-                    : 'Hệ thống tự kiểm tra trạng thái mỗi 15 giây. Bạn không cần bấm kiểm tra thủ công.'}
+                    : 'Quét VietQR bên dưới và chuyển khoản. Hệ thống tự kiểm tra mỗi 15 giây.'}
                 </p>
               </div>
             </div>
@@ -92,17 +92,19 @@ export default function SubscriptionPendingPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Trạng thái</p>
                   <p className={`text-lg font-bold ${isActive ? 'text-[#1f7a45]' : 'text-[#b26a00]'}`}>
-                    {isActive ? 'Đang hoạt động' : 'Chờ kích hoạt'}
+                    {isActive ? 'Đang hoạt động' : 'Chờ thanh toán'}
                   </p>
                   <p className="text-xs text-muted">Mã hệ thống: {statusLabel}</p>
                 </div>
               </div>
             </div>
 
+            {!isActive ? <SubscriptionPaymentPanel /> : null}
+
             {features.length > 0 ? (
               <div className="subscription-pending-page__features">
                 <p className="mb-3 text-sm font-semibold text-ink-deep">
-                  {isActive ? 'Tính năng trong gói của bạn' : 'Tính năng sẽ được mở sau khi kích hoạt'}
+                  {isActive ? 'Tính năng trong gói của bạn' : 'Tính năng sẽ được mở sau khi thanh toán'}
                 </p>
                 <ul className="grid gap-2 sm:grid-cols-2">
                   {features.map((feature) => (
@@ -136,16 +138,6 @@ export default function SubscriptionPendingPage() {
               </ol>
             </div>
 
-            {!isActive ? (
-              <div className="subscription-pending-page__notice">
-                <Mail className="mt-0.5 h-5 w-5 shrink-0 text-accent-violet" />
-                <p className="text-sm leading-6 text-muted">
-                  Khi admin kích hoạt gói, trang này sẽ tự chuyển sang dashboard trong vài giây.
-                  Bạn cũng có thể bấm <strong>Kiểm tra ngay</strong> nếu muốn cập nhật thủ công.
-                </p>
-              </div>
-            ) : null}
-
             <div className="subscription-pending-page__actions">
               {!isActive ? (
                 <button
@@ -162,7 +154,7 @@ export default function SubscriptionPendingPage() {
                   ) : (
                     <>
                       <RefreshCw className="h-4 w-4" />
-                      Kiểm tra ngay
+                      Kiểm tra thanh toán
                     </>
                   )}
                 </button>
