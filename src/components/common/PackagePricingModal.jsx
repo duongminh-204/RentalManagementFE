@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Check, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { getPublicPackages } from '../../features/packages/api/packagesApi';
-import { getStoredUser } from '../../hooks/useAuth';
+import { subscribeToPackage } from '../../features/packages/utils/subscribePackage';
+import {
+  getStoredUser,
+  isOwnerRole,
+  isOwnerSubscriptionActive,
+  isOwnerSubscriptionPending,
+} from '../../hooks/useAuth';
 
 const formatPrice = (price) => new Intl.NumberFormat('vi-VN').format(price) + 'đ/tháng';
 
@@ -35,10 +41,17 @@ const FALLBACK_PACKAGES = [
 ];
 
 const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState(FALLBACK_PACKAGES);
   const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
+  const [error, setError] = useState('');
   const user = getStoredUser();
   const isLoggedIn = Boolean(user?.role);
+  const isOwner = isOwnerRole(user?.role);
+  const isActive = isOwnerSubscriptionActive(user);
+  const isPending = isOwnerSubscriptionPending(user);
+  const currentPackageId = user?.packageId;
 
   useEffect(() => {
     if (!open) return undefined;
@@ -60,6 +73,7 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
     if (!open) return;
 
     setLoading(true);
+    setError('');
     getPublicPackages()
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) setPackages(data);
@@ -67,6 +81,85 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [open]);
+
+  const handleSubscribe = async (packageId) => {
+    if (!packageId) return;
+
+    try {
+      setSubmittingId(packageId);
+      setError('');
+      await subscribeToPackage(packageId);
+      onClose?.();
+      navigate('/subscription/pending');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể đăng ký gói. Vui lòng thử lại.');
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const renderPackageAction = (pkg) => {
+    const registerLink = pkg.packageId
+      ? `/register?role=owner&packageId=${pkg.packageId}`
+      : '/register?role=owner';
+
+    if (!isLoggedIn) {
+      return (
+        <Link to={registerLink} className="package-pricing-modal__cta" onClick={onClose}>
+          Chọn gói {pkg.packageName}
+        </Link>
+      );
+    }
+
+    if (!isOwner) {
+      return (
+        <p className="package-pricing-modal__owner-note">
+          Liên hệ quản trị viên để đăng ký gói <strong>{pkg.packageName}</strong>
+        </p>
+      );
+    }
+
+    if (isActive) {
+      if (pkg.packageId && pkg.packageId === currentPackageId) {
+        return <p className="package-pricing-modal__owner-note">Đây là gói bạn đang sử dụng</p>;
+      }
+      return (
+        <p className="package-pricing-modal__owner-note">
+          Liên hệ admin để nâng cấp lên gói <strong>{pkg.packageName}</strong>
+        </p>
+      );
+    }
+
+    if (isPending && pkg.packageId === currentPackageId) {
+      return (
+        <Link
+          to="/subscription/pending"
+          className="package-pricing-modal__cta"
+          onClick={onClose}
+        >
+          Xem mã VietQR thanh toán
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className="package-pricing-modal__cta"
+        disabled={!pkg.packageId || submittingId === pkg.packageId}
+        onClick={() => handleSubscribe(pkg.packageId)}
+      >
+        {submittingId === pkg.packageId ? (
+          <>
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+            Đang xử lý...
+          </>
+        ) : (
+          `Đăng ký & thanh toán VietQR`
+        )}
+      </button>
+    );
+  };
 
   if (!open) return null;
 
@@ -90,9 +183,9 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
               Chọn gói phù hợp quy mô trọ
             </h2>
             <p className="package-pricing-modal__subtitle">
-              {isLoggedIn
-                ? 'Liên hệ quản trị viên để nâng cấp gói. Sau khi admin kích hoạt, tính năng sẽ được mở khóa tự động.'
-                : 'Đăng ký gói → Admin xác nhận → Mở khóa đúng tính năng trong gói bạn chọn.'}
+              {isOwner
+                ? 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
+                : 'Đăng ký tài khoản → chọn gói → quét VietQR thanh toán.'}
             </p>
           </div>
           <button
@@ -105,6 +198,10 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
           </button>
         </div>
 
+        {error ? (
+          <div className="mx-6 mb-2 rounded-xl bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">{error}</div>
+        ) : null}
+
         {loading ? (
           <div className="flex justify-center py-16">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
@@ -115,9 +212,6 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
               const isRecommended = pkg.recommended || pkg.packageName === 'PRO';
               const isHighlighted =
                 highlightPackage && pkg.packageName?.toUpperCase() === highlightPackage.toUpperCase();
-              const registerLink = pkg.packageId
-                ? `/register?role=owner&packageId=${pkg.packageId}`
-                : '/register?role=owner';
 
               return (
                 <article
@@ -150,24 +244,22 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
                     ))}
                   </ul>
 
-                  {isLoggedIn ? (
-                    <p className="package-pricing-modal__owner-note">
-                      Liên hệ admin để nâng cấp lên gói <strong>{pkg.packageName}</strong>
-                    </p>
-                  ) : (
-                    <Link to={registerLink} className="package-pricing-modal__cta" onClick={onClose}>
-                      Chọn gói {pkg.packageName}
-                    </Link>
-                  )}
+                  {renderPackageAction(pkg)}
                 </article>
               );
             })}
           </div>
         )}
 
-        {isLoggedIn ? (
+        {isLoggedIn && isOwner ? (
           <p className="package-pricing-modal__footer">
             Gói hiện tại: <strong>{user?.packageName || 'Chưa có'}</strong>
+            {isPending ? (
+              <>
+                {' '}
+                — <Link to="/subscription/pending" onClick={onClose}>Xem mã VietQR</Link>
+              </>
+            ) : null}
             {highlightPackage ? (
               <>
                 {' '}

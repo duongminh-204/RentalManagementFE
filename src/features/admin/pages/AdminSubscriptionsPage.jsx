@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Clock3, LoaderCircle, Search } from 'lucide-react';
-import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import AdminOwnerSubscriptionsCard from '../components/AdminOwnerSubscriptionsCard';
 import FilterSelect from '../../../components/common/FilterSelect';
@@ -78,18 +77,6 @@ const AdminSubscriptionsPage = () => {
     getAdminPackages({ pageSize: 100, isEnabled: true }).then((data) => setPackages(data.items || [])).catch(() => {});
   }, [load]);
 
-  const allSubscriptions = useMemo(
-    () => groups.flatMap((group) => group.subscriptions || []),
-    [groups],
-  );
-
-  const stats = useMemo(() => {
-    const pending = allSubscriptions.filter((sub) => sub.status === 'Pending').length;
-    const active = allSubscriptions.filter((sub) => sub.status === 'Active').length;
-    const overLimit = allSubscriptions.filter((sub) => sub.ownerRoomCount > sub.maxRooms).length;
-    return { owners: groups.length, pending, active, overLimit };
-  }, [groups, allSubscriptions]);
-
   const runAction = async (fn, successMessage) => {
     try {
       setActionLoading(true);
@@ -146,30 +133,6 @@ const AdminSubscriptionsPage = () => {
 
   return (
     <div className="page-content page-content--wide">
-      <AdminPageHeader
-        title="Quản lý đăng ký"
-        description="Mỗi chủ trọ hiển thị trong một khối với danh sách gói đăng ký của họ. Kích hoạt, hủy hoặc xóa từng gói riêng biệt."
-      />
-
-      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-accent-violet bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Chủ trọ (trang này)</p>
-          <p className="mt-1 font-display text-3xl font-bold text-accent-violet">{stats.owners}</p>
-        </div>
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-[#b26a00] bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Chờ kích hoạt</p>
-          <p className="mt-1 font-display text-3xl font-bold text-[#b26a00]">{stats.pending}</p>
-        </div>
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-[#1f7a45] bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Đang hoạt động</p>
-          <p className="mt-1 font-display text-3xl font-bold text-[#1f7a45]">{stats.active}</p>
-        </div>
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-[#b4234a] bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Vượt giới hạn</p>
-          <p className="mt-1 font-display text-3xl font-bold text-[#b4234a]">{stats.overLimit}</p>
-        </div>
-      </div>
-
       <div className="dashboard-section-card">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row">
           <div className="relative flex-1">

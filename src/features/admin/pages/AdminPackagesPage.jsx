@@ -1,27 +1,21 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   Check,
   LoaderCircle,
   Package,
   Pencil,
-  Plus,
   Sparkles,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
   Users,
 } from 'lucide-react';
-import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import {
-  createAdminPackage,
   deleteAdminPackage,
   disableAdminPackage,
   enableAdminPackage,
   getAdminPackages,
   updateAdminPackage,
 } from '../api/adminApi';
-import { statusClass } from '../utils/adminHelpers';
 
 const emptyForm = {
   packageName: '',
@@ -67,18 +61,6 @@ const AdminPackagesPage = () => {
     load();
   }, [load]);
 
-  const stats = useMemo(() => {
-    const enabled = items.filter((pkg) => pkg.isEnabled).length;
-    const subscribers = items.reduce((sum, pkg) => sum + (pkg.subscriberCount || 0), 0);
-    return { total: items.length, enabled, subscribers };
-  }, [items]);
-
-  const openCreate = () => {
-    setEditingId(null);
-    setForm(emptyForm);
-    setShowForm(true);
-  };
-
   const openEdit = (pkg) => {
     setEditingId(pkg.packageId);
     setForm({
@@ -117,9 +99,6 @@ const AdminPackagesPage = () => {
       if (editingId) {
         await updateAdminPackage(editingId, payload);
         setMessage('Đã cập nhật gói dịch vụ.');
-      } else {
-        await createAdminPackage(payload);
-        setMessage('Đã tạo gói dịch vụ mới.');
       }
       setShowForm(false);
       await load();
@@ -164,30 +143,6 @@ const AdminPackagesPage = () => {
 
   return (
     <div className="page-content page-content--wide">
-      <AdminPageHeader
-        title="Quản lý gói dịch vụ"
-        description="Tạo, cập nhật, bật/tắt hoặc xóa các gói SaaS. Thay đổi hiển thị ngay trên trang chủ và trang chọn gói."
-      >
-        <button type="button" className="dashboard-action-button dashboard-action-button--primary" onClick={openCreate}>
-          <Plus className="h-4 w-4" /> Tạo gói
-        </button>
-      </AdminPageHeader>
-
-      <div className="mb-6 grid gap-3 sm:grid-cols-3">
-        <div className="rounded-2xl border border-hairline-cloud bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Tổng gói</p>
-          <p className="mt-1 font-display text-3xl font-bold text-ink-deep">{stats.total}</p>
-        </div>
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-[#1f7a45] bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Đang bật</p>
-          <p className="mt-1 font-display text-3xl font-bold text-[#1f7a45]">{stats.enabled}</p>
-        </div>
-        <div className="rounded-2xl border border-hairline-cloud border-l-4 border-l-accent-violet bg-white px-5 py-4 shadow-sm">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted">Người đăng ký</p>
-          <p className="mt-1 font-display text-3xl font-bold text-accent-violet">{stats.subscribers}</p>
-        </div>
-      </div>
-
       <div className="dashboard-section-card">
         {error ? <div className="mb-4 rounded-xl bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">{error}</div> : null}
         {message ? <div className="mb-4 rounded-xl bg-[#f8fff0] px-4 py-3 text-sm font-semibold text-[#1f7a45]">{message}</div> : null}
@@ -200,7 +155,7 @@ const AdminPackagesPage = () => {
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <Package className="mb-3 h-10 w-10 text-muted" />
             <p className="font-semibold text-ink-deep">Chưa có gói dịch vụ</p>
-            <p className="mt-1 text-sm text-muted">Bấm &quot;Tạo gói&quot; để thêm gói đầu tiên.</p>
+            <p className="mt-1 text-sm text-muted">Chưa có gói dịch vụ trong hệ thống.</p>
           </div>
         ) : (
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -231,13 +186,39 @@ const AdminPackagesPage = () => {
                         <p className="mt-0.5 text-sm text-muted">{pkg.targetAudience}</p>
                       ) : null}
                     </div>
-                    <span className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(pkg.isEnabled ? 'Active' : 'Disabled')}`}>
-                      {pkg.isEnabled ? 'Đang bật' : 'Đã tắt'}
-                    </span>
                   </div>
 
                   <p className="mt-4 font-display text-2xl font-bold text-ink-deep">{formatPriceShort(pkg.price)}</p>
                   {pkg.description ? <p className="mt-2 text-sm leading-6 text-muted">{pkg.description}</p> : null}
+
+                  <div
+                    className={`package-enable-toggle mt-4 ${pkg.isEnabled ? 'package-enable-toggle--on' : 'package-enable-toggle--off'}`}
+                  >
+                    <div className="package-enable-toggle__info">
+                      <p className="package-enable-toggle__label">Hiển thị gói dịch vụ</p>
+                      <p className="package-enable-toggle__hint">
+                        {pkg.isEnabled
+                          ? 'Đang bật — hiển thị trên trang chủ và trang chọn gói'
+                          : 'Đã tắt — chủ trọ không thể chọn gói này'}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="switch"
+                      aria-checked={pkg.isEnabled}
+                      aria-label={pkg.isEnabled ? 'Tắt gói dịch vụ' : 'Bật gói dịch vụ'}
+                      className="package-enable-toggle__switch"
+                      disabled={actionLoading}
+                      onClick={() => togglePackage(pkg)}
+                    >
+                      <span className="package-enable-toggle__track">
+                        <span className="package-enable-toggle__thumb" />
+                      </span>
+                      <span className="package-enable-toggle__state">
+                        {pkg.isEnabled ? 'Bật' : 'Tắt'}
+                      </span>
+                    </button>
+                  </div>
 
                   <div className="mt-4 flex flex-wrap gap-2 text-xs">
                     <span className="inline-flex items-center gap-1 rounded-full bg-surface-press px-2.5 py-1 font-medium text-ink-deep">
@@ -277,16 +258,6 @@ const AdminPackagesPage = () => {
                     </button>
                     <button
                       type="button"
-                      className="dashboard-action-button !w-auto !min-w-0"
-                      disabled={actionLoading}
-                      onClick={() => togglePackage(pkg)}
-                      title={pkg.isEnabled ? 'Tắt gói' : 'Bật gói'}
-                    >
-                      {pkg.isEnabled ? <ToggleRight className="h-4 w-4" /> : <ToggleLeft className="h-4 w-4" />}
-                      {pkg.isEnabled ? 'Tắt' : 'Bật'}
-                    </button>
-                    <button
-                      type="button"
                       className="dashboard-action-button !w-auto !min-w-0 text-[#b4234a]"
                       disabled={actionLoading}
                       onClick={() => handleDelete(pkg)}
@@ -310,10 +281,7 @@ const AdminPackagesPage = () => {
             onSubmit={handleSubmit}
             className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-hairline-cloud bg-white p-6 shadow-2xl"
           >
-            <h2 className="font-display text-xl font-bold text-ink-deep">
-              {editingId ? 'Cập nhật gói' : 'Tạo gói mới'}
-            </h2>
-            <p className="mt-1 text-sm text-muted">Thông tin hiển thị trên trang chủ và trang chọn gói.</p>
+            <h2 className="font-display text-xl font-bold text-ink-deep">Cập nhật gói</h2>
             <div className="mt-4 space-y-3">
               <input
                 required

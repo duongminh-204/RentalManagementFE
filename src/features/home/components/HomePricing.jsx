@@ -1,8 +1,15 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, LoaderCircle, Sparkles } from 'lucide-react';
 import { getPublicPackages } from '../../packages/api/packagesApi';
+import { subscribeToPackage } from '../../packages/utils/subscribePackage';
+import {
+  getStoredUser,
+  isOwnerRole,
+  isOwnerSubscriptionActive,
+  isOwnerSubscriptionPending,
+} from '../../../hooks/useAuth';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('vi-VN').format(price) + 'đ/tháng';
@@ -58,8 +65,16 @@ const cardVariants = {
 };
 
 export default function HomePricing() {
+  const navigate = useNavigate();
   const [packages, setPackages] = useState(FALLBACK_PACKAGES);
   const [loading, setLoading] = useState(true);
+  const [submittingId, setSubmittingId] = useState(null);
+  const [error, setError] = useState('');
+  const user = getStoredUser();
+  const isOwner = isOwnerRole(user?.role);
+  const isActive = isOwnerSubscriptionActive(user);
+  const isPending = isOwnerSubscriptionPending(user);
+  const currentPackageId = user?.packageId;
 
   useEffect(() => {
     getPublicPackages()
@@ -70,6 +85,70 @@ export default function HomePricing() {
       .finally(() => setLoading(false));
   }, []);
 
+  const handleSubscribe = async (packageId) => {
+    if (!packageId) return;
+
+    try {
+      setSubmittingId(packageId);
+      setError('');
+      await subscribeToPackage(packageId);
+      navigate('/subscription/pending');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể đăng ký gói. Vui lòng thử lại.');
+    } finally {
+      setSubmittingId(null);
+    }
+  };
+
+  const renderPackageAction = (pkg, isRecommended) => {
+    const registerLink = pkg.packageId
+      ? `/register?role=owner&packageId=${pkg.packageId}`
+      : '/register?role=owner';
+    const buttonClass = `w-full text-center no-underline ${
+      isRecommended ? 'btn-primary' : 'dashboard-action-button justify-center'
+    }`;
+
+    if (!isOwner) {
+      return (
+        <Link to={registerLink} className={buttonClass}>
+          Chọn gói {pkg.packageName}
+        </Link>
+      );
+    }
+
+    if (isActive) {
+      if (pkg.packageId && pkg.packageId === currentPackageId) {
+        return (
+          <span className={`${buttonClass} opacity-60 cursor-default`}>Gói hiện tại</span>
+        );
+      }
+      return (
+        <span className={`${buttonClass} opacity-60 cursor-default`}>
+          Liên hệ admin để nâng cấp
+        </span>
+      );
+    }
+
+    if (isPending && pkg.packageId === currentPackageId) {
+      return (
+        <Link to="/subscription/pending" className={buttonClass}>
+          Xem mã VietQR thanh toán
+        </Link>
+      );
+    }
+
+    return (
+      <button
+        type="button"
+        className={buttonClass}
+        disabled={!pkg.packageId || submittingId === pkg.packageId}
+        onClick={() => handleSubscribe(pkg.packageId)}
+      >
+        {submittingId === pkg.packageId ? 'Đang xử lý...' : 'Đăng ký & thanh toán VietQR'}
+      </button>
+    );
+  };
+
   return (
     <section id="pricing" className="home-section bg-surface-light px-5 py-20 lg:px-8 lg:py-28">
       <div className="mx-auto max-w-6xl">
@@ -79,9 +158,17 @@ export default function HomePricing() {
             Chọn gói phù hợp <span className="text-accent-violet">quy mô trọ</span>
           </h2>
           <p className="mt-4 text-muted">
-            Đăng ký gói → Admin xác nhận → Mở khóa đúng tính năng trong gói bạn chọn.
+            {isOwner
+              ? 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
+              : 'Đăng ký tài khoản → chọn gói → quét VietQR thanh toán.'}
           </p>
         </div>
+
+        {error ? (
+          <div className="mx-auto mt-6 max-w-xl rounded-xl bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">
+            {error}
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="mt-12 flex justify-center">
@@ -91,9 +178,6 @@ export default function HomePricing() {
           <div className="mt-12 grid gap-6 lg:grid-cols-3">
             {packages.map((pkg, index) => {
               const isRecommended = pkg.recommended || pkg.packageName === 'PRO';
-              const registerLink = pkg.packageId
-                ? `/register?role=owner&packageId=${pkg.packageId}`
-                : '/register?role=owner';
 
               return (
                 <motion.article
@@ -132,14 +216,7 @@ export default function HomePricing() {
                     ))}
                   </ul>
 
-                  <Link
-                    to={registerLink}
-                    className={`w-full text-center no-underline ${
-                      isRecommended ? 'btn-primary' : 'dashboard-action-button justify-center'
-                    }`}
-                  >
-                    Chọn gói {pkg.packageName}
-                  </Link>
+                  {renderPackageAction(pkg, isRecommended)}
                 </motion.article>
               );
             })}
@@ -147,7 +224,16 @@ export default function HomePricing() {
         )}
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted">
-          Sau khi đăng ký, hệ thống ghi nhận yêu cầu gói của bạn. Quản trị viên sẽ kích hoạt tài khoản để bạn sử dụng các tính năng tương ứng.
+          {isPending ? (
+            <>
+              Bạn đang chờ thanh toán.{' '}
+              <Link to="/subscription/pending" className="font-medium text-ink-deep underline">
+                Xem mã VietQR
+              </Link>
+            </>
+          ) : (
+            'Sau khi chuyển khoản, hệ thống tự kích hoạt gói trong vài phút — không cần admin xác nhận thủ công.'
+          )}
         </p>
       </div>
     </section>
