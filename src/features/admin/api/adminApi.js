@@ -45,9 +45,13 @@ export const exportAdminPaymentsExcel = async (params = {}) => {
 
 // Users
 export const getAdminUsers = (params) => api.get(`${adminBase}/users`, { params }).then((r) => r.data);
+export const getAdminUserPassword = (id) => api.get(`${adminBase}/users/${id}/password`).then((r) => r.data);
+export const changeAdminUserPassword = (id, newPassword) =>
+  api.put(`${adminBase}/users/${id}/password`, { newPassword });
 export const enableAdminUser = (id) => api.post(`${adminBase}/users/${id}/enable`).then((r) => r.data);
 export const disableAdminUser = (id) => api.post(`${adminBase}/users/${id}/disable`).then((r) => r.data);
-export const resetAdminUserPassword = (id) => api.post(`${adminBase}/users/${id}/reset-password`).then((r) => r.data);
+export const lockAdminUser = (id) => api.post(`${adminBase}/users/${id}/lock`).then((r) => r.data);
+export const unlockAdminUser = (id) => api.post(`${adminBase}/users/${id}/unlock`).then((r) => r.data);
 
 // Audit logs
 export const getAdminAuditLogs = (params) => api.get(`${adminBase}/audit-logs`, { params }).then((r) => r.data);

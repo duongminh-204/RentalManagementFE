@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Building2, LoaderCircle, Plus, Search, ShieldCheck, Users } from 'lucide-react';
+import { LoaderCircle, Plus, Search, Users } from 'lucide-react';
 import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
+import AdminPasswordModal from '../components/AdminPasswordModal';
 import AccountListRow from '../components/AccountListRow';
 import OwnerDetailPanel from '../components/OwnerDetailPanel';
 import FilterSelect from '../../../components/common/FilterSelect';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import {
-  activateAdminOwner,
+  changeAdminUserPassword,
   createAdminOwner,
   deleteAdminUser,
-  disableAdminUser,
-  enableAdminUser,
   getAdminOwnerById,
   getAdminPackages,
+  getAdminUserPassword,
   getAdminUsers,
   lockAdminOwner,
-  resetAdminUserPassword,
-  suspendAdminOwner,
+  lockAdminUser,
   unlockAdminOwner,
+  unlockAdminUser,
   updateAdminOwner,
 } from '../api/adminApi';
 import { normalizeAccount, normalizeOwner } from '../utils/adminHelpers';
@@ -46,7 +46,6 @@ const AdminUsersPage = () => {
   const [packages, setPackages] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const [totalCount, setTotalCount] = useState(0);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
@@ -58,16 +57,12 @@ const AdminUsersPage = () => {
   const [form, setForm] = useState(emptyForm);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
+  const [passwordTarget, setPasswordTarget] = useState(null);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordSaving, setPasswordSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
 
   const accounts = useMemo(() => items.map(normalizeAccount), [items]);
-
-  const pageStats = useMemo(() => ({
-    owners: accounts.filter((a) => a.isOwner).length,
-    active: accounts.filter((a) => a.isActive).length,
-    suspended: accounts.filter((a) => a.isSuspended).length,
-    totalRooms: accounts.reduce((sum, a) => sum + (a.roomCount || 0), 0),
-  }), [accounts]);
 
   const load = useCallback(async () => {
     try {
@@ -82,7 +77,6 @@ const AdminUsersPage = () => {
       });
       setItems(data.items || []);
       setTotalPages(data.totalPages || 1);
-      setTotalCount(data.totalCount || 0);
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải danh sách người dùng.');
     } finally {
@@ -126,6 +120,37 @@ const AdminUsersPage = () => {
     }
   };
 
+  const openPasswordModal = async (account) => {
+    const target = normalizeAccount(account);
+    setPasswordTarget({ ...target, password: '' });
+    setPasswordLoading(true);
+    try {
+      const data = await getAdminUserPassword(target.userId);
+      setPasswordTarget({ ...target, password: data.password || '' });
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể tải mật khẩu.');
+      setPasswordTarget(null);
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  const handleSavePassword = async (newPassword) => {
+    if (!passwordTarget) return;
+    try {
+      setPasswordSaving(true);
+      setError('');
+      await changeAdminUserPassword(passwordTarget.userId, newPassword);
+      setPasswordTarget({ ...passwordTarget, password: newPassword });
+      setMessage(`Đã cập nhật mật khẩu cho ${passwordTarget.fullName}.`);
+      setPasswordTarget(null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể đổi mật khẩu.');
+    } finally {
+      setPasswordSaving(false);
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
@@ -156,51 +181,47 @@ const AdminUsersPage = () => {
     }
   };
 
-  const runAction = async (fn, successMessage) => {
+  const handleLock = async (account) => {
     try {
       setActionLoading(true);
       setError('');
-      const result = await fn();
-      if (successMessage) setMessage(successMessage);
-      await load();
-      return result;
-    } catch (err) {
-      setError(err.response?.data?.message || 'Thao tác thất bại.');
-      return null;
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const runOwnerAction = async (fn, id) => {
-    try {
-      setActionLoading(true);
-      setError('');
-      await fn(id);
-      if (detail?.ownerId === id) {
-        const data = await getAdminOwnerById(id);
+      if (account.isOwner) {
+        await lockAdminOwner(account.userId);
+      } else {
+        await lockAdminUser(account.userId);
+      }
+      if (detail?.ownerId === account.userId) {
+        const data = await getAdminOwnerById(account.userId);
         setDetail(normalizeOwner(data));
       }
+      setMessage(`Đã khóa tài khoản ${account.fullName}.`);
       await load();
     } catch (err) {
-      setError(err.response?.data?.message || 'Thao tác thất bại.');
+      setError(err.response?.data?.message || 'Không thể khóa tài khoản.');
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleToggleActive = async (account) => {
-    if (account.isActive) {
-      await runAction(() => disableAdminUser(account.userId), 'Đã vô hiệu hóa người dùng.');
-    } else {
-      await runAction(() => enableAdminUser(account.userId), 'Đã kích hoạt người dùng.');
-    }
-  };
-
-  const handleResetPassword = async (userId) => {
-    const result = await runAction(() => resetAdminUserPassword(userId));
-    if (result?.temporaryPassword) {
-      setMessage(`Mật khẩu tạm: ${result.temporaryPassword}`);
+  const handleUnlock = async (account) => {
+    try {
+      setActionLoading(true);
+      setError('');
+      if (account.isOwner) {
+        await unlockAdminOwner(account.userId);
+      } else {
+        await unlockAdminUser(account.userId);
+      }
+      if (detail?.ownerId === account.userId) {
+        const data = await getAdminOwnerById(account.userId);
+        setDetail(normalizeOwner(data));
+      }
+      setMessage(`Đã mở khóa tài khoản ${account.fullName}.`);
+      await load();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Không thể mở khóa tài khoản.');
+    } finally {
+      setActionLoading(false);
     }
   };
 
@@ -232,41 +253,26 @@ const AdminUsersPage = () => {
     }
   };
 
+  const lockById = (id) => {
+    const account = accounts.find((a) => a.userId === id) || normalizeAccount({ ...detail, userId: id, ownerId: id, role: 'Owner' });
+    return handleLock(account);
+  };
+
+  const unlockById = (id) => {
+    const account = accounts.find((a) => a.userId === id) || normalizeAccount({ ...detail, userId: id, ownerId: id, role: 'Owner' });
+    return handleUnlock(account);
+  };
+
   return (
     <div className="page-content page-content--wide">
       <AdminPageHeader
         title="Quản lý người dùng"
-        description="Quản lý tài khoản Admin, chủ trọ và khách thuê — tìm kiếm, lọc, chỉnh sửa và xóa."
+        description="Quản lý tài khoản Admin, chủ trọ và khách thuê — khóa tài khoản, đổi mật khẩu và xóa."
       >
         <button type="button" className="dashboard-action-button dashboard-action-button--primary !w-auto !min-w-0" onClick={openCreate}>
           <Plus className="h-4 w-4" /> Thêm chủ trọ
         </button>
       </AdminPageHeader>
-
-      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <div className="rounded-xl border border-hairline-cloud border-l-4 border-l-accent-violet bg-surface-light px-4 py-3 shadow-sm">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
-            <Users className="h-3.5 w-3.5" /> Tổng người dùng
-          </p>
-          <p className="mt-1 text-2xl font-bold text-ink-deep">{totalCount}</p>
-        </div>
-        <div className="rounded-xl border border-hairline-cloud border-l-4 border-l-[#6366f1] bg-surface-light px-4 py-3 shadow-sm">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
-            <ShieldCheck className="h-3.5 w-3.5" /> Chủ trọ (trang)
-          </p>
-          <p className="mt-1 text-2xl font-bold text-ink-deep">{pageStats.owners}</p>
-        </div>
-        <div className="rounded-xl border border-hairline-cloud border-l-4 border-l-[#1f7a45] bg-surface-light px-4 py-3 shadow-sm">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted">Đang hoạt động (trang)</p>
-          <p className="mt-1 text-2xl font-bold text-ink-deep">{pageStats.active}</p>
-        </div>
-        <div className="rounded-xl border border-hairline-cloud border-l-4 border-l-accent-lime bg-surface-light px-4 py-3 shadow-sm">
-          <p className="flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-muted">
-            <Building2 className="h-3.5 w-3.5" /> Phòng (trang)
-          </p>
-          <p className="mt-1 text-2xl font-bold text-ink-deep">{pageStats.totalRooms}</p>
-        </div>
-      </div>
 
       <div className="dashboard-section-card">
         <div className="mb-4 flex flex-col gap-3 lg:flex-row">
@@ -314,6 +320,7 @@ const AdminUsersPage = () => {
               <thead>
                 <tr className="border-b border-hairline-cloud bg-surface-press/50 text-left text-xs font-semibold uppercase tracking-wide text-muted">
                   <th className="px-4 py-3">Người dùng</th>
+                  <th className="px-4 py-3">Địa chỉ</th>
                   <th className="px-4 py-3">Vai trò</th>
                   <th className="px-4 py-3">Gói</th>
                   <th className="px-4 py-3">Trạng thái</th>
@@ -331,12 +338,9 @@ const AdminUsersPage = () => {
                     actionLoading={actionLoading}
                     onView={openDetail}
                     onEdit={openEdit}
-                    onSuspend={(id) => runOwnerAction(suspendAdminOwner, id)}
-                    onActivate={(id) => runOwnerAction(activateAdminOwner, id)}
-                    onLock={(id) => runOwnerAction(lockAdminOwner, id)}
-                    onUnlock={(id) => runOwnerAction(unlockAdminOwner, id)}
-                    onToggleActive={handleToggleActive}
-                    onResetPassword={handleResetPassword}
+                    onLock={handleLock}
+                    onUnlock={handleUnlock}
+                    onManagePassword={openPasswordModal}
                     onDelete={handleDelete}
                   />
                 ))}
@@ -360,7 +364,7 @@ const AdminUsersPage = () => {
               <input required type="email" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               <input className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Số điện thoại" value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} />
               {!editingId ? (
-                <input required type="password" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Mật khẩu" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                <input required type="text" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Mật khẩu" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
               ) : null}
               <select className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" value={form.packageId} onChange={(e) => setForm({ ...form, packageId: e.target.value })}>
                 <option value="">Chọn gói (tuỳ chọn)</option>
@@ -386,11 +390,20 @@ const AdminUsersPage = () => {
           actionLoading={actionLoading}
           onClose={() => setDetail(null)}
           onEdit={(owner) => { setDetail(null); openEdit(normalizeAccount(owner)); }}
-          onSuspend={(id) => runOwnerAction(suspendAdminOwner, id)}
-          onActivate={(id) => runOwnerAction(activateAdminOwner, id)}
-          onLock={(id) => runOwnerAction(lockAdminOwner, id)}
-          onUnlock={(id) => runOwnerAction(unlockAdminOwner, id)}
+          onLock={lockById}
+          onUnlock={unlockById}
+          onManagePassword={(owner) => openPasswordModal(normalizeAccount(owner))}
           onDelete={(owner) => handleDelete(normalizeAccount(owner))}
+        />
+      ) : null}
+
+      {passwordTarget ? (
+        <AdminPasswordModal
+          account={passwordTarget}
+          loading={passwordLoading}
+          saving={passwordSaving}
+          onClose={() => setPasswordTarget(null)}
+          onSave={handleSavePassword}
         />
       ) : null}
 

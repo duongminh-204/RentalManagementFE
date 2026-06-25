@@ -6,12 +6,9 @@ import {
   Lock,
   LockOpen,
   Mail,
-  Pause,
+  MapPin,
   Pencil,
   Phone,
-  Play,
-  ToggleLeft,
-  ToggleRight,
   Trash2,
 } from 'lucide-react';
 import UserAvatar from '../../../components/common/UserAvatar';
@@ -38,12 +35,9 @@ const AccountListRow = ({
   actionLoading,
   onView,
   onEdit,
-  onSuspend,
-  onActivate,
   onLock,
   onUnlock,
-  onToggleActive,
-  onResetPassword,
+  onManagePassword,
   onDelete,
 }) => (
   <tr className="border-b border-hairline-cloud/60 transition-colors hover:bg-surface-press/30">
@@ -64,6 +58,16 @@ const AccountListRow = ({
           ) : null}
         </div>
       </div>
+    </td>
+    <td className="max-w-[14rem] px-4 py-3">
+      {account.address ? (
+        <p className="flex items-start gap-1 text-xs text-muted" title={account.address}>
+          <MapPin className="mt-0.5 h-3 w-3 shrink-0" />
+          <span className="line-clamp-2">{account.address}</span>
+        </p>
+      ) : (
+        <span className="text-xs text-muted">—</span>
+      )}
     </td>
     <td className="px-4 py-3">
       <span className="inline-flex rounded-lg bg-surface-press px-2.5 py-1 text-xs font-semibold text-ink-deep">
@@ -93,7 +97,7 @@ const AccountListRow = ({
         </>
       ) : (
         <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(account.isActive ? 'Active' : 'Disabled')}`}>
-          {account.isActive ? 'Hoạt động' : 'Vô hiệu'}
+          {account.isActive ? 'Hoạt động' : 'Đã khóa'}
         </span>
       )}
     </td>
@@ -127,49 +131,26 @@ const AccountListRow = ({
             <IconBtn title="Sửa" onClick={() => onEdit(account)}>
               <Pencil className="h-4 w-4" />
             </IconBtn>
-            {account.isSuspended ? (
-              <IconBtn title="Kích hoạt" disabled={actionLoading} onClick={() => onActivate(account.userId)}>
-                <Play className="h-4 w-4" />
-              </IconBtn>
-            ) : (
-              <IconBtn title="Tạm ngưng" danger disabled={actionLoading} onClick={() => onSuspend(account.userId)}>
-                <Pause className="h-4 w-4" />
-              </IconBtn>
-            )}
+          </>
+        ) : null}
+        {!account.isAdmin ? (
+          <>
             {account.isActive ? (
-              <IconBtn title="Khóa tài khoản" danger disabled={actionLoading} onClick={() => onLock(account.userId)}>
+              <IconBtn title="Khóa tài khoản" danger disabled={actionLoading} onClick={() => onLock(account)}>
                 <Lock className="h-4 w-4" />
               </IconBtn>
             ) : (
-              <IconBtn title="Mở khóa" disabled={actionLoading} onClick={() => onUnlock(account.userId)}>
+              <IconBtn title="Mở khóa tài khoản" disabled={actionLoading} onClick={() => onUnlock(account)}>
                 <LockOpen className="h-4 w-4" />
               </IconBtn>
             )}
-          </>
-        ) : (
-          <>
-            {account.isActive ? (
-              <IconBtn
-                title="Vô hiệu hóa"
-                disabled={actionLoading || account.isAdmin}
-                onClick={() => onToggleActive(account)}
-              >
-                <ToggleRight className="h-4 w-4" />
-              </IconBtn>
-            ) : (
-              <IconBtn title="Kích hoạt" disabled={actionLoading} onClick={() => onToggleActive(account)}>
-                <ToggleLeft className="h-4 w-4" />
-              </IconBtn>
-            )}
-            <IconBtn title="Reset mật khẩu" disabled={actionLoading} onClick={() => onResetPassword(account.userId)}>
+            <IconBtn title="Mật khẩu" disabled={actionLoading} onClick={() => onManagePassword(account)}>
               <KeyRound className="h-4 w-4" />
             </IconBtn>
+            <IconBtn title="Xóa" danger disabled={actionLoading} onClick={() => onDelete(account)}>
+              <Trash2 className="h-4 w-4" />
+            </IconBtn>
           </>
-        )}
-        {!account.isAdmin ? (
-          <IconBtn title="Xóa" danger disabled={actionLoading} onClick={() => onDelete(account)}>
-            <Trash2 className="h-4 w-4" />
-          </IconBtn>
         ) : null}
       </div>
     </td>

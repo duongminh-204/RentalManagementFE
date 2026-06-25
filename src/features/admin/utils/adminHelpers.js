@@ -68,6 +68,7 @@ export const normalizeAccount = (raw) => {
     fullName: raw.fullName ?? raw.FullName ?? '',
     email: raw.email ?? raw.Email ?? '',
     phoneNumber: raw.phoneNumber ?? raw.PhoneNumber ?? raw.phone ?? raw.Phone ?? '',
+    address: raw.address ?? raw.Address ?? '',
     avatar: raw.avatar ?? raw.Avatar ?? '',
     role: role || (raw.ownerId || raw.OwnerId ? 'Owner' : ''),
     isActive: raw.isActive ?? raw.IsActive ?? true,

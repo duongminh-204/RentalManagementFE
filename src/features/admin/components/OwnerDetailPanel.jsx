@@ -3,14 +3,13 @@ import {
   Calendar,
   CreditCard,
   Home,
+  KeyRound,
   Loader2,
   Lock,
   LockOpen,
   Mail,
   MapPin,
-  Pause,
   Phone,
-  Play,
   User,
   X,
 } from 'lucide-react';
@@ -55,7 +54,7 @@ const IconAction = ({ title, onClick, disabled, children, variant = 'default' })
   );
 };
 
-const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onSuspend, onActivate, onLock, onUnlock, onDelete }) => {
+const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onLock, onUnlock, onManagePassword, onDelete }) => {
   if (!owner) return null;
 
   return (
@@ -91,11 +90,6 @@ const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onSu
                   <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(owner.isActive ? 'Active' : 'Disabled')}`}>
                     {owner.isActive ? 'Tài khoản mở' : 'Tài khoản khóa'}
                   </span>
-                  {owner.isSuspended ? (
-                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass('Suspended')}`}>
-                      Đang tạm ngưng
-                    </span>
-                  ) : null}
                 </div>
               </div>
             </div>
@@ -132,15 +126,9 @@ const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onSu
           <IconAction title="Chỉnh sửa" onClick={() => onEdit(owner)} disabled={actionLoading}>
             Sửa thông tin
           </IconAction>
-          {owner.isSuspended ? (
-            <IconAction title="Kích hoạt lại" variant="success" disabled={actionLoading} onClick={() => onActivate(owner.ownerId)}>
-              <Play className="h-3.5 w-3.5" /> Kích hoạt
-            </IconAction>
-          ) : (
-            <IconAction title="Tạm ngưng" variant="danger" disabled={actionLoading} onClick={() => onSuspend(owner.ownerId)}>
-              <Pause className="h-3.5 w-3.5" /> Tạm ngưng
-            </IconAction>
-          )}
+          <IconAction title="Mật khẩu" onClick={() => onManagePassword(owner)} disabled={actionLoading}>
+            <KeyRound className="h-3.5 w-3.5" /> Mật khẩu
+          </IconAction>
           {owner.isActive ? (
             <IconAction title="Khóa tài khoản" variant="danger" disabled={actionLoading} onClick={() => onLock(owner.ownerId)}>
               <Lock className="h-3.5 w-3.5" /> Khóa
