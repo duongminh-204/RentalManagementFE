@@ -2,6 +2,7 @@ import {
   Building,
   Building2,
   Car,
+  ClipboardCheck,
   Cpu,
   FileText,
   HandCoins,
@@ -44,7 +45,10 @@ export const OWNER_NAV_SECTIONS = [
     label: 'PREMIUM',
     hint: 'Tính năng cao cấp',
     badgeClass: 'owner-nav-section__badge--premium',
-    items: [{ label: 'AI Decor phòng', path: '/rooms/decor', icon: Sparkles }],
+    items: [
+      { label: 'AI Decor phòng', path: '/rooms/decor', icon: Sparkles },
+      { label: 'Checklist pháp lý', path: '/legal', icon: ClipboardCheck },
+    ],
   },
 ];
 

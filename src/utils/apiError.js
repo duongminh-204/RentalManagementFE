@@ -13,6 +13,7 @@ const ROUTE_PACKAGE_FEATURE = {
   '/invoices': 'PaymentInvoices',
   '/vehicles': 'VehicleManagement',
   '/rooms/decor': 'AiRoomDecor',
+  '/legal': 'LegalChecklist',
   '/debts': 'RevenueDebtReports',
 };
 
@@ -25,6 +26,7 @@ const ROUTE_FEATURES = {
   '/invoices': { label: 'Quản lý hoá đơn', requiredPackage: 'Starter', featureKey: 'invoices' },
   '/vehicles': { label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
   '/rooms/decor': { label: 'AI Decor phòng', requiredPackage: 'PREMIUM', featureKey: 'roomDecor' },
+  '/legal': { label: 'Checklist pháp lý', requiredPackage: 'PREMIUM', featureKey: 'legalChecklist' },
   '/debts': { label: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
 };
 
@@ -72,6 +74,7 @@ const API_FEATURES = [
   { pattern: /\/dashboard\/revenue/i, label: 'Báo cáo doanh thu', requiredPackage: 'PRO', featureKey: 'revenueReports' },
   { pattern: /\/vehicles/i, label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
   { pattern: /\/room-decor|\/rooms\/decor/i, label: 'AI Decor phòng', requiredPackage: 'PREMIUM', featureKey: 'roomDecor' },
+  { pattern: /\/legal/i, label: 'Checklist pháp lý', requiredPackage: 'PREMIUM', featureKey: 'legalChecklist' },
 ];
 
 export const isForbiddenError = (error) => error?.response?.status === 403;

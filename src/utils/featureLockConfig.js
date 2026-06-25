@@ -1,6 +1,7 @@
 import {
   Building2,
   Car,
+  ClipboardCheck,
   Clock3,
   Cpu,
   DoorOpen,
@@ -98,6 +99,18 @@ export const FEATURE_LOCK_CONFIGS = {
     previewItems: ['Upload ảnh phòng thật', 'Chọn phong cách decor', 'AI tạo concept', 'Lưu ảnh vào phòng'],
     accent: 'violet',
   },
+  legalChecklist: {
+    key: 'legalChecklist',
+    label: 'Checklist pháp lý',
+    title: 'Checklist Pháp lý',
+    subtitle: 'Quản lý hồ sơ, hợp đồng, tạm trú và giấy tờ khu trọ — thuộc gói PREMIUM.',
+    description:
+      'Theo dõi hồ sơ khách thuê, checklist từng phòng, hợp đồng sắp hết hạn, khai báo tạm trú và giấy tờ PCCC.',
+    icon: ClipboardCheck,
+    requiredPackage: 'PREMIUM',
+    previewItems: ['Điểm pháp lý (Legal Score)', 'Checklist khách & phòng', 'Nhắc hợp đồng hết hạn', 'Giấy tờ khu trọ'],
+    accent: 'indigo',
+  },
   debtReports: {
     key: 'debtReports',
     label: 'Báo cáo công nợ',
@@ -168,6 +181,7 @@ const PATH_FEATURE_KEYS = {
   '/invoices': 'invoices',
   '/vehicles': 'vehicles',
   '/rooms/decor': 'roomDecor',
+  '/legal': 'legalChecklist',
   '/debts': 'debtPage',
 };
 
@@ -186,6 +200,7 @@ const API_FEATURE_KEYS = [
   { pattern: /\/dashboard\/revenue/i, key: 'revenueReports' },
   { pattern: /\/vehicles/i, key: 'vehicles' },
   { pattern: /\/room-decor|\/rooms\/decor/i, key: 'roomDecor' },
+  { pattern: /\/legal/i, key: 'legalChecklist' },
 ];
 
 export const resolveFeatureKey = ({ path, requestUrl, featureLabel, lockedKey } = {}) => {

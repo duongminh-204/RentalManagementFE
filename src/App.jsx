@@ -10,6 +10,7 @@ import VehiclesPage from "./features/vehicles/pages/VehiclesPage";
 import DevicesPage from "./features/devices/pages/DevicesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
+import { LegalPage } from './features/legal';
 import { RoomDecorPage } from './features/room-decor';
 import {
   AdminAuditLogsPage,
@@ -61,6 +62,7 @@ function App() {
         <Route path="/debts" element={<OwnerRoute><DebtDetailsPage /></OwnerRoute>} />
         <Route path="/rooms" element={<OwnerRoute><RoomsPage /></OwnerRoute>} />
         <Route path="/rooms/decor" element={<OwnerRoute><RoomDecorPage /></OwnerRoute>} />
+        <Route path="/legal" element={<OwnerRoute><LegalPage /></OwnerRoute>} />
         <Route path="/buildings" element={<OwnerRoute><BuildingPage /></OwnerRoute>} />
         <Route path="/buildings/create" element={<OwnerRoute><BuildingCreate /></OwnerRoute>} />
         <Route path="/buildings/:id/edit" element={<OwnerRoute><BuildingEdit /></OwnerRoute>} />
