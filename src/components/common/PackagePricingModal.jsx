@@ -3,9 +3,17 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { Check, LoaderCircle, Sparkles, X } from 'lucide-react';
 import { getPublicPackages } from '../../features/packages/api/packagesApi';
+import { getMySubscription } from '../../features/packages/api/subscriptionsApi';
 import { subscribeToPackage } from '../../features/packages/utils/subscribePackage';
 import {
+  estimateUpgradeFee,
+  formatUpgradeFeeLabel,
+  getCurrentPackage,
+  isHigherPackage,
+} from '../../features/packages/utils/packageUpgrade';
+import {
   getStoredUser,
+  hasOwnerPendingUpgrade,
   isOwnerRole,
   isOwnerSubscriptionActive,
   isOwnerSubscriptionPending,
@@ -46,12 +54,15 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState(null);
   const [error, setError] = useState('');
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
   const user = getStoredUser();
   const isLoggedIn = Boolean(user?.role);
   const isOwner = isOwnerRole(user?.role);
   const isActive = isOwnerSubscriptionActive(user);
   const isPending = isOwnerSubscriptionPending(user);
+  const hasPendingUpgrade = hasOwnerPendingUpgrade(user);
   const currentPackageId = user?.packageId;
+  const currentPackage = getCurrentPackage(packages, currentPackageId);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -80,7 +91,15 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [open]);
+
+    if (isOwner && isOwnerSubscriptionActive(getStoredUser())) {
+      getMySubscription()
+        .then((data) => setSubscriptionEndDate(data?.endDate ?? null))
+        .catch(() => {});
+    } else {
+      setSubscriptionEndDate(null);
+    }
+  }, [open, isOwner]);
 
   const handleSubscribe = async (packageId) => {
     if (!packageId) return;
@@ -88,9 +107,13 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
     try {
       setSubmittingId(packageId);
       setError('');
-      await subscribeToPackage(packageId);
+      const result = await subscribeToPackage(packageId);
       onClose?.();
-      navigate('/subscription/pending');
+      if (String(result.status).toLowerCase() === 'active' && (result.isUpgrade ?? result.IsUpgrade)) {
+        navigate('/dashboard');
+      } else {
+        navigate('/subscription/pending');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể đăng ký gói. Vui lòng thử lại.');
     } finally {
@@ -123,9 +146,46 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
       if (pkg.packageId && pkg.packageId === currentPackageId) {
         return <p className="package-pricing-modal__owner-note">Đây là gói bạn đang sử dụng</p>;
       }
+
+      if (isHigherPackage(pkg, currentPackage)) {
+        const estimatedFee = estimateUpgradeFee(pkg, currentPackage, subscriptionEndDate);
+        const isSelectedPendingUpgrade =
+          hasPendingUpgrade && user?.pendingPackageId === pkg.packageId;
+
+        if (isSelectedPendingUpgrade) {
+          return (
+            <Link
+              to="/subscription/pending"
+              className="package-pricing-modal__cta"
+              onClick={onClose}
+            >
+              Xem mã VietQR nâng cấp
+            </Link>
+          );
+        }
+
+        return (
+          <button
+            type="button"
+            className="package-pricing-modal__cta"
+            disabled={!pkg.packageId || submittingId === pkg.packageId}
+            onClick={() => handleSubscribe(pkg.packageId)}
+          >
+            {submittingId === pkg.packageId ? (
+              <>
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+                Đang xử lý...
+              </>
+            ) : (
+              `Nâng cấp — ${formatUpgradeFeeLabel(estimatedFee)}`
+            )}
+          </button>
+        );
+      }
+
       return (
         <p className="package-pricing-modal__owner-note">
-          Liên hệ admin để nâng cấp lên gói <strong>{pkg.packageName}</strong>
+          Liên hệ admin để chuyển sang gói <strong>{pkg.packageName}</strong>
         </p>
       );
     }
@@ -184,7 +244,9 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
             </h2>
             <p className="package-pricing-modal__subtitle">
               {isOwner
-                ? 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
+                ? isActive
+                  ? 'Nâng cấp bất kỳ lúc nào — chỉ thanh toán phần chênh lệch theo số ngày còn lại của chu kỳ.'
+                  : 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
                 : 'Đăng ký tài khoản → chọn gói → quét VietQR thanh toán.'}
             </p>
           </div>
@@ -258,6 +320,13 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
               <>
                 {' '}
                 — <Link to="/subscription/pending" onClick={onClose}>Xem mã VietQR</Link>
+              </>
+            ) : null}
+            {hasPendingUpgrade ? (
+              <>
+                {' '}
+                — Đang chờ thanh toán nâng cấp lên <strong>{user?.pendingPackageName}</strong>.{' '}
+                <Link to="/subscription/pending" onClick={onClose}>Xem VietQR</Link>
               </>
             ) : null}
             {highlightPackage ? (

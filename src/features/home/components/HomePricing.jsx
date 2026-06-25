@@ -5,7 +5,15 @@ import { Check, LoaderCircle, Sparkles } from 'lucide-react';
 import { getPublicPackages } from '../../packages/api/packagesApi';
 import { subscribeToPackage } from '../../packages/utils/subscribePackage';
 import {
+  estimateUpgradeFee,
+  formatUpgradeFeeLabel,
+  getCurrentPackage,
+  isHigherPackage,
+} from '../../packages/utils/packageUpgrade';
+import { getMySubscription } from '../../packages/api/subscriptionsApi';
+import {
   getStoredUser,
+  hasOwnerPendingUpgrade,
   isOwnerRole,
   isOwnerSubscriptionActive,
   isOwnerSubscriptionPending,
@@ -70,11 +78,14 @@ export default function HomePricing() {
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState(null);
   const [error, setError] = useState('');
+  const [subscriptionEndDate, setSubscriptionEndDate] = useState(null);
   const user = getStoredUser();
   const isOwner = isOwnerRole(user?.role);
   const isActive = isOwnerSubscriptionActive(user);
   const isPending = isOwnerSubscriptionPending(user);
+  const hasPendingUpgrade = hasOwnerPendingUpgrade(user);
   const currentPackageId = user?.packageId;
+  const currentPackage = getCurrentPackage(packages, currentPackageId);
 
   useEffect(() => {
     getPublicPackages()
@@ -85,14 +96,29 @@ export default function HomePricing() {
       .finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (!isOwner || !isActive) {
+      setSubscriptionEndDate(null);
+      return;
+    }
+
+    getMySubscription()
+      .then((data) => setSubscriptionEndDate(data?.endDate ?? null))
+      .catch(() => {});
+  }, [isOwner, isActive]);
+
   const handleSubscribe = async (packageId) => {
     if (!packageId) return;
 
     try {
       setSubmittingId(packageId);
       setError('');
-      await subscribeToPackage(packageId);
-      navigate('/subscription/pending');
+      const result = await subscribeToPackage(packageId);
+      if (String(result.status).toLowerCase() === 'active' && (result.isUpgrade ?? result.IsUpgrade)) {
+        navigate('/dashboard');
+      } else {
+        navigate('/subscription/pending');
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể đăng ký gói. Vui lòng thử lại.');
     } finally {
@@ -122,9 +148,37 @@ export default function HomePricing() {
           <span className={`${buttonClass} opacity-60 cursor-default`}>Gói hiện tại</span>
         );
       }
+
+      if (isHigherPackage(pkg, currentPackage)) {
+        const estimatedFee = estimateUpgradeFee(pkg, currentPackage, subscriptionEndDate);
+        const isSelectedPendingUpgrade =
+          hasPendingUpgrade && user?.pendingPackageId === pkg.packageId;
+
+        if (isSelectedPendingUpgrade) {
+          return (
+            <Link to="/subscription/pending" className={buttonClass}>
+              Xem mã VietQR nâng cấp
+            </Link>
+          );
+        }
+
+        return (
+          <button
+            type="button"
+            className={buttonClass}
+            disabled={!pkg.packageId || submittingId === pkg.packageId}
+            onClick={() => handleSubscribe(pkg.packageId)}
+          >
+            {submittingId === pkg.packageId
+              ? 'Đang xử lý...'
+              : `Nâng cấp — ${formatUpgradeFeeLabel(estimatedFee)}`}
+          </button>
+        );
+      }
+
       return (
         <span className={`${buttonClass} opacity-60 cursor-default`}>
-          Liên hệ admin để nâng cấp
+          Liên hệ admin để chuyển gói
         </span>
       );
     }
@@ -159,7 +213,9 @@ export default function HomePricing() {
           </h2>
           <p className="mt-4 text-muted">
             {isOwner
-              ? 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
+              ? isActive
+                ? 'Nâng cấp bất kỳ lúc nào — chỉ thanh toán phần chênh lệch theo số ngày còn lại của chu kỳ.'
+                : 'Chọn gói và quét VietQR để thanh toán — hệ thống tự kích hoạt sau khi nhận tiền.'
               : 'Đăng ký tài khoản → chọn gói → quét VietQR thanh toán.'}
           </p>
         </div>
@@ -224,9 +280,9 @@ export default function HomePricing() {
         )}
 
         <p className="mx-auto mt-8 max-w-2xl text-center text-sm text-muted">
-          {isPending ? (
+          {isPending || hasPendingUpgrade ? (
             <>
-              Bạn đang chờ thanh toán.{' '}
+              Bạn đang chờ thanh toán{hasPendingUpgrade ? ' nâng cấp' : ''}.{' '}
               <Link to="/subscription/pending" className="font-medium text-ink-deep underline">
                 Xem mã VietQR
               </Link>

@@ -32,6 +32,12 @@ export const isOwnerSubscriptionActive = (user) =>
 export const isOwnerSubscriptionPending = (user) =>
   isOwnerRole(user?.role) && normalizeRole(user?.subscriptionStatus) === 'pending';
 
+export const hasOwnerPendingUpgrade = (user) =>
+  isOwnerRole(user?.role) && user?.hasPendingUpgrade === true;
+
+export const needsSubscriptionPayment = (user) =>
+  isOwnerSubscriptionPending(user) || hasOwnerPendingUpgrade(user);
+
 export const isOwnerSubscriptionReady = (user) =>
   isOwnerSubscriptionActive(user) || isOwnerSubscriptionPending(user);
 

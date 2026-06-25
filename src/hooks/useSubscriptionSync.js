@@ -4,6 +4,7 @@ import {
   getStoredUser,
   isOwnerRole,
   isOwnerSubscriptionPending,
+  needsSubscriptionPayment,
   updateStoredUser,
 } from './useAuth';
 
@@ -21,18 +22,27 @@ export const syncSubscriptionFromApi = async () => {
     const hasChanges =
       (data?.status && newStatus !== currentStatus) ||
       (data?.packageId != null && data.packageId !== user?.packageId) ||
-      (data?.packageName && data.packageName !== user?.packageName);
+      (data?.packageName && data.packageName !== user?.packageName) ||
+      Boolean(data?.hasPendingUpgrade) !== Boolean(user?.hasPendingUpgrade);
 
     if (hasChanges) {
       const merged = updateStoredUser({
         subscriptionStatus: data.status,
         packageId: data.packageId,
         packageName: data.packageName,
+        hasPendingUpgrade: Boolean(data.hasPendingUpgrade),
+        pendingPackageId: data.pendingPackageId ?? null,
+        pendingPackageName: data.pendingPackageName ?? null,
+        pendingPaymentAmount: data.pendingPaymentAmount ?? null,
       });
       return {
         data,
         user: merged,
-        activated: newStatus === 'active' && currentStatus === 'pending',
+        activated:
+          (newStatus === 'active' && currentStatus === 'pending') ||
+          (newStatus === 'active' &&
+            data?.packageId != null &&
+            data.packageId !== user?.packageId),
       };
     }
 
@@ -74,11 +84,11 @@ export const useSubscriptionSync = ({ poll = true, onActivated } = {}) => {
 
     refresh(true);
 
-    if (!poll || !isOwnerSubscriptionPending(user)) return undefined;
+    if (!poll || !needsSubscriptionPayment(user)) return undefined;
 
     const intervalId = setInterval(async () => {
       const currentUser = getStoredUser();
-      if (!isOwnerSubscriptionPending(currentUser)) {
+      if (!needsSubscriptionPayment(currentUser)) {
         clearInterval(intervalId);
         return;
       }

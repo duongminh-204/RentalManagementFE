@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, Clock3 } from 'lucide-react';
-import { getStoredUser, isOwnerSubscriptionPending } from '../../hooks/useAuth';
+import { getStoredUser, needsSubscriptionPayment } from '../../hooks/useAuth';
 import { useSubscriptionSync } from '../../hooks/useSubscriptionSync';
 
 const PendingSubscriptionBanner = () => {
@@ -9,7 +9,7 @@ const PendingSubscriptionBanner = () => {
   const [justActivated, setJustActivated] = useState(false);
 
   useSubscriptionSync({
-    poll: isOwnerSubscriptionPending(user),
+    poll: needsSubscriptionPayment(user),
     onActivated: () => {
       setJustActivated(true);
       setUser(getStoredUser());
@@ -45,7 +45,9 @@ const PendingSubscriptionBanner = () => {
     );
   }
 
-  if (!isOwnerSubscriptionPending(user)) return null;
+  if (!needsSubscriptionPayment(user)) return null;
+
+  const isUpgrade = user?.hasPendingUpgrade;
 
   return (
     <div className="pending-subscription-banner" role="status" aria-live="polite">
@@ -56,10 +58,14 @@ const PendingSubscriptionBanner = () => {
         <div className="min-w-0 flex-1">
           <p className="pending-subscription-banner__eyebrow">Thông tin tài khoản</p>
           <p className="pending-subscription-banner__title">
-            Gói {user?.packageName || 'dịch vụ'} đang chờ thanh toán
+            {isUpgrade
+              ? `Đang chờ thanh toán nâng cấp lên ${user?.pendingPackageName || 'gói mới'}`
+              : `Gói ${user?.packageName || 'dịch vụ'} đang chờ thanh toán`}
           </p>
           <p className="pending-subscription-banner__text">
-            Quét VietQR và chuyển khoản — hệ thống tự kích hoạt gói khi nhận tiền.
+            {isUpgrade
+              ? 'Chỉ thanh toán phần chênh lệch theo số ngày còn lại — quét VietQR bên dưới.'
+              : 'Quét VietQR và chuyển khoản — hệ thống tự kích hoạt gói khi nhận tiền.'}
           </p>
         </div>
         <Link to="/subscription/pending" className="pending-subscription-banner__link">

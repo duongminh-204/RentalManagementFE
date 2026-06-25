@@ -116,10 +116,22 @@ export default function SubscriptionPaymentPanel({ onCheckoutLoaded }) {
         <div className="subscription-payment-panel__details">
           <div className="subscription-payment-panel__row">
             <span className="text-xs font-semibold uppercase tracking-wide text-muted">Gói</span>
-            <strong className="text-ink-deep">{checkout.packageName}</strong>
+            <strong className="text-ink-deep">
+              {checkout.isUpgrade && checkout.currentPackageName
+                ? `${checkout.currentPackageName} → ${checkout.packageName}`
+                : checkout.packageName}
+            </strong>
           </div>
+          {checkout.isUpgrade ? (
+            <div className="subscription-payment-panel__row">
+              <span className="text-xs font-semibold uppercase tracking-wide text-muted">Giá gói mới</span>
+              <span className="text-sm text-muted line-through">{formatPrice(checkout.fullPackagePrice)}</span>
+            </div>
+          ) : null}
           <div className="subscription-payment-panel__row">
-            <span className="text-xs font-semibold uppercase tracking-wide text-muted">Số tiền</span>
+            <span className="text-xs font-semibold uppercase tracking-wide text-muted">
+              {checkout.isUpgrade ? 'Phí nâng cấp' : 'Số tiền'}
+            </span>
             <button
               type="button"
               className="subscription-payment-panel__copyable"
@@ -154,7 +166,9 @@ export default function SubscriptionPaymentPanel({ onCheckoutLoaded }) {
       </div>
 
       <p className="subscription-payment-panel__hint">
-        Sau khi chuyển khoản thành công, hệ thống tự kích hoạt gói trong vài giây. Không cần bấm xác nhận thủ công.
+        {checkout.isUpgrade
+          ? 'Sau khi thanh toán phí nâng cấp, gói mới được kích hoạt ngay và giữ nguyên ngày hết hạn hiện tại.'
+          : 'Sau khi chuyển khoản thành công, hệ thống tự kích hoạt gói trong vài giây. Không cần bấm xác nhận thủ công.'}
       </p>
 
       {isDev ? (

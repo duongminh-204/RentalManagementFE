@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   CheckCircle2,
@@ -9,9 +9,10 @@ import {
   RefreshCw,
   ShieldCheck,
 } from 'lucide-react';
-import { getStoredUser } from '../../../hooks/useAuth';
+import { getStoredUser, hasOwnerPendingUpgrade, isOwnerSubscriptionPending } from '../../../hooks/useAuth';
 import { useSubscriptionSync } from '../../../hooks/useSubscriptionSync';
 import SubscriptionPaymentPanel from '../components/SubscriptionPaymentPanel';
+import { getPaymentCheckout } from '../api/subscriptionsApi';
 
 const BASE_STEPS = [
   {
@@ -30,6 +31,7 @@ const BASE_STEPS = [
 
 export default function SubscriptionPendingPage() {
   const navigate = useNavigate();
+  const [hasCheckout, setHasCheckout] = useState(false);
 
   const { subscription, checking, initialized, refresh } = useSubscriptionSync({
     poll: true,
@@ -39,10 +41,25 @@ export default function SubscriptionPendingPage() {
   });
 
   const user = getStoredUser();
-  const packageName = subscription?.packageName || user?.packageName || 'Chưa chọn gói';
+  const hasPendingUpgrade = hasOwnerPendingUpgrade(user);
+  const isPendingSignup = isOwnerSubscriptionPending(user);
+  const isUpgradeFlow = hasPendingUpgrade || subscription?.hasPendingUpgrade;
+  const packageName =
+    (isUpgradeFlow ? user?.pendingPackageName || subscription?.pendingPackageName : null) ||
+    subscription?.packageName ||
+    user?.packageName ||
+    'Chưa chọn gói';
   const statusLabel = subscription?.status || user?.subscriptionStatus || 'Pending';
   const features = subscription?.features || [];
-  const isActive = String(statusLabel).toLowerCase() === 'active';
+  const isActive = String(statusLabel).toLowerCase() === 'active' && !hasCheckout && !isUpgradeFlow;
+
+  useEffect(() => {
+    getPaymentCheckout()
+      .then(() => setHasCheckout(true))
+      .catch(() => setHasCheckout(false));
+  }, []);
+
+  const showPaymentPanel = !isActive && (isPendingSignup || hasPendingUpgrade || hasCheckout);
 
   const steps = useMemo(() => {
     const doneCount = isActive ? 3 : 1;
@@ -69,12 +86,18 @@ export default function SubscriptionPendingPage() {
               <div>
                 <p className="subscription-pending-page__eyebrow">Trạng thái tài khoản</p>
                 <h1 className="subscription-pending-page__title">
-                  {isActive ? 'Gói đã được kích hoạt' : 'Hoàn tất thanh toán để kích hoạt gói'}
+                  {isActive
+                    ? 'Gói đã được kích hoạt'
+                    : isUpgradeFlow
+                      ? 'Hoàn tất thanh toán để nâng cấp gói'
+                      : 'Hoàn tất thanh toán để kích hoạt gói'}
                 </h1>
                 <p className="subscription-pending-page__subtitle">
                   {isActive
                     ? 'Bạn có thể sử dụng đầy đủ tính năng trong gói đã chọn.'
-                    : 'Quét VietQR bên dưới và chuyển khoản. Hệ thống tự kiểm tra mỗi 15 giây.'}
+                    : isUpgradeFlow
+                      ? 'Chỉ thanh toán phần chênh lệch theo số ngày còn lại. Hệ thống tự kiểm tra mỗi 15 giây.'
+                      : 'Quét VietQR bên dưới và chuyển khoản. Hệ thống tự kiểm tra mỗi 15 giây.'}
                 </p>
               </div>
             </div>
@@ -83,7 +106,9 @@ export default function SubscriptionPendingPage() {
               <div className="subscription-pending-page__summary-item">
                 <Package className="h-5 w-5 text-accent-violet" />
                 <div>
-                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">Gói đã chọn</p>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+                    {isUpgradeFlow ? 'Gói nâng cấp' : 'Gói đã chọn'}
+                  </p>
                   <p className="text-lg font-bold text-ink-deep">{packageName}</p>
                 </div>
               </div>
@@ -92,14 +117,14 @@ export default function SubscriptionPendingPage() {
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted">Trạng thái</p>
                   <p className={`text-lg font-bold ${isActive ? 'text-[#1f7a45]' : 'text-[#b26a00]'}`}>
-                    {isActive ? 'Đang hoạt động' : 'Chờ thanh toán'}
+                    {isActive ? 'Đang hoạt động' : isUpgradeFlow ? 'Chờ thanh toán nâng cấp' : 'Chờ thanh toán'}
                   </p>
                   <p className="text-xs text-muted">Mã hệ thống: {statusLabel}</p>
                 </div>
               </div>
             </div>
 
-            {!isActive ? <SubscriptionPaymentPanel /> : null}
+            {showPaymentPanel ? <SubscriptionPaymentPanel onCheckoutLoaded={() => setHasCheckout(true)} /> : null}
 
             {features.length > 0 ? (
               <div className="subscription-pending-page__features">
@@ -139,7 +164,7 @@ export default function SubscriptionPendingPage() {
             </div>
 
             <div className="subscription-pending-page__actions">
-              {!isActive ? (
+              {showPaymentPanel ? (
                 <button
                   type="button"
                   className="btn-primary justify-center"
@@ -164,7 +189,7 @@ export default function SubscriptionPendingPage() {
                   Vào tổng quan
                 </Link>
               )}
-              {!isActive ? (
+              {!isActive && showPaymentPanel ? (
                 <Link to="/dashboard" className="dashboard-action-button justify-center no-underline">
                   <Home className="h-4 w-4" />
                   Duyệt menu
