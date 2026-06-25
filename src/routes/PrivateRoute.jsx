@@ -47,6 +47,10 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
   const normalizedRole = role?.trim().toLowerCase();
   const normalizedAllowedRoles = allowedRoles?.map((allowedRole) => String(allowedRole).trim().toLowerCase()) || [];
 
+  if (normalizedRole === 'admin' && normalizedAllowedRoles.length === 0) {
+    return <Navigate to="/admin/dashboard" replace />;
+  }
+
   if (normalizedAllowedRoles.length && !normalizedAllowedRoles.includes(normalizedRole)) {
     const fallbackPath = getRoleHomePath(role);
 

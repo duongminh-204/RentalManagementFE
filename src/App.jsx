@@ -11,8 +11,19 @@ import DevicesPage from "./features/devices/pages/DevicesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
 import { RoomDecorPage } from './features/room-decor';
+import {
+  AdminAuditLogsPage,
+  AdminDashboardPage,
+  AdminOwnersPage,
+  AdminPackagesPage,
+  AdminPaymentsPage,
+  AdminSubscriptionsPage,
+  AdminUsersPage,
+  ExcelTemplateAdminPage,
+} from './features/admin';
 
 import { PrivateRoute } from './routes/PrivateRoute';
+import { AdminPrivateRoute } from './routes/AdminPrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
 
 function App() {
@@ -123,6 +134,73 @@ function App() {
             </PrivateRoute>
           }
         />
+
+        {/* Admin Routes */}
+        <Route
+          path="/admin/dashboard"
+          element={
+            <AdminPrivateRoute>
+              <AdminDashboardPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/owners"
+          element={
+            <AdminPrivateRoute>
+              <AdminOwnersPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/packages"
+          element={
+            <AdminPrivateRoute>
+              <AdminPackagesPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/subscriptions"
+          element={
+            <AdminPrivateRoute>
+              <AdminSubscriptionsPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/payments"
+          element={
+            <AdminPrivateRoute>
+              <AdminPaymentsPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminPrivateRoute>
+              <AdminUsersPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <AdminPrivateRoute>
+              <AdminAuditLogsPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/excel-template"
+          element={
+            <AdminPrivateRoute>
+              <ExcelTemplateAdminPage />
+            </AdminPrivateRoute>
+          }
+        />
+        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
