@@ -186,13 +186,13 @@ const MonthlyRevenueReport = () => {
               </div>
             </div>
 
-            <div className="dashboard-legend-card">
+            <div className="dashboard-mini-card">
               <p className="text-sm font-semibold text-muted">Tháng thu cao nhất</p>
               <p className="mt-2 text-xl font-bold text-ink-deep">{bestRow ? formatMonthName(bestRow) : 'Chưa có dữ liệu'}</p>
               <p className="mt-2 text-base font-semibold text-accent-violet-deep">{formatCurrency(bestRow?.amount ?? 0)}</p>
             </div>
 
-            <div className="dashboard-legend-card">
+            <div className="dashboard-mini-card">
               <p className="text-sm font-semibold text-muted">Tổng doanh thu trong kỳ</p>
               <p className="mt-2 text-xl font-bold text-ink-deep">{formatCurrency(totalAmount)}</p>
             </div>

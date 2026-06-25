@@ -119,7 +119,7 @@ const RevenueSection = ({ rows, summary }) => {
       title="Doanh thu SaaS"
       description="Thu từ thanh toán gói đăng ký — theo dõi xu hướng 6 tháng gần nhất."
     >
-      <div className="grid gap-3 lg:grid-cols-[1.2fr_0.9fr_0.9fr]">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-2xl border border-[#d8e8c6] bg-gradient-to-br from-[#f7fff0] to-white p-5">
           <p className="text-sm font-semibold text-muted">Tháng {latest?.label}</p>
           <p className="mt-2 text-3xl font-bold text-[#2f7f32]">{formatVnd(latest?.value)}</p>
@@ -136,12 +136,12 @@ const RevenueSection = ({ rows, summary }) => {
             </span>
           </div>
         </div>
-        <div className="dashboard-legend-card">
+        <div className="dashboard-mini-card">
           <p className="text-sm font-semibold text-muted">MRR ước tính</p>
           <p className="mt-2 text-xl font-bold text-ink-deep">{formatVnd(summary?.mrr)}</p>
           <p className="mt-1 text-xs text-muted">Tổng giá gói đang active</p>
         </div>
-        <div className="dashboard-legend-card">
+        <div className="dashboard-mini-card">
           <p className="text-sm font-semibold text-muted">Tổng 6 tháng</p>
           <p className="mt-2 text-xl font-bold text-ink-deep">{formatVnd(total)}</p>
           <p className="mt-1 text-xs text-muted">
