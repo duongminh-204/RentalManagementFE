@@ -198,7 +198,7 @@ export default function HomePricing() {
         disabled={!pkg.packageId || submittingId === pkg.packageId}
         onClick={() => handleSubscribe(pkg.packageId)}
       >
-        {submittingId === pkg.packageId ? 'Đang xử lý...' : 'Đăng ký & thanh toán VietQR'}
+        {submittingId === pkg.packageId ? 'Đang xử lý...' : 'Đăng ký'}
       </button>
     );
   };

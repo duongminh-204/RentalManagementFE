@@ -3,7 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Check, LoaderCircle } from 'lucide-react';
 import { getPublicPackages } from '../api/packagesApi';
 import { requestSubscription } from '../api/subscriptionsApi';
-import { getStoredUser, isOwnerRole } from '../../../hooks/useAuth';
+import {
+  getStoredUser,
+  isOwnerRole,
+  isOwnerSubscriptionActive,
+  isOwnerSubscriptionPending,
+} from '../../../hooks/useAuth';
 
 const formatPrice = (price) =>
   new Intl.NumberFormat('vi-VN').format(price) + 'đ/tháng';
@@ -21,11 +26,11 @@ export default function SelectPlanPage() {
       navigate('/', { replace: true });
       return;
     }
-    if (user?.subscriptionStatus === 'Active') {
+    if (isOwnerSubscriptionActive(user)) {
       navigate('/dashboard', { replace: true });
       return;
     }
-    if (user?.subscriptionStatus === 'Pending') {
+    if (isOwnerSubscriptionPending(user)) {
       navigate('/subscription/pending', { replace: true });
       return;
     }

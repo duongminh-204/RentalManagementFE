@@ -4,6 +4,7 @@ import { LogOut, Menu, X } from 'lucide-react';
 import { getRoleLabel, getStoredUser } from '../../hooks/useAuth';
 import { OWNER_ACCOUNT_NAV, OWNER_NAV_SECTIONS } from '../../utils/ownerNavConfig';
 import UserAvatar from './UserAvatar';
+import OwnerPackageBadge from './OwnerPackageBadge';
 import AppLogo from './AppLogo';
 
 const navLinkClass = ({ isActive }) =>
@@ -98,7 +99,10 @@ const Sidebar = () => {
           onClick={close}
           className="mb-2 flex items-center gap-3 rounded-xl px-2 py-2 transition-colors hover:bg-surface-press"
         >
-          <UserAvatar user={user} size="md" />
+          <div className="flex shrink-0 items-center gap-2">
+            <UserAvatar user={user} size="md" />
+            <OwnerPackageBadge user={user} />
+          </div>
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-ink-deep">{displayName}</p>
             <p className="truncate text-xs font-medium uppercase tracking-wide text-accent-violet-mid">
@@ -122,7 +126,10 @@ const Sidebar = () => {
     <>
       <div className="safe-top sticky top-0 z-40 flex items-center justify-between border-b border-hairline-cloud bg-surface-light px-3 py-2.5 sm:px-4 sm:py-3 lg:hidden">
         <Link to="/profile" className="flex min-w-0 items-center gap-2.5">
-          <UserAvatar user={user} size="sm" />
+          <div className="flex shrink-0 items-center gap-1.5">
+            <UserAvatar user={user} size="sm" />
+            <OwnerPackageBadge user={user} className="owner-package-badge--compact" />
+          </div>
           <div className="min-w-0">
             <p className="truncate font-display text-sm font-semibold text-ink-deep">{displayName}</p>
             <p className="truncate text-[10px] font-semibold uppercase tracking-wide text-accent-violet-mid">

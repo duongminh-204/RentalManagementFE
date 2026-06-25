@@ -215,7 +215,7 @@ const PackagePricingModal = ({ open, onClose, highlightPackage }) => {
             Đang xử lý...
           </>
         ) : (
-          `Đăng ký & thanh toán VietQR`
+          'Đăng ký'
         )}
       </button>
     );

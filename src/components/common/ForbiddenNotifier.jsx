@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { X } from 'lucide-react';
 import FeatureLockedNotice from './FeatureLockedNotice';
 import { resolveForbiddenNotice } from '../../utils/apiError';
-import { getStoredUser } from '../../hooks/useAuth';
+import { getStoredUser, isOwnerRole, isOwnerSubscriptionActive } from '../../hooks/useAuth';
 
 const ForbiddenNotifier = () => {
   const [notice, setNotice] = useState(null);
@@ -10,16 +10,22 @@ const ForbiddenNotifier = () => {
   useEffect(() => {
     const handleForbidden = (event) => {
       const user = getStoredUser();
+      if (isOwnerRole(user?.role) && !isOwnerSubscriptionActive(user)) {
+        return;
+      }
+
       const detail = event.detail || {};
-      setNotice(
-        resolveForbiddenNotice(
-          {
-            response: { status: 403, data: { message: detail.message } },
-            config: { url: detail.url },
-          },
-          { path: window.location.pathname, user },
-        ),
+      const notice = resolveForbiddenNotice(
+        {
+          response: { status: 403, data: { message: detail.message } },
+          config: { url: detail.url },
+        },
+        { path: window.location.pathname, user },
       );
+
+      if (!notice || notice.variant === 'no_plan') return;
+
+      setNotice(notice);
     };
 
     window.addEventListener('forbidden', handleForbidden);

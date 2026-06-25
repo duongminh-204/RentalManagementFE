@@ -23,6 +23,7 @@ import {
 import { formatCount, formatMonthLabel } from '../utils/dashboardFormat';
 import FeatureLockedNotice from '../../../components/common/FeatureLockedNotice';
 import { resolveForbiddenNotice } from '../../../utils/apiError';
+import { getStoredUser, isOwnerSubscriptionActive } from '../../../hooks/useAuth';
 
 const DOWNLOAD_ERROR_MESSAGE =
   'Chưa tải được file mẫu. Nếu backend vừa được cập nhật, hãy khởi động lại backend rồi thử lại.';
@@ -50,17 +51,19 @@ const Dashboard = () => {
   const totalDebt = Number(debtInfo?.totalDebt ?? stats?.totalDebt ?? 0);
   const topDebtors = Array.isArray(debtInfo?.topDebtors) ? debtInfo.topDebtors : [];
 
+  const hasActiveSubscription = isOwnerSubscriptionActive(getStoredUser());
   const hasLockedReports =
-    lockedFeatures.includes('debtReports') || lockedFeatures.includes('revenueReports');
+    hasActiveSubscription &&
+    (lockedFeatures.includes('debtReports') || lockedFeatures.includes('revenueReports'));
   const debtNotice =
-    lockedFeatures.includes('debtReports')
+    hasActiveSubscription && lockedFeatures.includes('debtReports')
       ? resolveForbiddenNotice(
           { response: { status: 403 } },
           { featureLabel: 'Báo cáo công nợ', requiredPackage: 'PRO', featureKey: 'debtReports' },
         )
       : null;
   const revenueNotice =
-    lockedFeatures.includes('revenueReports')
+    hasActiveSubscription && lockedFeatures.includes('revenueReports')
       ? resolveForbiddenNotice(
           { response: { status: 403 } },
           { featureLabel: 'Báo cáo doanh thu', requiredPackage: 'PRO', featureKey: 'revenueReports' },
