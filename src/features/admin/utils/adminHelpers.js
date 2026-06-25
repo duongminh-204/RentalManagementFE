@@ -33,6 +33,33 @@ export const subscriptionStatusLabel = (status) => {
   return map[String(status || '').toLowerCase()] || status || '—';
 };
 
+export const subscriptionStatusIcon = (status) => {
+  const normalized = String(status || '').toLowerCase();
+  if (normalized === 'active') return 'active';
+  if (normalized === 'pending') return 'pending';
+  if (['expired', 'cancelled'].includes(normalized)) return 'inactive';
+  if (normalized === 'suspended') return 'warning';
+  return 'default';
+};
+
+export const daysUntil = (endDate) => {
+  if (!endDate) return null;
+  const end = new Date(endDate);
+  end.setHours(23, 59, 59, 999);
+  return Math.ceil((end.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+};
+
+export const roomUsagePercent = (used, max) => {
+  if (!max || max <= 0) return 0;
+  return Math.round((Number(used || 0) / max) * 100);
+};
+
+export const roomUsageTone = (percent) => {
+  if (percent > 100) return 'danger';
+  if (percent >= 85) return 'warning';
+  return 'success';
+};
+
 export const normalizeOwner = (raw) => {
   if (!raw) return null;
   return {

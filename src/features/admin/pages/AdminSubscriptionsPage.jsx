@@ -1,8 +1,17 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Clock3, LoaderCircle, Search } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  AlertTriangle,
+  CheckCircle2,
+  Clock3,
+  LoaderCircle,
+  RefreshCw,
+  Search,
+  Users,
+} from 'lucide-react';
+import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import AdminOwnerSubscriptionsCard from '../components/AdminOwnerSubscriptionsCard';
-import FilterSelect from '../../../components/common/FilterSelect';
+import AdminChangePackageModal from '../components/AdminChangePackageModal';
 import { useConfirmDelete } from '../../../hooks/useConfirmDelete';
 import {
   activateAdminSubscription,
@@ -15,13 +24,13 @@ import {
   upgradeAdminSubscription,
 } from '../api/adminApi';
 
-const STATUS_OPTIONS = [
-  { value: '', label: 'Tất cả trạng thái' },
-  { value: 'Pending', label: 'Chờ duyệt' },
-  { value: 'Active', label: 'Đang hoạt động' },
-  { value: 'Expired', label: 'Hết hạn' },
-  { value: 'Cancelled', label: 'Đã hủy' },
-  { value: 'Suspended', label: 'Tạm ngưng' },
+const STATUS_FILTERS = [
+  { value: '', label: 'Tất cả', icon: Users },
+  { value: 'Pending', label: 'Chờ duyệt', icon: Clock3 },
+  { value: 'Active', label: 'Đang hoạt động', icon: CheckCircle2 },
+  { value: 'Expired', label: 'Hết hạn', icon: AlertTriangle },
+  { value: 'Cancelled', label: 'Đã hủy', icon: RefreshCw },
+  { value: 'Suspended', label: 'Tạm ngưng', icon: AlertTriangle },
 ];
 
 const normalizeGroup = (raw) => ({
@@ -44,12 +53,42 @@ const normalizeGroup = (raw) => ({
   })),
 });
 
+const sortGroups = (groups) =>
+  [...groups].sort((a, b) => {
+    const score = (g) => {
+      const subs = g.subscriptions || [];
+      if (subs.some((s) => s.status === 'Pending')) return 0;
+      if (subs.some((s) => s.status === 'Active')) return 1;
+      return 2;
+    };
+    return score(a) - score(b);
+  });
+
+const computePageStats = (groups) => {
+  let pending = 0;
+  let active = 0;
+  let overLimit = 0;
+  let totalSubs = 0;
+
+  groups.forEach((group) => {
+    (group.subscriptions || []).forEach((sub) => {
+      totalSubs += 1;
+      if (sub.status === 'Pending') pending += 1;
+      if (sub.status === 'Active') active += 1;
+      if (sub.ownerRoomCount > sub.maxRooms) overLimit += 1;
+    });
+  });
+
+  return { owners: groups.length, pending, active, overLimit, totalSubs };
+};
+
 const AdminSubscriptionsPage = () => {
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [groups, setGroups] = useState([]);
   const [packages, setPackages] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
@@ -63,8 +102,9 @@ const AdminSubscriptionsPage = () => {
       setLoading(true);
       setError('');
       const data = await getAdminSubscriptionsGrouped({ status, search, page, pageSize: 8 });
-      setGroups((data.items || []).map(normalizeGroup));
+      setGroups(sortGroups((data.items || []).map(normalizeGroup)));
       setTotalPages(data.totalPages || 1);
+      setTotalCount(data.totalCount ?? data.total ?? 0);
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể tải đăng ký.');
     } finally {
@@ -74,8 +114,21 @@ const AdminSubscriptionsPage = () => {
 
   useEffect(() => {
     load();
-    getAdminPackages({ pageSize: 100, isEnabled: true }).then((data) => setPackages(data.items || [])).catch(() => {});
+    getAdminPackages({ pageSize: 100, isEnabled: true })
+      .then((data) => setPackages(data.items || []))
+      .catch(() => {});
   }, [load]);
+
+  const pageStats = useMemo(() => computePageStats(groups), [groups]);
+
+  const changeTargetSub = useMemo(() => {
+    if (!changeTarget) return null;
+    for (const group of groups) {
+      const sub = group.subscriptions?.find((s) => s.subscriptionId === changeTarget.subscriptionId);
+      if (sub) return sub;
+    }
+    return null;
+  }, [changeTarget, groups]);
 
   const runAction = async (fn, successMessage) => {
     try {
@@ -92,9 +145,7 @@ const AdminSubscriptionsPage = () => {
     }
   };
 
-  const handleChangePackage = async (event) => {
-    event.preventDefault();
-    const packageId = Number(new FormData(event.target).get('packageId'));
+  const handleChangePackage = async (packageId) => {
     if (!changeTarget || !packageId) return;
     await runAction(
       () =>
@@ -133,12 +184,62 @@ const AdminSubscriptionsPage = () => {
 
   return (
     <div className="page-content page-content--wide">
+      <AdminPageHeader
+        title="Quản lý đăng ký gói"
+        description="Duyệt, kích hoạt, nâng cấp và gia hạn gói dịch vụ cho chủ trọ. Ưu tiên xử lý các đăng ký đang chờ duyệt."
+      >
+        <button
+          type="button"
+          className="dashboard-action-button !w-auto !min-w-0"
+          onClick={load}
+          disabled={loading}
+        >
+          {loading ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+          Làm mới
+        </button>
+      </AdminPageHeader>
+
+      <div className="mb-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="dashboard-mini-card">
+          <p className="text-sm text-muted">Chủ trọ (tổng)</p>
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-ink-deep">
+            <Users className="h-5 w-5 text-accent-violet" />
+            {totalCount || pageStats.owners}
+          </p>
+          <p className="mt-1 text-xs text-muted">Trang {page}/{totalPages}</p>
+        </div>
+        <div className="dashboard-mini-card">
+          <p className="text-sm text-muted">Chờ duyệt</p>
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#b26a00]">
+            <Clock3 className="h-5 w-5" />
+            {pageStats.pending}
+          </p>
+          <p className="mt-1 text-xs text-muted">Trên trang hiện tại</p>
+        </div>
+        <div className="dashboard-mini-card">
+          <p className="text-sm text-muted">Đang hoạt động</p>
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#1f7a45]">
+            <CheckCircle2 className="h-5 w-5" />
+            {pageStats.active}
+          </p>
+          <p className="mt-1 text-xs text-muted">{pageStats.totalSubs} đăng ký trên trang</p>
+        </div>
+        <div className="dashboard-mini-card">
+          <p className="text-sm text-muted">Vượt giới hạn phòng</p>
+          <p className="mt-2 flex items-center gap-2 text-2xl font-bold text-[#b4234a]">
+            <AlertTriangle className="h-5 w-5" />
+            {pageStats.overLimit}
+          </p>
+          <p className="mt-1 text-xs text-muted">Cần nâng cấp gói</p>
+        </div>
+      </div>
+
       <div className="dashboard-section-card">
-        <div className="mb-4 flex flex-col gap-3 lg:flex-row">
-          <div className="relative flex-1">
+        <div className="mb-5 space-y-4">
+          <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted" />
             <input
-              className="w-full rounded-xl border border-hairline-cloud bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-accent-violet"
+              className="w-full rounded-xl border border-hairline-cloud bg-white py-3 pl-10 pr-4 text-sm outline-none transition focus:border-accent-violet focus:ring-2 focus:ring-accent-violet/15"
               placeholder="Tìm theo tên hoặc email chủ trọ..."
               value={search}
               onChange={(e) => {
@@ -147,32 +248,63 @@ const AdminSubscriptionsPage = () => {
               }}
             />
           </div>
-          <FilterSelect
-            value={status}
-            onChange={(e) => {
-              setStatus(e.target.value);
-              setPage(1);
-            }}
-            options={STATUS_OPTIONS}
-            className="lg:w-56"
-          />
+
+          <div className="flex flex-wrap gap-2">
+            {STATUS_FILTERS.map(({ value, label, icon: Icon }) => {
+              const active = status === value;
+              return (
+                <button
+                  key={value || 'all'}
+                  type="button"
+                  onClick={() => {
+                    setStatus(value);
+                    setPage(1);
+                  }}
+                  className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    active
+                      ? 'bg-accent-violet text-white shadow-sm'
+                      : 'bg-surface-press/60 text-muted hover:bg-surface-press hover:text-ink-deep'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {error ? <div className="mb-4 rounded-xl bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">{error}</div> : null}
-        {message ? <div className="mb-4 rounded-xl bg-[#f8fff0] px-4 py-3 text-sm font-semibold text-[#1f7a45]">{message}</div> : null}
+        {error ? (
+          <div className="mb-4 rounded-xl border border-[#f5d0d8] bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">
+            {error}
+          </div>
+        ) : null}
+        {message ? (
+          <div className="mb-4 rounded-xl border border-[#c8ead6] bg-[#f8fff0] px-4 py-3 text-sm font-semibold text-[#1f7a45]">
+            {message}
+          </div>
+        ) : null}
 
         {loading ? (
           <div className="flex justify-center py-16">
             <LoaderCircle className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : groups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-hairline-cloud bg-surface-press/20 py-16 text-center">
             <Clock3 className="mb-3 h-10 w-10 text-muted" />
             <p className="font-semibold text-ink-deep">Không có đăng ký nào</p>
-            <p className="mt-1 text-sm text-muted">Thử đổi bộ lọc hoặc tìm kiếm khác.</p>
+            <p className="mt-1 max-w-sm text-sm text-muted">
+              Thử đổi bộ lọc trạng thái hoặc tìm kiếm với từ khóa khác.
+            </p>
           </div>
         ) : (
           <div className="space-y-5">
+            {pageStats.pending > 0 && !status ? (
+              <div className="rounded-xl border border-[#f0d9a8] bg-[#fffaf0] px-4 py-3 text-sm text-[#8a5a00]">
+                <strong>{pageStats.pending}</strong> đăng ký đang chờ duyệt trên trang này — ưu tiên kích hoạt để chủ trọ sử dụng hệ thống.
+              </div>
+            ) : null}
+
             {groups.map((group) => (
               <AdminOwnerSubscriptionsCard
                 key={group.ownerId}
@@ -184,8 +316,12 @@ const AdminSubscriptionsPage = () => {
                     `Đã kích hoạt gói ${sub.packageName} cho ${group.ownerName}.`,
                   )
                 }
-                onUpgrade={(sub) => setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'upgrade' })}
-                onDowngrade={(sub) => setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'downgrade' })}
+                onUpgrade={(sub) =>
+                  setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'upgrade' })
+                }
+                onDowngrade={(sub) =>
+                  setChangeTarget({ subscriptionId: sub.subscriptionId, mode: 'downgrade' })
+                }
                 onRenew={(sub) => runAction(() => renewAdminSubscription(sub.subscriptionId), 'Đã gia hạn gói.')}
                 onCancel={handleCancel}
                 onDelete={handleDelete}
@@ -197,43 +333,16 @@ const AdminSubscriptionsPage = () => {
         <AdminPagination page={page} totalPages={totalPages} onPageChange={setPage} />
       </div>
 
-      {changeTarget ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <form
-            onSubmit={handleChangePackage}
-            className="w-full max-w-md rounded-2xl border border-hairline-cloud bg-white p-6 shadow-xl"
-          >
-            <h2 className="font-display text-xl font-bold text-ink-deep">
-              {changeTarget.mode === 'upgrade' ? 'Nâng cấp gói' : 'Hạ cấp gói'}
-            </h2>
-            <p className="mt-1 text-sm text-muted">Chọn gói mới cho đăng ký #{changeTarget.subscriptionId}</p>
-            <select
-              name="packageId"
-              required
-              className="mt-4 w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet"
-            >
-              <option value="">Chọn gói mới</option>
-              {packages.map((pkg) => (
-                <option key={pkg.packageId} value={pkg.packageId}>
-                  {pkg.packageName} — {pkg.maxRooms} phòng
-                </option>
-              ))}
-            </select>
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" className="dashboard-action-button !w-auto !min-w-0" onClick={() => setChangeTarget(null)}>
-                Huỷ
-              </button>
-              <button
-                type="submit"
-                disabled={actionLoading}
-                className="dashboard-action-button dashboard-action-button--primary !w-auto !min-w-0"
-              >
-                Xác nhận
-              </button>
-            </div>
-          </form>
-        </div>
-      ) : null}
+      <AdminChangePackageModal
+        open={Boolean(changeTarget)}
+        mode={changeTarget?.mode}
+        subscriptionId={changeTarget?.subscriptionId}
+        currentPackageId={changeTargetSub?.packageId}
+        packages={packages}
+        loading={actionLoading}
+        onClose={() => setChangeTarget(null)}
+        onSubmit={handleChangePackage}
+      />
 
       <ConfirmDeleteDialog />
     </div>

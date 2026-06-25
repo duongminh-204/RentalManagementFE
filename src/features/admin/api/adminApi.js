@@ -61,3 +61,4 @@ export const unlockAdminUser = (id) => api.post(`${adminBase}/users/${id}/unlock
 
 // Audit logs
 export const getAdminAuditLogs = (params) => api.get(`${adminBase}/audit-logs`, { params }).then((r) => r.data);
+export const clearAdminAuditLogs = (params) => api.delete(`${adminBase}/audit-logs`, { params }).then((r) => r.data);
