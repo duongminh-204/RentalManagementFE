@@ -81,7 +81,15 @@ export default function SelectPlanPage() {
         ) : (
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             {packages.map((pkg) => (
-              <article key={pkg.packageId} className="dashboard-section-card flex flex-col">
+              <article
+                key={pkg.packageId}
+                className={`dashboard-section-card relative flex flex-col ${pkg.recommended ? 'ring-2 ring-accent-violet/30' : ''}`}
+              >
+                {pkg.recommended ? (
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-accent-violet px-3 py-1 text-xs font-semibold text-white">
+                    Khuyên dùng
+                  </span>
+                ) : null}
                 <h2 className="font-display text-xl font-bold text-ink-deep">{pkg.packageName}</h2>
                 <p className="mt-1 text-sm text-accent-violet">{pkg.roomRange}</p>
                 <p className="text-sm text-muted">{pkg.targetAudience}</p>

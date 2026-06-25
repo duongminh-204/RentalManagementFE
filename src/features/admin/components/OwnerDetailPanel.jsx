@@ -14,7 +14,7 @@ import {
   X,
 } from 'lucide-react';
 import UserAvatar from '../../../components/common/UserAvatar';
-import { formatDate, formatDateTime, statusClass, subscriptionStatusLabel } from '../utils/adminHelpers';
+import { formatDate, formatDateTime, statusClass } from '../utils/adminHelpers';
 
 const InfoRow = ({ icon: Icon, label, value }) => (
   <div className="flex items-start gap-3 py-2.5">
@@ -54,7 +54,7 @@ const IconAction = ({ title, onClick, disabled, children, variant = 'default' })
   );
 };
 
-const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onLock, onUnlock, onManagePassword, onDelete }) => {
+const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onLock, onUnlock, onManagePassword, onDelete }) => {
   if (!owner) return null;
 
   return (
@@ -84,12 +84,11 @@ const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onLo
                 <h3 className="truncate text-xl font-bold text-ink-deep">{owner.fullName}</h3>
                 <p className="text-sm text-muted">ID #{owner.ownerId}</p>
                 <div className="mt-2 flex flex-wrap gap-1.5">
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(owner.subscriptionStatus)}`}>
-                    {subscriptionStatusLabel(owner.subscriptionStatus)}
-                  </span>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass(owner.isActive ? 'Active' : 'Disabled')}`}>
-                    {owner.isActive ? 'Tài khoản mở' : 'Tài khoản khóa'}
-                  </span>
+                  {!owner.isActive || owner.isSuspended ? (
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${statusClass('Disabled')}`}>
+                      Đã khóa
+                    </span>
+                  ) : null}
                 </div>
               </div>
             </div>
@@ -123,13 +122,10 @@ const OwnerDetailPanel = ({ owner, loading, actionLoading, onClose, onEdit, onLo
         )}
 
         <div className="flex flex-wrap gap-2 border-t border-hairline-cloud px-5 py-4">
-          <IconAction title="Chỉnh sửa" onClick={() => onEdit(owner)} disabled={actionLoading}>
-            Sửa thông tin
-          </IconAction>
           <IconAction title="Mật khẩu" onClick={() => onManagePassword(owner)} disabled={actionLoading}>
             <KeyRound className="h-3.5 w-3.5" /> Mật khẩu
           </IconAction>
-          {owner.isActive ? (
+          {owner.isActive && !owner.isSuspended ? (
             <IconAction title="Khóa tài khoản" variant="danger" disabled={actionLoading} onClick={() => onLock(owner.ownerId)}>
               <Lock className="h-3.5 w-3.5" /> Khóa
             </IconAction>

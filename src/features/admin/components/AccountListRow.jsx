@@ -7,12 +7,11 @@ import {
   LockOpen,
   Mail,
   MapPin,
-  Pencil,
   Phone,
   Trash2,
 } from 'lucide-react';
 import UserAvatar from '../../../components/common/UserAvatar';
-import { formatDate, formatDateTime, roleLabel, statusClass, subscriptionStatusLabel } from '../utils/adminHelpers';
+import { formatDate, formatDateTime, roleLabel, statusClass } from '../utils/adminHelpers';
 
 const IconBtn = ({ title, onClick, disabled, children, danger }) => (
   <button
@@ -34,7 +33,6 @@ const AccountListRow = ({
   account,
   actionLoading,
   onView,
-  onEdit,
   onLock,
   onUnlock,
   onManagePassword,
@@ -84,21 +82,12 @@ const AccountListRow = ({
       )}
     </td>
     <td className="px-4 py-3">
-      {account.isOwner ? (
-        <>
-          <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(account.subscriptionStatus)}`}>
-            {subscriptionStatusLabel(account.subscriptionStatus)}
-          </span>
-          {!account.isActive ? (
-            <span className={`ml-1 inline-flex rounded-full px-2 py-0.5 text-[10px] font-semibold ${statusClass('Disabled')}`}>
-              Khóa
-            </span>
-          ) : null}
-        </>
-      ) : (
-        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(account.isActive ? 'Active' : 'Disabled')}`}>
-          {account.isActive ? 'Hoạt động' : 'Đã khóa'}
+      {!account.isActive || account.isSuspended ? (
+        <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass('Disabled')}`}>
+          Đã khóa
         </span>
+      ) : (
+        <span className="text-xs text-muted">—</span>
       )}
     </td>
     <td className="px-4 py-3">
@@ -128,14 +117,11 @@ const AccountListRow = ({
             <IconBtn title="Xem chi tiết" onClick={() => onView(account)}>
               <Eye className="h-4 w-4" />
             </IconBtn>
-            <IconBtn title="Sửa" onClick={() => onEdit(account)}>
-              <Pencil className="h-4 w-4" />
-            </IconBtn>
           </>
         ) : null}
         {!account.isAdmin ? (
           <>
-            {account.isActive ? (
+            {account.isActive && !account.isSuspended ? (
               <IconBtn title="Khóa tài khoản" danger disabled={actionLoading} onClick={() => onLock(account)}>
                 <Lock className="h-4 w-4" />
               </IconBtn>

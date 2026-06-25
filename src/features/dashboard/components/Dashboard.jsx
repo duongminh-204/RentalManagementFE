@@ -56,14 +56,14 @@ const Dashboard = () => {
     lockedFeatures.includes('debtReports')
       ? resolveForbiddenNotice(
           { response: { status: 403 } },
-          { featureLabel: 'Báo cáo công nợ', requiredPackage: 'PRO' },
+          { featureLabel: 'Báo cáo công nợ', requiredPackage: 'PRO', featureKey: 'debtReports' },
         )
       : null;
   const revenueNotice =
     lockedFeatures.includes('revenueReports')
       ? resolveForbiddenNotice(
           { response: { status: 403 } },
-          { featureLabel: 'Báo cáo doanh thu', requiredPackage: 'PRO' },
+          { featureLabel: 'Báo cáo doanh thu', requiredPackage: 'PRO', featureKey: 'revenueReports' },
         )
       : null;
 

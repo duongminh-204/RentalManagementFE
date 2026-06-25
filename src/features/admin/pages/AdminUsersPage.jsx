@@ -19,7 +19,6 @@ import {
   lockAdminUser,
   unlockAdminOwner,
   unlockAdminUser,
-  updateAdminOwner,
 } from '../api/adminApi';
 import { normalizeAccount, normalizeOwner } from '../utils/adminHelpers';
 
@@ -32,14 +31,6 @@ const ROLE_OPTIONS = [
   { value: 'Tenant', label: 'Khách thuê' },
 ];
 
-const SUBSCRIPTION_STATUS_OPTIONS = [
-  { value: '', label: 'Tất cả trạng thái gói' },
-  { value: 'Active', label: 'Đang hoạt động' },
-  { value: 'Expired', label: 'Hết hạn' },
-  { value: 'Suspended', label: 'Tạm ngưng' },
-  { value: 'None', label: 'Chưa đăng ký' },
-];
-
 const AdminUsersPage = () => {
   const { confirmDelete, ConfirmDeleteDialog } = useConfirmDelete();
   const [items, setItems] = useState([]);
@@ -48,12 +39,10 @@ const AdminUsersPage = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [search, setSearch] = useState('');
   const [role, setRole] = useState('');
-  const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [showForm, setShowForm] = useState(false);
-  const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [detail, setDetail] = useState(null);
   const [detailLoading, setDetailLoading] = useState(false);
@@ -71,7 +60,6 @@ const AdminUsersPage = () => {
       const data = await getAdminUsers({
         search,
         role,
-        subscriptionStatus: role === 'Owner' || role === '' ? subscriptionStatus : undefined,
         page,
         pageSize: 10,
       });
@@ -82,7 +70,7 @@ const AdminUsersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [search, role, subscriptionStatus, page]);
+  }, [search, role, page]);
 
   useEffect(() => {
     load();
@@ -90,20 +78,7 @@ const AdminUsersPage = () => {
   }, [load]);
 
   const openCreate = () => {
-    setEditingId(null);
     setForm(emptyForm);
-    setShowForm(true);
-  };
-
-  const openEdit = (account) => {
-    setEditingId(account.userId);
-    setForm({
-      fullName: account.fullName,
-      email: account.email || '',
-      phoneNumber: account.phoneNumber || '',
-      password: '',
-      packageId: '',
-    });
     setShowForm(true);
   };
 
@@ -155,24 +130,15 @@ const AdminUsersPage = () => {
     event.preventDefault();
     try {
       setActionLoading(true);
-      if (editingId) {
-        await updateAdminOwner(editingId, {
-          fullName: form.fullName,
-          email: form.email,
-          phoneNumber: form.phoneNumber,
-          packageId: form.packageId ? Number(form.packageId) : undefined,
-        });
-      } else {
-        await createAdminOwner({
-          fullName: form.fullName,
-          email: form.email,
-          phoneNumber: form.phoneNumber,
-          password: form.password,
-          packageId: form.packageId ? Number(form.packageId) : undefined,
-        });
-      }
+      await createAdminOwner({
+        fullName: form.fullName,
+        email: form.email,
+        phoneNumber: form.phoneNumber,
+        password: form.password,
+        packageId: form.packageId ? Number(form.packageId) : undefined,
+      });
       setShowForm(false);
-      setMessage(editingId ? 'Đã cập nhật chủ trọ.' : 'Đã thêm chủ trọ mới.');
+      setMessage('Đã thêm chủ trọ mới.');
       await load();
     } catch (err) {
       setError(err.response?.data?.message || 'Không thể lưu chủ trọ.');
@@ -287,18 +253,10 @@ const AdminUsersPage = () => {
           </div>
           <FilterSelect
             value={role}
-            onChange={(e) => { setRole(e.target.value); setPage(1); setSubscriptionStatus(''); }}
+            onChange={(e) => { setRole(e.target.value); setPage(1); }}
             options={ROLE_OPTIONS}
             className="lg:w-48"
           />
-          {(role === 'Owner' || role === '') ? (
-            <FilterSelect
-              value={subscriptionStatus}
-              onChange={(e) => { setSubscriptionStatus(e.target.value); setPage(1); }}
-              options={SUBSCRIPTION_STATUS_OPTIONS}
-              className="lg:w-52"
-            />
-          ) : null}
         </div>
 
         {error ? <div className="mb-4 rounded-xl bg-[#fff6f9] px-4 py-3 text-sm text-[#b4234a]">{error}</div> : null}
@@ -337,7 +295,6 @@ const AdminUsersPage = () => {
                     account={account}
                     actionLoading={actionLoading}
                     onView={openDetail}
-                    onEdit={openEdit}
                     onLock={handleLock}
                     onUnlock={handleUnlock}
                     onManagePassword={openPasswordModal}
@@ -355,17 +312,13 @@ const AdminUsersPage = () => {
       {showForm ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <form onSubmit={handleSubmit} className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="text-xl font-bold text-ink-deep">{editingId ? 'Cập nhật chủ trọ' : 'Thêm chủ trọ'}</h2>
-            <p className="mt-1 text-sm text-muted">
-              {editingId ? 'Chỉnh sửa thông tin tài khoản chủ trọ.' : 'Tạo tài khoản chủ trọ mới trên hệ thống.'}
-            </p>
+            <h2 className="text-xl font-bold text-ink-deep">Thêm chủ trọ</h2>
+            <p className="mt-1 text-sm text-muted">Tạo tài khoản chủ trọ mới trên hệ thống.</p>
             <div className="mt-4 space-y-3">
               <input required className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Họ tên" value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} />
               <input required type="email" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
               <input className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Số điện thoại" value={form.phoneNumber} onChange={(e) => setForm({ ...form, phoneNumber: e.target.value })} />
-              {!editingId ? (
-                <input required type="text" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Mật khẩu" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-              ) : null}
+              <input required type="text" className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" placeholder="Mật khẩu" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
               <select className="w-full rounded-xl border border-hairline-cloud px-4 py-2.5 text-sm outline-none focus:border-accent-violet" value={form.packageId} onChange={(e) => setForm({ ...form, packageId: e.target.value })}>
                 <option value="">Chọn gói (tuỳ chọn)</option>
                 {packages.map((pkg) => (
@@ -389,7 +342,6 @@ const AdminUsersPage = () => {
           loading={detailLoading}
           actionLoading={actionLoading}
           onClose={() => setDetail(null)}
-          onEdit={(owner) => { setDetail(null); openEdit(normalizeAccount(owner)); }}
           onLock={lockById}
           onUnlock={unlockById}
           onManagePassword={(owner) => openPasswordModal(normalizeAccount(owner))}

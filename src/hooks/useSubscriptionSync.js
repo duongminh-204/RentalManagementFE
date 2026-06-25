@@ -1,0 +1,98 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { getMySubscription } from '../features/packages/api/subscriptionsApi';
+import {
+  getStoredUser,
+  isOwnerRole,
+  isOwnerSubscriptionPending,
+  updateStoredUser,
+} from './useAuth';
+
+const POLL_INTERVAL_MS = 15000;
+
+export const syncSubscriptionFromApi = async () => {
+  const user = getStoredUser();
+  if (!isOwnerRole(user?.role)) return null;
+
+  try {
+    const data = await getMySubscription();
+    const currentStatus = String(user?.subscriptionStatus || '').toLowerCase();
+    const newStatus = String(data?.status || '').toLowerCase();
+
+    const hasChanges =
+      (data?.status && newStatus !== currentStatus) ||
+      (data?.packageId != null && data.packageId !== user?.packageId) ||
+      (data?.packageName && data.packageName !== user?.packageName);
+
+    if (hasChanges) {
+      const merged = updateStoredUser({
+        subscriptionStatus: data.status,
+        packageId: data.packageId,
+        packageName: data.packageName,
+      });
+      return {
+        data,
+        user: merged,
+        activated: newStatus === 'active' && currentStatus === 'pending',
+      };
+    }
+
+    return { data, user, activated: false };
+  } catch {
+    return null;
+  }
+};
+
+export const useSubscriptionSync = ({ poll = true, onActivated } = {}) => {
+  const [subscription, setSubscription] = useState(null);
+  const [checking, setChecking] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+  const onActivatedRef = useRef(onActivated);
+  onActivatedRef.current = onActivated;
+
+  const refresh = useCallback(async (silent = false) => {
+    const user = getStoredUser();
+    if (!isOwnerRole(user?.role)) {
+      setInitialized(true);
+      return null;
+    }
+
+    if (!silent) setChecking(true);
+    try {
+      const result = await syncSubscriptionFromApi();
+      if (result?.data) setSubscription(result.data);
+      if (result?.activated) onActivatedRef.current?.(result.data);
+      return result;
+    } finally {
+      if (!silent) setChecking(false);
+      setInitialized(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    const user = getStoredUser();
+    if (!isOwnerRole(user?.role)) return undefined;
+
+    refresh(true);
+
+    if (!poll || !isOwnerSubscriptionPending(user)) return undefined;
+
+    const intervalId = setInterval(async () => {
+      const currentUser = getStoredUser();
+      if (!isOwnerSubscriptionPending(currentUser)) {
+        clearInterval(intervalId);
+        return;
+      }
+
+      const result = await syncSubscriptionFromApi();
+      if (result?.data) setSubscription(result.data);
+      if (result?.activated) {
+        onActivatedRef.current?.(result.data);
+        clearInterval(intervalId);
+      }
+    }, POLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [poll, refresh]);
+
+  return { subscription, checking, initialized, refresh };
+};

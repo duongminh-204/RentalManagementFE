@@ -24,9 +24,12 @@ export const createAdminPackage = (data) => api.post(`${adminBase}/packages`, da
 export const updateAdminPackage = (id, data) => api.put(`${adminBase}/packages/${id}`, data).then((r) => r.data);
 export const enableAdminPackage = (id) => api.post(`${adminBase}/packages/${id}/enable`).then((r) => r.data);
 export const disableAdminPackage = (id) => api.post(`${adminBase}/packages/${id}/disable`).then((r) => r.data);
+export const deleteAdminPackage = (id) => api.delete(`${adminBase}/packages/${id}`).then((r) => r.data);
 
 // Subscriptions
 export const getAdminSubscriptions = (params) => api.get(`${adminBase}/subscriptions`, { params }).then((r) => r.data);
+export const getAdminSubscriptionsGrouped = (params) =>
+  api.get(`${adminBase}/subscriptions/grouped`, { params }).then((r) => r.data);
 export const upgradeAdminSubscription = (id, packageId) =>
   api.post(`${adminBase}/subscriptions/${id}/upgrade`, { packageId }).then((r) => r.data);
 export const downgradeAdminSubscription = (id, packageId) =>
@@ -34,6 +37,7 @@ export const downgradeAdminSubscription = (id, packageId) =>
 export const renewAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/renew`).then((r) => r.data);
 export const activateAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/activate`).then((r) => r.data);
 export const cancelAdminSubscription = (id) => api.post(`${adminBase}/subscriptions/${id}/cancel`).then((r) => r.data);
+export const deleteAdminSubscription = (id) => api.delete(`${adminBase}/subscriptions/${id}`);
 
 // Payments
 export const getAdminPayments = (params) => api.get(`${adminBase}/payments`, { params }).then((r) => r.data);

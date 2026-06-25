@@ -8,7 +8,7 @@ const OwnerSubscriptionGate = ({ children }) => {
     return (
       <div className="min-h-screen w-full flex-1 bg-surface-light">
         <div className="page-content page-content--wide py-8">
-          <FeatureLockedNotice {...notice} />
+          <FeatureLockedNotice {...notice} fullPage />
         </div>
       </div>
     );

@@ -217,7 +217,7 @@ const TenantsList = () => {
     <div className="min-h-screen w-full flex-1 bg-surface-light font-sans">
       <div className="page-content page-content--wide">
         {accessNotice ? (
-          <FeatureLockedNotice {...accessNotice} />
+          <FeatureLockedNotice {...accessNotice} fullPage />
         ) : (
         <>
         <div className="mb-6 rounded-xl border border-hairline-cloud bg-surface-light p-4">

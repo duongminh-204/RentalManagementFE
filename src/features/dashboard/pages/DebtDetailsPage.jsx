@@ -647,7 +647,7 @@ const DebtDetailsPage = () => {
   const debtNotice = debtLocked
     ? resolveForbiddenNotice(
         { response: { status: 403 } },
-        { path: '/debts', featureLabel: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO' },
+        { path: '/debts', featureLabel: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
       )
     : null;
 
@@ -1464,7 +1464,7 @@ const DebtDetailsPage = () => {
           </div>
         ) : debtNotice ? (
           <section className="mt-8">
-            <FeatureLockedNotice {...debtNotice} />
+            <FeatureLockedNotice {...debtNotice} fullPage />
           </section>
         ) : (
           <section className="mt-8">

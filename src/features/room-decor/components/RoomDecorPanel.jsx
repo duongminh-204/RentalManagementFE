@@ -142,7 +142,7 @@ const RoomDecorPanel = () => {
   if (accessNotice) {
     return (
       <div className="page-content page-content--wide">
-        <FeatureLockedNotice {...accessNotice} />
+        <FeatureLockedNotice {...accessNotice} fullPage />
       </div>
     );
   }

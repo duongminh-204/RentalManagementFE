@@ -1,18 +1,19 @@
 import { getStoredUser, isOwnerRole, isOwnerSubscriptionActive, isOwnerSubscriptionPending } from '../hooks/useAuth';
+import { getFeatureLockConfig, resolveFeatureKey } from './featureLockConfig';
 
 export const PACKAGE_TIER_ORDER = ['Starter', 'PRO', 'PREMIUM'];
 
 const ROUTE_FEATURES = {
-  '/vehicles': { label: 'Quản lý phương tiện', requiredPackage: 'PRO' },
-  '/rooms/decor': { label: 'AI Decor phòng', requiredPackage: 'PREMIUM' },
-  '/debts': { label: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO' },
+  '/vehicles': { label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
+  '/rooms/decor': { label: 'AI Decor phòng', requiredPackage: 'PREMIUM', featureKey: 'roomDecor' },
+  '/debts': { label: 'Báo cáo công nợ & doanh thu', requiredPackage: 'PRO', featureKey: 'debtPage' },
 };
 
 const API_FEATURES = [
-  { pattern: /\/dashboard\/debt/i, label: 'Báo cáo công nợ', requiredPackage: 'PRO' },
-  { pattern: /\/dashboard\/revenue/i, label: 'Báo cáo doanh thu', requiredPackage: 'PRO' },
-  { pattern: /\/vehicles/i, label: 'Quản lý phương tiện', requiredPackage: 'PRO' },
-  { pattern: /\/room-decor|\/rooms\/decor/i, label: 'AI Decor phòng', requiredPackage: 'PREMIUM' },
+  { pattern: /\/dashboard\/debt/i, label: 'Báo cáo công nợ', requiredPackage: 'PRO', featureKey: 'debtReports' },
+  { pattern: /\/dashboard\/revenue/i, label: 'Báo cáo doanh thu', requiredPackage: 'PRO', featureKey: 'revenueReports' },
+  { pattern: /\/vehicles/i, label: 'Quản lý phương tiện', requiredPackage: 'PRO', featureKey: 'vehicles' },
+  { pattern: /\/room-decor|\/rooms\/decor/i, label: 'AI Decor phòng', requiredPackage: 'PREMIUM', featureKey: 'roomDecor' },
 ];
 
 export const isForbiddenError = (error) => error?.response?.status === 403;
@@ -30,24 +31,29 @@ export const resolveForbiddenNotice = (error, options = {}) => {
 
   if (status === 'pending') {
     const packageLabel = user?.packageName || 'dịch vụ';
+    const pendingConfig = getFeatureLockConfig('pending');
     return {
       variant: 'pending',
+      featureKey: 'pending',
       title: `Gói ${packageLabel} đang chờ admin kích hoạt`,
-      message:
-        'Yêu cầu gói của bạn đã được ghi nhận. Admin sẽ xem xét và mở khóa tính năng trong thời gian sớm nhất.',
+      message: pendingConfig?.description,
       currentPackage: user?.packageName,
       actionLabel: 'Theo dõi trạng thái kích hoạt',
       actionPath: '/subscription/pending',
+      fullPage: true,
     };
   }
 
   if (status !== 'active') {
+    const noPlanConfig = getFeatureLockConfig('noPlan');
     return {
       variant: 'no_plan',
-      title: 'Chưa có gói đang hoạt động',
-      message: 'Vui lòng chọn gói dịch vụ và chờ admin kích hoạt trước khi sử dụng hệ thống.',
-      actionLabel: 'Chọn gói dịch vụ',
-      actionPath: '/register/select-plan',
+      featureKey: 'noPlan',
+      title: noPlanConfig?.title,
+      message: noPlanConfig?.description,
+      actionLabel: 'Xem bảng giá',
+      actionType: 'pricing',
+      fullPage: true,
     };
   }
 
@@ -55,26 +61,40 @@ export const resolveForbiddenNotice = (error, options = {}) => {
     ROUTE_FEATURES[path] ||
     matchApiFeature(requestUrl) ||
     (options.featureLabel
-      ? { label: options.featureLabel, requiredPackage: options.requiredPackage || 'PRO' }
+      ? {
+          label: options.featureLabel,
+          requiredPackage: options.requiredPackage || 'PRO',
+          featureKey: options.featureKey || resolveFeatureKey({ featureLabel: options.featureLabel }),
+        }
       : null);
 
+  const featureKey =
+    options.featureKey ||
+    options.lockedKey ||
+    feature?.featureKey ||
+    resolveFeatureKey({ path, requestUrl, featureLabel: feature?.label || options.featureLabel });
+  const lockConfig = getFeatureLockConfig(featureKey);
+
   const backendMessage = error?.response?.data?.message;
-  const requiredPackage = feature?.requiredPackage || 'PRO';
+  const requiredPackage = feature?.requiredPackage || lockConfig?.requiredPackage || 'PRO';
+  const isFullPage = Boolean(path && ROUTE_FEATURES[path]);
 
   return {
     variant: 'upgrade',
-    title: 'Tính năng chưa được mở',
+    featureKey,
+    title: lockConfig?.title,
     message:
       backendMessage && !String(backendMessage).includes('403')
         ? backendMessage
         : feature
           ? `"${feature.label}" không có trong gói ${user?.packageName || 'hiện tại'} của bạn.`
-          : 'Tính năng này chưa có trong gói dịch vụ hiện tại của bạn.',
-    featureLabel: feature?.label,
+          : lockConfig?.description,
+    featureLabel: feature?.label || lockConfig?.label,
     currentPackage: user?.packageName,
     requiredPackage,
     actionLabel: 'Xem bảng giá',
-    actionPath: '/#pricing',
+    actionType: 'pricing',
+    fullPage: isFullPage || options.fullPage,
   };
 };
 

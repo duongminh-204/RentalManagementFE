@@ -9,6 +9,18 @@ export const getStoredUser = () => {
   }
 };
 
+export const updateStoredUser = (patch) => {
+  try {
+    const current = getStoredUser() || {};
+    const merged = { ...current, ...patch };
+    localStorage.setItem('user', JSON.stringify(merged));
+    window.dispatchEvent(new CustomEvent('user-updated', { detail: merged }));
+    return merged;
+  } catch {
+    return getStoredUser();
+  }
+};
+
 export const getStoredRole = () => getStoredUser()?.role || '';
 
 export const isAdminRole = (role) => normalizeRole(role) === 'admin';
