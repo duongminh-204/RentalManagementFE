@@ -25,7 +25,13 @@ const AdminOwnerFeatureGrants = ({ ownerId, packageName, onSaved }) => {
       const data = await getAdminOwnerFeatureGrants(ownerId);
       setFeatures(data.features || []);
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể tải quyền tính năng.');
+      if (!err.response) {
+        setError(
+          'Không thể kết nối API cấp quyền. Thường do backend chưa deploy bản mới hoặc database chưa chạy migration OwnerFeatureGrants.',
+        );
+      } else {
+        setError(err.response?.data?.message || 'Không thể tải quyền tính năng.');
+      }
     } finally {
       setLoading(false);
     }
@@ -78,7 +84,13 @@ const AdminOwnerFeatureGrants = ({ ownerId, packageName, onSaved }) => {
       setMessage('Đã cập nhật quyền dùng thử.');
       onSaved?.();
     } catch (err) {
-      setError(err.response?.data?.message || 'Không thể lưu quyền tính năng.');
+      if (!err.response) {
+        setError(
+          'Không thể kết nối API cấp quyền. Thường do backend chưa deploy bản mới hoặc database chưa chạy migration OwnerFeatureGrants.',
+        );
+      } else {
+        setError(err.response?.data?.message || 'Không thể lưu quyền tính năng.');
+      }
     } finally {
       setSaving(false);
     }
