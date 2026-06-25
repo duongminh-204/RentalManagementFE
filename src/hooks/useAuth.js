@@ -29,6 +29,12 @@ export const isOwnerRole = (role) => normalizeRole(role) === 'owner';
 export const isOwnerSubscriptionActive = (user) =>
   isOwnerRole(user?.role) && normalizeRole(user?.subscriptionStatus) === 'active';
 
+export const hasOwnerTrialAccess = (user) =>
+  isOwnerRole(user?.role) && Boolean(user?.hasTrialAccess);
+
+export const canOwnerUseApp = (user) =>
+  isOwnerSubscriptionActive(user) || hasOwnerTrialAccess(user);
+
 export const isOwnerSubscriptionPending = (user) =>
   isOwnerRole(user?.role) && normalizeRole(user?.subscriptionStatus) === 'pending';
 
@@ -44,7 +50,7 @@ export const isOwnerSubscriptionReady = (user) =>
 export const getOwnerAccessPath = (user) => {
   if (!isOwnerRole(user?.role)) return '/dashboard';
   const status = normalizeRole(user?.subscriptionStatus);
-  if (status === 'active') return '/dashboard';
+  if (status === 'active' || hasOwnerTrialAccess(user)) return '/dashboard';
   if (status === 'pending') return '/subscription/pending';
   return '/register/select-plan';
 };

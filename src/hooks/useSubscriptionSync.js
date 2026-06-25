@@ -2,7 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { getMySubscription } from '../features/packages/api/subscriptionsApi';
 import {
   getStoredUser,
+  hasOwnerTrialAccess,
   isOwnerRole,
+  isOwnerSubscriptionActive,
   isOwnerSubscriptionPending,
   needsSubscriptionPayment,
   updateStoredUser,
@@ -23,7 +25,9 @@ export const syncSubscriptionFromApi = async () => {
       (data?.status && newStatus !== currentStatus) ||
       (data?.packageId != null && data.packageId !== user?.packageId) ||
       (data?.packageName && data.packageName !== user?.packageName) ||
-      Boolean(data?.hasPendingUpgrade) !== Boolean(user?.hasPendingUpgrade);
+      Boolean(data?.hasPendingUpgrade) !== Boolean(user?.hasPendingUpgrade) ||
+      Boolean(data?.hasTrialAccess) !== Boolean(user?.hasTrialAccess) ||
+      JSON.stringify(data?.effectiveFeatures || []) !== JSON.stringify(user?.effectiveFeatures || []);
 
     if (hasChanges) {
       const merged = updateStoredUser({
@@ -34,6 +38,8 @@ export const syncSubscriptionFromApi = async () => {
         pendingPackageId: data.pendingPackageId ?? null,
         pendingPackageName: data.pendingPackageName ?? null,
         pendingPaymentAmount: data.pendingPaymentAmount ?? null,
+        hasTrialAccess: Boolean(data.hasTrialAccess),
+        effectiveFeatures: data.effectiveFeatures || [],
       });
       return {
         data,
@@ -84,11 +90,19 @@ export const useSubscriptionSync = ({ poll = true, onActivated } = {}) => {
 
     refresh(true);
 
-    if (!poll || !needsSubscriptionPayment(user)) return undefined;
+    if (!poll) return undefined;
+
+    const shouldPollAccess = (currentUser) =>
+      needsSubscriptionPayment(currentUser) ||
+      (isOwnerRole(currentUser?.role) &&
+        !isOwnerSubscriptionActive(currentUser) &&
+        !hasOwnerTrialAccess(currentUser));
+
+    if (!shouldPollAccess(user)) return undefined;
 
     const intervalId = setInterval(async () => {
       const currentUser = getStoredUser();
-      if (!needsSubscriptionPayment(currentUser)) {
+      if (!shouldPollAccess(currentUser)) {
         clearInterval(intervalId);
         return;
       }

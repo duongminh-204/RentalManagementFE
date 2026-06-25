@@ -1,11 +1,25 @@
-import { getStoredUser } from '../hooks/useAuth';
+import { getStoredUser, canOwnerUseApp } from '../hooks/useAuth';
 import { getFeatureLockConfig, resolveFeatureKey } from './featureLockConfig';
 
 export const PACKAGE_TIER_ORDER = ['Starter', 'PRO', 'PREMIUM'];
 
+const ROUTE_PACKAGE_FEATURE = {
+  '/dashboard': 'Dashboard',
+  '/buildings': 'TenantManagement',
+  '/rooms': 'TenantManagement',
+  '/tenants': 'TenantManagement',
+  '/contracts': 'Contracts',
+  '/devices': 'UtilitiesInvoices',
+  '/invoices': 'PaymentInvoices',
+  '/vehicles': 'VehicleManagement',
+  '/rooms/decor': 'AiRoomDecor',
+  '/debts': 'RevenueDebtReports',
+};
+
 const ROUTE_FEATURES = {
   '/buildings': { label: 'Quản lý tòa nhà', requiredPackage: 'Starter', featureKey: 'buildings' },
   '/rooms': { label: 'Quản lý phòng trọ', requiredPackage: 'Starter', featureKey: 'rooms' },
+  '/tenants': { label: 'Quản lý khách thuê', requiredPackage: 'Starter', featureKey: 'tenants' },
   '/contracts': { label: 'Quản lý hợp đồng', requiredPackage: 'Starter', featureKey: 'contracts' },
   '/devices': { label: 'Thiết bị & Dịch vụ', requiredPackage: 'Starter', featureKey: 'devices' },
   '/invoices': { label: 'Quản lý hoá đơn', requiredPackage: 'Starter', featureKey: 'invoices' },
@@ -23,6 +37,29 @@ export const resolveRouteFeature = (path = '') => {
   if (ROUTE_FEATURES[path]) return ROUTE_FEATURES[path];
   const prefixMatch = ROUTE_PREFIX_FEATURES.find(({ prefix }) => path.startsWith(prefix));
   return prefixMatch?.feature || null;
+};
+
+const ownerHasPackageFeature = (user, packageFeatureName) => {
+  if (!packageFeatureName) return true;
+  const features = user?.effectiveFeatures || [];
+  return features.some(
+    (feature) => String(feature).toLowerCase() === String(packageFeatureName).toLowerCase(),
+  );
+};
+
+const resolveRoutePackageFeature = (path = '') => {
+  if (ROUTE_PACKAGE_FEATURE[path]) return ROUTE_PACKAGE_FEATURE[path];
+  const prefixMatch = ROUTE_PREFIX_FEATURES.find(({ prefix }) => path.startsWith(prefix));
+  return prefixMatch ? ROUTE_PACKAGE_FEATURE[prefixMatch.prefix] : null;
+};
+
+export const canOwnerAccessRoute = (path, user = getStoredUser()) => {
+  if (!canOwnerUseApp(user)) return false;
+  const status = String(user?.subscriptionStatus || '').toLowerCase();
+  if (status === 'active') return true;
+  if (!user?.hasTrialAccess) return false;
+  const packageFeature = resolveRoutePackageFeature(path);
+  return ownerHasPackageFeature(user, packageFeature);
 };
 
 const API_FEATURES = [
@@ -116,7 +153,7 @@ export const resolveForbiddenNotice = (error, options = {}) => {
     feature?.featureKey ||
     resolveFeatureKey({ path, requestUrl, featureLabel: feature?.label || options.featureLabel });
 
-  if (feature && (status === 'pending' || status !== 'active')) {
+  if (feature && (status === 'pending' || !canOwnerUseApp(user))) {
     return buildFeatureLockNotice(feature, user, status);
   }
 
@@ -135,7 +172,7 @@ export const resolveForbiddenNotice = (error, options = {}) => {
     };
   }
 
-  if (status !== 'active') {
+  if (!canOwnerUseApp(user)) {
     const noPlanConfig = getFeatureLockConfig('noPlan');
     return {
       variant: 'no_plan',
@@ -146,6 +183,25 @@ export const resolveForbiddenNotice = (error, options = {}) => {
       actionType: 'pricing',
       fullPage: true,
     };
+  }
+
+  if (user?.hasTrialAccess) {
+    const packageFeature = resolveRoutePackageFeature(path);
+    if (packageFeature && !ownerHasPackageFeature(user, packageFeature)) {
+      const lockConfig = getFeatureLockConfig(featureKey);
+      return {
+        variant: 'upgrade',
+        featureKey,
+        title: lockConfig?.title || feature?.label,
+        message: `"${feature?.label || lockConfig?.label || 'Tính năng này'}" chưa được admin cấp dùng thử cho tài khoản của bạn.`,
+        featureLabel: feature?.label || lockConfig?.label,
+        currentPackage: 'Dùng thử',
+        requiredPackage: feature?.requiredPackage || lockConfig?.requiredPackage || 'PRO',
+        actionLabel: 'Xem bảng giá',
+        actionType: 'pricing',
+        fullPage: Boolean(resolveRouteFeature(path)),
+      };
+    }
   }
 
   const lockConfig = getFeatureLockConfig(featureKey);
@@ -179,6 +235,10 @@ export const resolveFeatureRouteNotice = (path, user = getStoredUser()) => {
 
   const status = String(user?.subscriptionStatus || '').toLowerCase();
   if (status === 'active') return null;
+  if (user?.hasTrialAccess && canOwnerAccessRoute(path, user)) return null;
+  if (status === 'pending' || !canOwnerUseApp(user)) {
+    return buildFeatureLockNotice(feature, user, status);
+  }
 
   return buildFeatureLockNotice(feature, user, status);
 };
