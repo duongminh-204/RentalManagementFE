@@ -11,6 +11,7 @@ import DevicesPage from "./features/devices/pages/DevicesPage";
 import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
 import { RoomDecorPage } from './features/room-decor';
+import FacebookChatWidget from './components/common/FacebookChatWidget';
 
 import { PrivateRoute } from './routes/PrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
@@ -127,6 +128,7 @@ function App() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <FacebookChatWidget />
     </Router>
   );
 }
