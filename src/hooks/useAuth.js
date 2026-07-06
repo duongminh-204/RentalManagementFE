@@ -29,7 +29,7 @@ export const getRoleLabel = (role) => {
 
 export const getRoleHomePath = (role) => {
   const normalizedRole = normalizeRole(role);
-  if (normalizedRole === 'admin') return '/admin/excel-template';
+  if (normalizedRole === 'admin') return '/admin/overview';
   if (normalizedRole === 'owner') return '/dashboard';
   return '/dashboard';
 };

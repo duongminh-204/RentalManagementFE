@@ -75,6 +75,7 @@ const Header = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new CustomEvent('auth-changed'));
     navigate('/');
   };
 
