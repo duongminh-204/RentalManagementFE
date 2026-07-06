@@ -35,6 +35,7 @@ instance.interceptors.response.use(
             
             // Dispatch custom event để PrivateRoute biết token không hợp lệ
             window.dispatchEvent(new CustomEvent('unauthorized'));
+            window.dispatchEvent(new CustomEvent('auth-changed'));
         }
         return Promise.reject(error);
     }
