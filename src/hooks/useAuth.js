@@ -31,7 +31,8 @@ export const getRoleHomePath = (role) => {
   const normalizedRole = normalizeRole(role);
   if (normalizedRole === 'admin') return '/admin/overview';
   if (normalizedRole === 'owner') return '/dashboard';
-  return '/dashboard';
+  if (normalizedRole === 'tenant') return '/profile';
+  return '/profile';
 };
 
 export const useAuth = () => {

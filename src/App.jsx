@@ -14,10 +14,19 @@ import { RoomDecorPage } from './features/room-decor';
 import ExcelTemplateAdminPage from './features/admin/pages/ExcelTemplateAdminPage';
 import AdminPlaceholderPage from './features/admin/pages/AdminPlaceholderPage';
 import ChatAdminPage from './features/chat/pages/ChatAdminPage';
+import OwnerChatPage from './features/chat/pages/OwnerChatPage';
 import ChatWidget from './components/common/ChatWidget';
 
 import { PrivateRoute } from './routes/PrivateRoute';
 import { contractRoutes } from './routes/index.jsx';
+import { getStoredRole, isOwnerRole } from './hooks/useAuth';
+
+const OWNER_ROLES = ['Owner'];
+const INTERNAL_CHAT_ROLES = ['Owner', 'Tenant'];
+
+const InternalChatRoute = () => (
+  <OwnerChatPage mode={isOwnerRole(getStoredRole()) ? 'owner' : 'tenant'} />
+);
 
 function App() {
   return (
@@ -32,7 +41,7 @@ function App() {
         <Route
           path="/dashboard"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <Dashboard />
             </PrivateRoute>
           }
@@ -40,7 +49,7 @@ function App() {
         <Route
           path="/debts"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <DebtDetailsPage />
             </PrivateRoute>
           }
@@ -48,7 +57,7 @@ function App() {
         <Route
           path="/rooms"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <RoomsPage />
             </PrivateRoute>
           }
@@ -56,7 +65,7 @@ function App() {
         <Route
           path="/rooms/decor"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <RoomDecorPage />
             </PrivateRoute>
           }
@@ -64,7 +73,7 @@ function App() {
         <Route
           path="/buildings"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <BuildingPage />
             </PrivateRoute>
           }
@@ -72,7 +81,7 @@ function App() {
         <Route
           path="/buildings/create"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <BuildingCreate />
             </PrivateRoute>
           }
@@ -80,7 +89,7 @@ function App() {
         <Route
           path="/buildings/:id/edit"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <BuildingEdit />
             </PrivateRoute>
           }
@@ -88,7 +97,7 @@ function App() {
         <Route
           path="/invoices"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <InvoicesPage />
             </PrivateRoute>
           }
@@ -96,7 +105,7 @@ function App() {
         <Route
           path="/tenants"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <TenantsPage />
             </PrivateRoute>
           }
@@ -105,7 +114,7 @@ function App() {
         <Route
           path="/vehicles"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <VehiclesPage />
             </PrivateRoute>
           }
@@ -113,12 +122,27 @@ function App() {
         <Route
           path="/devices"
           element={
-            <PrivateRoute>
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
               <DevicesPage />
             </PrivateRoute>
           }
         />
-        <Route path="/services" element={<Navigate to="/devices" replace />} />
+        <Route
+          path="/chat"
+          element={
+            <PrivateRoute allowedRoles={INTERNAL_CHAT_ROLES}>
+              <InternalChatRoute />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/services"
+          element={
+            <PrivateRoute allowedRoles={OWNER_ROLES}>
+              <Navigate to="/devices" replace />
+            </PrivateRoute>
+          }
+        />
         <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
         <Route
           path="/admin/overview"

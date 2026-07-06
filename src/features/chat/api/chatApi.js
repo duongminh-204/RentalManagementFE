@@ -79,3 +79,81 @@ export const createAdminStreamUrl = () => {
   const token = localStorage.getItem('token') || '';
   return `${apiBaseUrl.replace(/\/+$/, '')}/admin/chat/stream?access_token=${encodeURIComponent(token)}`;
 };
+
+export const getOwnerContacts = async (q = '') => {
+  const response = await api.get('/owner/chat/contacts', { params: q ? { q } : {} });
+  return response.data;
+};
+
+export const getOwnerConversations = async () => {
+  const response = await api.get('/owner/chat/conversations');
+  return response.data;
+};
+
+export const createOwnerConversation = async (payload) => {
+  const response = await api.post('/owner/chat/conversations', payload);
+  return response.data;
+};
+
+export const getOwnerMessages = async (conversationId) => {
+  const response = await api.get(`/owner/chat/conversations/${conversationId}/messages`);
+  return response.data;
+};
+
+export const sendOwnerMessage = async (conversationId, payload) => {
+  const response = await api.post(`/owner/chat/conversations/${conversationId}/messages`, payload);
+  return response.data;
+};
+
+export const uploadOwnerAttachment = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/owner/chat/attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const createOwnerStreamUrl = () => {
+  const token = localStorage.getItem('token') || '';
+  return `${apiBaseUrl.replace(/\/+$/, '')}/owner/chat/stream?access_token=${encodeURIComponent(token)}`;
+};
+
+export const getTenantChatContacts = async (q = '') => {
+  const response = await api.get('/tenant/chat/contacts', { params: q ? { q } : {} });
+  return response.data;
+};
+
+export const getTenantChatConversations = async () => {
+  const response = await api.get('/tenant/chat/conversations');
+  return response.data;
+};
+
+export const createTenantChatConversation = async (payload) => {
+  const response = await api.post('/tenant/chat/conversations', payload);
+  return response.data;
+};
+
+export const getTenantChatMessages = async (conversationId) => {
+  const response = await api.get(`/tenant/chat/conversations/${conversationId}/messages`);
+  return response.data;
+};
+
+export const sendTenantChatMessage = async (conversationId, payload) => {
+  const response = await api.post(`/tenant/chat/conversations/${conversationId}/messages`, payload);
+  return response.data;
+};
+
+export const uploadTenantChatAttachment = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+  const response = await api.post('/tenant/chat/attachments', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+  return response.data;
+};
+
+export const createTenantChatStreamUrl = () => {
+  const token = localStorage.getItem('token') || '';
+  return `${apiBaseUrl.replace(/\/+$/, '')}/tenant/chat/stream?access_token=${encodeURIComponent(token)}`;
+};

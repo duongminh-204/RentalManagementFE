@@ -23,20 +23,26 @@ import {
   Users,
   X,
 } from 'lucide-react';
-import { getRoleHomePath, getRoleLabel, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+import { getRoleHomePath, getRoleLabel, getStoredUser, isAdminRole, isOwnerRole } from '../../hooks/useAuth';
 import UserAvatar from './UserAvatar';
 import AppLogo from './AppLogo';
 
 const ownerNavItems = [
   { label: 'Tổng quan', path: '/dashboard', icon: Home },
   { label: 'Quản lý tòa nhà', path: '/buildings', icon: Building },
-  { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+  { label: 'Phòng trọ', path: '/rooms', icon: Building2, end: true },
   { label: 'AI Decor phòng', path: '/rooms/decor', icon: Sparkles },
   { label: 'Khách thuê', path: '/tenants', icon: Users },
   { label: 'Hợp đồng', path: '/contracts', icon: FileText },
   { label: 'Phương tiện', path: '/vehicles', icon: Car },
   { label: 'Thiết bị & Dịch vụ', path: '/devices', icon: Cpu },
   { label: 'Hoá đơn', path: '/invoices', icon: HandCoins },
+  { label: 'Tin nhắn', path: '/chat', icon: MessageCircle },
+  { label: 'Hồ sơ', path: '/profile', icon: User },
+];
+
+const tenantNavItems = [
+  { label: 'Tin nhắn', path: '/chat', icon: MessageCircle },
   { label: 'Hồ sơ', path: '/profile', icon: User },
 ];
 
@@ -65,10 +71,16 @@ const Sidebar = () => {
 
   const role = user?.role || '';
   const isAdmin = isAdminRole(role);
+  const isOwner = isOwnerRole(role);
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
   const roleLabel = getRoleLabel(role);
   const homePath = getRoleHomePath(role);
-  const navItems = isAdmin ? adminNavItems : ownerNavItems;
+  const navItems = isAdmin ? adminNavItems : isOwner ? ownerNavItems : tenantNavItems;
+  const productContextLabel = isAdmin
+    ? 'Quản trị hệ thống'
+    : isOwner
+      ? 'Quản lý phòng trọ'
+      : 'Người thuê trọ';
 
   useEffect(() => {
     const refreshUser = () => setUser(getStoredUser());
@@ -111,14 +123,14 @@ const Sidebar = () => {
         <div className="min-w-0">
           <p className="font-display text-base font-semibold tracking-tight text-ink-deep">TROEZ</p>
           <p className="text-xs font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
-            {isAdmin ? 'Quản trị hệ thống' : 'Quản lý phòng trọ'}
+            {productContextLabel}
           </p>
         </div>
       </Link>
 
       <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-3 py-4">
-        {navItems.map(({ label, path, icon: Icon }) => (
-          <NavLink key={path} to={path} onClick={close} className={navLinkClass}>
+        {navItems.map(({ label, path, icon: Icon, end }) => (
+          <NavLink key={path} to={path} end={end} onClick={close} className={navLinkClass}>
             <Icon size={20} />
             {label}
           </NavLink>

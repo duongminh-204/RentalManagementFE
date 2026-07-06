@@ -9,13 +9,14 @@ import {
   Home,
   LogOut,
   Menu,
+  MessageCircle,
   Sparkles,
   User,
   Users,
   X,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { getRoleLabel, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+import { getRoleHomePath, getRoleLabel, getStoredUser, isAdminRole, isOwnerRole } from '../../hooks/useAuth';
 import UserAvatar from './UserAvatar';
 import AppLogo from './AppLogo';
 
@@ -54,23 +55,34 @@ const Header = () => {
 
   const role = user?.role || '';
   const isAdmin = isAdminRole(role);
+  const isOwner = isOwnerRole(role);
   const roleLabel = getRoleLabel(role);
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
 
-  const menuItems = isAdmin
-    ? [
-        { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
-        { label: 'Dashboard', path: '/dashboard', icon: Home },
-      ]
-    : [
-        { label: 'Tổng quan', path: '/dashboard', icon: Home },
-        { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
-        { label: 'AI Decor', path: '/rooms/decor', icon: Sparkles },
-        { label: 'Hoá đơn', path: '/invoices', icon: FileText },
-        { label: 'Công nợ', path: '/debts', icon: HandCoins },
-        { label: 'Khách thuê', path: '/tenants', icon: Users },
-        { label: 'Phương tiện', path: '/vehicles', icon: Car },
-      ];
+  const adminMenuItems = [
+    { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
+    { label: 'Tổng quan hệ thống', path: '/admin/overview', icon: Home },
+  ];
+  const ownerMenuItems = [
+    { label: 'Tổng quan', path: '/dashboard', icon: Home },
+    { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+    { label: 'AI Decor', path: '/rooms/decor', icon: Sparkles },
+    { label: 'Hoá đơn', path: '/invoices', icon: FileText },
+    { label: 'Công nợ', path: '/debts', icon: HandCoins },
+    { label: 'Khách thuê', path: '/tenants', icon: Users },
+    { label: 'Phương tiện', path: '/vehicles', icon: Car },
+    { label: 'Tin nhắn', path: '/chat', icon: MessageCircle },
+  ];
+  const tenantMenuItems = [
+    { label: 'Tin nhắn', path: '/chat', icon: MessageCircle },
+    { label: 'Hồ sơ', path: '/profile', icon: User },
+  ];
+  const menuItems = isAdmin ? adminMenuItems : isOwner ? ownerMenuItems : tenantMenuItems;
+  const productContextLabel = isAdmin
+    ? 'Quản trị hệ thống'
+    : isOwner
+      ? 'Quản lý phòng trọ'
+      : 'Người thuê trọ';
 
   const handleLogout = () => {
     localStorage.removeItem('token');
@@ -80,7 +92,7 @@ const Header = () => {
   };
 
   const isActive = (path) => location.pathname === path;
-  const homePath = isAdmin ? '/admin/excel-template' : '/dashboard';
+  const homePath = getRoleHomePath(role);
 
   return (
     <header className="safe-top sticky top-0 z-50 border-b border-hairline-cloud bg-surface-light">
@@ -93,7 +105,7 @@ const Header = () => {
                 TROEZ
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
-                {isAdmin ? 'Quản trị hệ thống' : 'Quản lý phòng trọ'}
+                {productContextLabel}
               </p>
             </div>
           </Link>
