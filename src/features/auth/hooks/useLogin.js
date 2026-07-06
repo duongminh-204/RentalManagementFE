@@ -34,6 +34,7 @@ export const useLogin = () => {
 
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user || {}));
+            window.dispatchEvent(new CustomEvent('auth-changed'));
 
             const redirectPath = getRoleHomePath(user?.role || '');
             navigate(redirectPath, { replace: true });

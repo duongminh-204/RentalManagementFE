@@ -59,6 +59,7 @@ export default function GoogleLoginButton() {
         // Lưu phiên đăng nhập giống hệt luồng login hiện tại
         localStorage.setItem('token', token);
         localStorage.setItem('user', JSON.stringify(user || {}));
+        window.dispatchEvent(new CustomEvent('auth-changed'));
 
         navigate(getRoleHomePath(user?.role || ''), { replace: true });
       } catch (err) {

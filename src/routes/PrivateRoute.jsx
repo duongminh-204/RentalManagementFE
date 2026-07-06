@@ -53,6 +53,7 @@ export const PrivateRoute = ({ children, allowedRoles }) => {
     if (!fallbackPath) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
+      window.dispatchEvent(new CustomEvent('auth-changed'));
       return <Navigate to="/" replace />;
     }
 
