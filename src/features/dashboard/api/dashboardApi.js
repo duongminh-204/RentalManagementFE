@@ -1,5 +1,7 @@
 import api from '../../../utils/api';
 
+const monthlyRevenueRequestCache = new Map();
+
 export const getDashboardStats = async () => {
   const response = await api.get('/dashboard/stats');
   return response.data;
@@ -26,8 +28,36 @@ export const restoreDebtItem = async (invoiceId, itemKey) => {
 };
 
 export const getMonthlyRevenue = async (month, year) => {
-  const response = await api.get(`/dashboard/revenue/${month}/${year}`);
-  return response.data;
+  const cacheKey = `${year}-${month}`;
+
+  if (!monthlyRevenueRequestCache.has(cacheKey)) {
+    monthlyRevenueRequestCache.set(
+      cacheKey,
+      api
+        .get(`/dashboard/revenue/${month}/${year}`)
+        .then((response) => response.data)
+        .finally(() => {
+          monthlyRevenueRequestCache.delete(cacheKey);
+        })
+    );
+  }
+
+  return monthlyRevenueRequestCache.get(cacheKey);
+};
+
+export const getMonthlyRevenueSeries = async (months) => {
+  const rows = [];
+
+  for (const monthInfo of months) {
+    const revenue = await getMonthlyRevenue(monthInfo.month, monthInfo.year);
+
+    rows.push({
+      ...monthInfo,
+      amount: Number(revenue?.monthlyRevenue ?? 0),
+    });
+  }
+
+  return rows;
 };
 
 export const importDashboardExcel = async (file) => {
@@ -112,6 +142,35 @@ export const getAllDashboardData = async (month, year) => {
     revenue: null,
     lockedFeatures: [],
     errors: [],
+  };
+  const [roomStats, debtInfo, revenue] = await Promise.all([
+    getRoomStats(),
+    getDebtInfo(),
+    getMonthlyRevenue(month, year),
+  ]);
+
+  const stats = {
+    totalRooms: roomStats?.totalRooms ?? 0,
+    occupiedRooms: roomStats?.occupiedRooms ?? 0,
+    emptyRooms: roomStats?.emptyRooms ?? 0,
+    monthlyRevenue: revenue?.monthlyRevenue ?? 0,
+    unpaidTenantsCount: debtInfo?.unpaidTenantsCount ?? 0,
+    totalDebt: debtInfo?.totalDebt ?? 0,
+  };
+
+  return {
+    stats,
+    roomStats,
+    debtInfo,
+    revenue,
+    lockedFeatures: results.reduce((acc, result) => {
+      if (result.lockedKey) acc.push(result.lockedKey);
+      return acc;
+    }, []),
+    errors: results.reduce((acc, result) => {
+      if (result.error && result.error?.response?.status !== 403) acc.push(result.error);
+      return acc;
+    }, []), 
   };
 
   for (const result of results) {

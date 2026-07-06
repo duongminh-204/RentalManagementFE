@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart3, ChevronDown, TrendingDown, TrendingUp } from 'lucide-react';
-import { getMonthlyRevenue } from '../api/dashboardApi';
+import { getMonthlyRevenueSeries } from '../api/dashboardApi';
 import { formatCurrency } from '../utils/dashboardFormat';
 
 const itemVariants = {
@@ -61,18 +61,7 @@ const MonthlyRevenueReport = () => {
       try {
         setLoading(true);
         const months = buildRecentMonths(period);
-        const responses = await Promise.all(
-          months.map(async ({ month, year, label }) => {
-            const revenue = await getMonthlyRevenue(month, year);
-
-            return {
-              label,
-              month,
-              year,
-              amount: Number(revenue?.monthlyRevenue ?? 0),
-            };
-          })
-        );
+        const responses = await getMonthlyRevenueSeries(months);
 
         if (isMounted) {
           setRows(responses);
