@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { LogOut, Menu, X } from 'lucide-react';
-import { getRoleLabel, getStoredUser } from '../../hooks/useAuth';
+
 import { OWNER_ACCOUNT_NAV, OWNER_NAV_SECTIONS } from '../../utils/ownerNavConfig';
 
 import {
@@ -125,27 +124,38 @@ const Sidebar = () => {
       </Link>
 
       <nav className="flex flex-1 flex-col gap-4 overflow-y-auto px-3 py-4">
-        {OWNER_NAV_SECTIONS.map((section) => (
-          <div key={section.tier} className="owner-nav-section">
-            <div className="owner-nav-section__header">
-              <span className={`owner-nav-section__badge ${section.badgeClass}`}>{section.label}</span>
-              <span className="owner-nav-section__hint">{section.hint}</span>
-            </div>
-            <div className="flex flex-col gap-1">
-              {section.items.map(({ label, path, icon: Icon }) => (
-                <NavLink key={path} to={path} onClick={close} className={navLinkClass}>
-                  <Icon size={20} />
-                  {label}
-                </NavLink>
-              ))}
-            </div>
+        {isAdmin ? (
+          <div className="flex flex-col gap-1">
+            {adminNavItems.map(({ label, path, icon: Icon }) => (
+              <NavLink key={path} to={path} onClick={close} className={navLinkClass}>
+                <Icon size={20} />
+                {label}
+              </NavLink>
+            ))}
           </div>
-        ))}
+        ) : (
+          OWNER_NAV_SECTIONS.map((section) => (
+            <div key={section.tier} className="owner-nav-section">
+              <div className="owner-nav-section__header">
+                <span className={`owner-nav-section__badge ${section.badgeClass}`}>{section.label}</span>
+                <span className="owner-nav-section__hint">{section.hint}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                {section.items.map(({ label, path, icon: Icon }) => (
+                  <NavLink key={path} to={path} onClick={close} className={navLinkClass}>
+                    <Icon size={20} />
+                    {label}
+                  </NavLink>
+                ))}
+              </div>
+            </div>
+          ))
+        )}
       </nav>
 
       <div className="border-t border-hairline-cloud px-3 py-4">
         <div className="mb-2 flex flex-col gap-1">
-          {OWNER_ACCOUNT_NAV.map(({ label, path, icon: Icon }) => (
+          {!isAdmin && OWNER_ACCOUNT_NAV.map(({ label, path, icon: Icon }) => (
             <NavLink key={path} to={path} onClick={close} className={navLinkClass}>
               <Icon size={20} />
               {label}

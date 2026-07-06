@@ -24,7 +24,6 @@ import {
   ExcelTemplateAdminPage,
 } from './features/admin';
 
-import ExcelTemplateAdminPage from './features/admin/pages/ExcelTemplateAdminPage';
 import AdminPlaceholderPage from './features/admin/pages/AdminPlaceholderPage';
 import ChatAdminPage from './features/chat/pages/ChatAdminPage';
 import ChatWidget from './components/common/ChatWidget';
@@ -86,73 +85,73 @@ function App() {
         <Route
           path="/admin/overview"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <AdminPlaceholderPage type="overview" />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/users"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
-              <AdminPlaceholderPage type="users" />
-            </PrivateRoute>
+            <AdminPrivateRoute>
+              <AdminUsersPage />
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/monitoring"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <AdminPlaceholderPage type="monitoring" />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/tickets"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <AdminPlaceholderPage type="tickets" />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/plans"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <AdminPlaceholderPage type="plans" />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/excel-template"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <ExcelTemplateAdminPage />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/chat"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <ChatAdminPage />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/settings"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
+            <AdminPrivateRoute>
               <AdminPlaceholderPage type="settings" />
-            </PrivateRoute>
+            </AdminPrivateRoute>
           }
         />
         <Route
           path="/admin/audit-logs"
           element={
-            <PrivateRoute allowedRoles={['Admin']}>
-              <AdminPlaceholderPage type="auditLogs" />
-            </PrivateRoute>
+            <AdminPrivateRoute>
+              <AdminAuditLogsPage />
+            </AdminPrivateRoute>
           }
         />
         <Route
@@ -195,31 +194,6 @@ function App() {
             </AdminPrivateRoute>
           }
         />
-        <Route
-          path="/admin/users"
-          element={
-            <AdminPrivateRoute>
-              <AdminUsersPage />
-            </AdminPrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/audit-logs"
-          element={
-            <AdminPrivateRoute>
-              <AdminAuditLogsPage />
-            </AdminPrivateRoute>
-          }
-        />
-        <Route
-          path="/admin/excel-template"
-          element={
-            <AdminPrivateRoute>
-              <ExcelTemplateAdminPage />
-            </AdminPrivateRoute>
-          }
-        />
-        <Route path="/admin" element={<Navigate to="/admin/dashboard" replace />} />
 
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />

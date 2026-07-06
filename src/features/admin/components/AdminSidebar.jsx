@@ -1,14 +1,19 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
+  Activity,
+  BarChart3,
   ClipboardList,
   CreditCard,
   FileSpreadsheet,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Menu,
+  MessageCircle,
   Package,
   RefreshCw,
+  Settings,
   Users,
   X,
 } from 'lucide-react';
@@ -16,14 +21,23 @@ import { getRoleLabel, getStoredUser } from '../../../hooks/useAuth';
 import UserAvatar from '../../../components/common/UserAvatar';
 import AppLogo from '../../../components/common/AppLogo';
 
-const navItems = [
-  { label: 'Tổng quan', path: '/admin/dashboard', icon: LayoutDashboard },
+const navItemsMain = [
+  { label: 'Bảng điều khiển', path: '/admin/dashboard', icon: LayoutDashboard },
   { label: 'Người dùng', path: '/admin/users', icon: Users },
+  { label: 'Chat website', path: '/admin/chat', icon: MessageCircle },
   { label: 'Gói dịch vụ', path: '/admin/packages', icon: Package },
   { label: 'Đăng ký', path: '/admin/subscriptions', icon: RefreshCw },
   { label: 'Thanh toán', path: '/admin/payments', icon: CreditCard },
-  { label: 'Nhật ký', path: '/admin/audit-logs', icon: ClipboardList },
   { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
+  { label: 'Nhật ký hoạt động', path: '/admin/audit-logs', icon: ClipboardList },
+];
+
+const navItemsPlaceholder = [
+  { label: 'Tổng quan hệ thống', path: '/admin/overview', icon: BarChart3 },
+  { label: 'Giám sát dữ liệu', path: '/admin/monitoring', icon: Activity },
+  { label: 'Ticket hỗ trợ', path: '/admin/tickets', icon: LifeBuoy },
+  { label: 'Kế hoạch gói', path: '/admin/plans', icon: Package },
+  { label: 'Cấu hình hệ thống', path: '/admin/settings', icon: Settings },
 ];
 
 const navLinkClass = ({ isActive }) =>
@@ -62,9 +76,29 @@ const AdminSidebar = () => {
         </div>
       </Link>
 
-      <nav className="flex-1 space-y-1 px-3">
-        {navItems.map((item) => (
+      <nav className="flex-1 overflow-y-auto space-y-1 px-3 py-2">
+        {navItemsMain.map((item) => (
           <NavLink key={item.path} to={item.path} className={navLinkClass} onClick={() => setIsOpen(false)}>
+            <item.icon className="h-4 w-4 shrink-0" />
+            {item.label}
+          </NavLink>
+        ))}
+
+        <div className="my-3 border-t border-hairline-cloud" />
+        <p className="px-4 pb-1 text-[10px] font-semibold uppercase tracking-widest text-muted">
+          Sắp ra mắt
+        </p>
+        {navItemsPlaceholder.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors opacity-60 ${
+                isActive ? 'bg-primary text-on-primary opacity-100' : 'text-ink-deep hover:bg-surface-press hover:opacity-80'
+              }`
+            }
+            onClick={() => setIsOpen(false)}
+          >
             <item.icon className="h-4 w-4 shrink-0" />
             {item.label}
           </NavLink>
