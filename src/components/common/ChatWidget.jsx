@@ -50,23 +50,6 @@ const formatTime = (value) => {
 
 const formatAdminPresence = (presence, minuteTick) => {
   void minuteTick;
-  if (!presence.hasPresence && !presence.isAdminOnline) return 'Đang kiểm tra...';
-  if (presence.isAdminOnline) return 'Online';
-
-  const lastSeen = presence.lastSeenAt ? new Date(presence.lastSeenAt) : null;
-  if (!lastSeen || Number.isNaN(lastSeen.getTime())) return 'Online cách đây vài phút';
-
-  const minutes = Math.max(1, Math.floor((Date.now() - lastSeen.getTime()) / 60000));
-  if (minutes < 60) return `Online cách đây ${minutes} phút`;
-
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `Online cách đây ${hours} giờ`;
-
-  return 'Online cách đây hơn 1 ngày';
-};
-
-const formatAdminPresenceLabel = (presence, minuteTick) => {
-  void minuteTick;
   if (presence.isAdminOnline) return 'Online';
 
   const lastSeen = presence.lastSeenAt ? new Date(presence.lastSeenAt) : null;
@@ -125,7 +108,7 @@ export default function ChatWidget() {
   const fileInputRef = useRef(null);
 
   const publicToken = conversation?.publicToken;
-  const adminPresenceLabel = formatAdminPresenceLabel(adminPresence, minuteTick);
+  const adminPresenceLabel = formatAdminPresence(adminPresence, minuteTick);
 
   const resetChatSession = useCallback(() => {
     clearStoredChatSession();

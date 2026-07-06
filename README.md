@@ -17,10 +17,10 @@ If you are developing a production application, we recommend using TypeScript wi
 
 ## Chat website
 
-TROEZ dùng widget chat riêng trên website. Khách truy cập có thể chat ngay, không cần đăng nhập Facebook hoặc Messenger.
+TROEZ dùng widget chat riêng trên website. Khách truy cập có thể chat ngay bằng tài khoản hiện tại của hệ thống.
 
 - API của khách truy cập nằm dưới `/api/chat/*` và định danh hội thoại bằng `publicToken` khó đoán.
-- API của quản trị nằm dưới `/api/admin/chat/*` và yêu cầu JWT có vai trò `Admin` hoặc `Owner`.
+- API của quản trị nằm dưới `/api/admin/chat/*` và yêu cầu JWT có vai trò `Admin`.
 - Realtime dùng SSE: `/api/chat/conversations/:publicToken/stream` cho khách truy cập và `/api/admin/chat/stream` cho quản trị.
 - Tệp đính kèm dùng hạ tầng lưu trữ hiện có của backend và được lưu trong `uploads/chat`.
 
