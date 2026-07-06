@@ -3,9 +3,63 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { LogOut, Menu, X } from 'lucide-react';
 import { getRoleLabel, getStoredUser } from '../../hooks/useAuth';
 import { OWNER_ACCOUNT_NAV, OWNER_NAV_SECTIONS } from '../../utils/ownerNavConfig';
+
+import {
+  Activity,
+  BarChart3,
+  Building,
+  Building2,
+  Car,
+  ClipboardList,
+  Cpu,
+  FileSpreadsheet,
+  FileText,
+  HandCoins,
+  Home,
+  LifeBuoy,
+  LogOut,
+  Menu,
+  MessageCircle,
+  Package,
+  Settings,
+  Sparkles,
+  User,
+  Users,
+  X,
+} from 'lucide-react';
+import { getRoleHomePath, getRoleLabel, getStoredUser, isAdminRole } from '../../hooks/useAuth';
+
 import UserAvatar from './UserAvatar';
 import OwnerPackageBadge from './OwnerPackageBadge';
 import AppLogo from './AppLogo';
+
+
+const ownerNavItems = [
+  { label: 'Tổng quan', path: '/dashboard', icon: Home },
+  { label: 'Quản lý tòa nhà', path: '/buildings', icon: Building },
+  { label: 'Phòng trọ', path: '/rooms', icon: Building2 },
+  { label: 'AI Decor phòng', path: '/rooms/decor', icon: Sparkles },
+  { label: 'Khách thuê', path: '/tenants', icon: Users },
+  { label: 'Hợp đồng', path: '/contracts', icon: FileText },
+  { label: 'Phương tiện', path: '/vehicles', icon: Car },
+  { label: 'Thiết bị & Dịch vụ', path: '/devices', icon: Cpu },
+  { label: 'Hoá đơn', path: '/invoices', icon: HandCoins },
+  { label: 'Hồ sơ', path: '/profile', icon: User },
+];
+
+const adminNavItems = [
+  { label: 'Tổng quan hệ thống', path: '/admin/overview', icon: BarChart3 },
+  { label: 'Người dùng', path: '/admin/users', icon: Users },
+  { label: 'Giám sát dữ liệu', path: '/admin/monitoring', icon: Activity },
+  { label: 'Chat website', path: '/admin/chat', icon: MessageCircle },
+  { label: 'Ticket hỗ trợ', path: '/admin/tickets', icon: LifeBuoy },
+  { label: 'Gói dịch vụ', path: '/admin/plans', icon: Package },
+  { label: 'Mẫu Excel', path: '/admin/excel-template', icon: FileSpreadsheet },
+  { label: 'Cấu hình hệ thống', path: '/admin/settings', icon: Settings },
+  { label: 'Nhật ký hoạt động', path: '/admin/audit-logs', icon: ClipboardList },
+  { label: 'Hồ sơ admin', path: '/profile', icon: User },
+];
+
 
 const navLinkClass = ({ isActive }) =>
   `flex items-center gap-3 rounded-xl px-4 py-2.5 text-sm font-medium transition-colors ${
@@ -18,8 +72,11 @@ const Sidebar = () => {
   const navigate = useNavigate();
 
   const role = user?.role || '';
+  const isAdmin = isAdminRole(role);
   const displayName = user?.fullName || user?.FullName || 'Tài khoản';
   const roleLabel = getRoleLabel(role);
+  const homePath = getRoleHomePath(role);
+  const navItems = isAdmin ? adminNavItems : ownerNavItems;
 
   useEffect(() => {
     const refreshUser = () => setUser(getStoredUser());
@@ -47,13 +104,14 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.dispatchEvent(new CustomEvent('auth-changed'));
     navigate('/');
   };
 
   const sidebarBody = (
     <div className="flex h-full flex-col">
       <Link
-        to="/dashboard"
+        to={homePath}
         onClick={close}
         className="flex items-center gap-3 border-b border-hairline-cloud px-4 py-4 sm:gap-4 sm:px-5 sm:py-6"
       >
@@ -61,7 +119,7 @@ const Sidebar = () => {
         <div className="min-w-0">
           <p className="font-display text-base font-semibold tracking-tight text-ink-deep">TROEZ</p>
           <p className="text-xs font-semibold uppercase tracking-[0.25px] text-accent-violet-mid">
-            Quản lý phòng trọ
+            {isAdmin ? 'Quản trị hệ thống' : 'Quản lý phòng trọ'}
           </p>
         </div>
       </Link>

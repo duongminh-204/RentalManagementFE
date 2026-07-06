@@ -16,6 +16,7 @@ export const useRegister = () => {
             const res = await authApi.register(userData);
             localStorage.setItem('token', res.token);
             localStorage.setItem('user', JSON.stringify(res.user));
+            window.dispatchEvent(new CustomEvent('auth-changed'));
 
             if (isOwnerRole(res.user?.role)) {
                 navigate(getOwnerAccessPath(res.user), { replace: true });

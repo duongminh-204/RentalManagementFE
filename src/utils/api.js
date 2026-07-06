@@ -62,6 +62,8 @@ instance.interceptors.response.use(
                     }),
                 );
             }
+            window.dispatchEvent(new CustomEvent('auth-changed'));
+
         }
         return Promise.reject(error);
     }

@@ -12,6 +12,7 @@ import InvoicesPage from "./features/invoices/pages/InvoicesPage";
 import { ProfilePage } from './features/profile';
 import { LegalPage } from './features/legal';
 import { RoomDecorPage } from './features/room-decor';
+
 import {
   AdminAuditLogsPage,
   AdminDashboardPage,
@@ -22,6 +23,12 @@ import {
   AdminUsersPage,
   ExcelTemplateAdminPage,
 } from './features/admin';
+
+import ExcelTemplateAdminPage from './features/admin/pages/ExcelTemplateAdminPage';
+import AdminPlaceholderPage from './features/admin/pages/AdminPlaceholderPage';
+import ChatAdminPage from './features/chat/pages/ChatAdminPage';
+import ChatWidget from './components/common/ChatWidget';
+
 
 import { PrivateRoute } from './routes/PrivateRoute';
 import { OwnerRoute } from './routes/OwnerRoute';
@@ -72,9 +79,82 @@ function App() {
         <Route path="/vehicles" element={<OwnerRoute><VehiclesPage /></OwnerRoute>} />
         <Route path="/devices" element={<OwnerRoute><DevicesPage /></OwnerRoute>} />
         <Route path="/services" element={<Navigate to="/devices" replace />} />
-        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
 
+        <Route path="/profile" element={<PrivateRoute><ProfilePage /></PrivateRoute>} />
         {/* Admin Routes */}
+        <Route path="/admin" element={<Navigate to="/admin/overview" replace />} />
+        <Route
+          path="/admin/overview"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="overview" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="users" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/monitoring"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="monitoring" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/tickets"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="tickets" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/plans"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="plans" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/excel-template"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <ExcelTemplateAdminPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/chat"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <ChatAdminPage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/settings"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="settings" />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/admin/audit-logs"
+          element={
+            <PrivateRoute allowedRoles={['Admin']}>
+              <AdminPlaceholderPage type="auditLogs" />
+            </PrivateRoute>
+          }
+        />
         <Route
           path="/admin/dashboard"
           element={
@@ -144,6 +224,7 @@ function App() {
         {/* Catch all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <ChatWidget />
     </Router>
   );
 }
