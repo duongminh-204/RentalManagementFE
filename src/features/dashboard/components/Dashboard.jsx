@@ -28,11 +28,23 @@ import { getStoredUser, isOwnerSubscriptionActive } from '../../../hooks/useAuth
 const DOWNLOAD_ERROR_MESSAGE =
   'Chưa tải được file mẫu. Nếu backend vừa được cập nhật, hãy khởi động lại backend rồi thử lại.';
 
+
 const TAGLINE_ITEMS = [
   { icon: Sparkles, text: 'Quản lý thông minh', tone: 'violet' },
   { icon: Zap, text: 'Vận hành dễ dàng', tone: 'lime' },
   { icon: TrendingUp, text: 'Tăng trưởng bền vững', tone: 'pink' },
 ];
+
+const getApiErrorMessage = (err, fallbackMessage) => {
+  const data = err.response?.data;
+
+  if (typeof data === 'string' && data.trim()) {
+    return data;
+  }
+
+  return data?.message || data?.title || data?.detail || fallbackMessage;
+};
+
 
 const Dashboard = () => {
   const { stats, roomStats, debtInfo, revenue, lockedFeatures, loading, error, refetch } = useDashboard();
@@ -124,7 +136,7 @@ const Dashboard = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      setImportError(err.response?.data?.message || 'Không thể xuất file Excel lúc này. Vui lòng thử lại.');
+      setImportError(getApiErrorMessage(err, 'Không thể xuất file Excel lúc này. Vui lòng thử lại.'));
     } finally {
       setIsExporting(false);
     }
@@ -148,7 +160,7 @@ const Dashboard = () => {
       if (err.response?.status === 404) {
         setImportError('Backend hiện chưa có API import Excel. Hãy khởi động lại backend rồi thử nhập lại.');
       } else {
-        setImportError(err.response?.data?.message || 'Không thể nhập file Excel. Vui lòng kiểm tra lại mẫu file.');
+        setImportError(getApiErrorMessage(err, 'Không thể nhập file Excel. Vui lòng kiểm tra lại mẫu file.'));
       }
     } finally {
       setIsImporting(false);
