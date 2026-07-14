@@ -3,7 +3,22 @@ const normalizeRole = (role) => String(role || '').trim().toLowerCase();
 export const getStoredUser = () => {
   try {
     const rawUser = localStorage.getItem('user');
-    return rawUser ? JSON.parse(rawUser) : null;
+    if (!rawUser) return null;
+    const user = JSON.parse(rawUser);
+    return {
+      ...user,
+      userId: user.userId ?? user.UserId ?? user.id ?? user.Id,
+      fullName: user.fullName ?? user.FullName,
+      email: user.email ?? user.Email,
+      phoneNumber: user.phoneNumber ?? user.PhoneNumber,
+      role: user.role ?? user.Role,
+      subscriptionStatus: user.subscriptionStatus ?? user.SubscriptionStatus,
+      packageId: user.packageId ?? user.PackageId,
+      packageName: user.packageName ?? user.PackageName,
+      hasTrialAccess: user.hasTrialAccess ?? user.HasTrialAccess ?? false,
+      hasPendingUpgrade: user.hasPendingUpgrade ?? user.HasPendingUpgrade ?? false,
+      effectiveFeatures: user.effectiveFeatures ?? user.EffectiveFeatures ?? [],
+    };
   } catch {
     return null;
   }
@@ -73,7 +88,7 @@ export const getRoleHomePath = (role, user) => {
   if (normalizedRole === 'admin') return '/admin/dashboard';
   if (normalizedRole === 'owner') return getOwnerAccessPath(user || getStoredUser());
   if (normalizedRole === 'tenant') return '/profile';
-  return '/dashboard';
+  return '';
 
 };
 

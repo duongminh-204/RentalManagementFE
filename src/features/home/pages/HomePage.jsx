@@ -21,8 +21,11 @@ export default function HomePage() {
 
   if (isAuthenticated) {
     const canBrowseHomeWithoutPlan = isOwnerRole(role) && !isOwnerSubscriptionReady(user);
+    const redirectPath = getRoleHomePath(role, user);
     if (!canBrowseHomeWithoutPlan) {
-      return <Navigate to={getRoleHomePath(role, user)} replace />;
+      if (redirectPath) {
+        return <Navigate to={redirectPath} replace />;
+      }
     }
   }
 

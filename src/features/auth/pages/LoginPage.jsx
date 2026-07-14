@@ -8,9 +8,11 @@ import logo from '../../../assets/LOGOEXE.png';
 export default function LoginPage() {
   const { isAuthenticated, role } = useAuth();
   const hasGoogleLogin = Boolean(import.meta.env.VITE_GOOGLE_CLIENT_ID);
+  const storedUser = getStoredUser();
+  const redirectPath = isAuthenticated ? getRoleHomePath(role, storedUser) : '';
 
-  if (isAuthenticated) {
-    return <Navigate to={getRoleHomePath(role, getStoredUser())} replace />;
+  if (redirectPath) {
+    return <Navigate to={redirectPath} replace />;
   }
 
   return (

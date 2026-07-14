@@ -27,16 +27,21 @@ export const useLogin = () => {
 
             const res = await authApi.login({ email: phoneOrEmail, password });
             const { token, user } = normalizeLoginResponse(res);
+            const userRole = user?.role ?? user?.Role ?? '';
+            const redirectPath = getRoleHomePath(userRole, user);
 
             if (!token) {
                 throw new Error('Server không trả về token. Vui lòng thử lại.');
+            }
+
+            if (!redirectPath) {
+                throw new Error('Server không trả về vai trò tài khoản hợp lệ. Vui lòng thử lại.');
             }
 
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(user || {}));
             window.dispatchEvent(new CustomEvent('auth-changed'));
 
-            const redirectPath = getRoleHomePath(user?.role || '', user);
             navigate(redirectPath, { replace: true });
 
         } catch (err) {

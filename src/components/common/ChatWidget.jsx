@@ -267,7 +267,7 @@ export default function ChatWidget() {
     }
   };
 
-  if (!authToken || isAdminRole(role)) {
+  if (!authToken || !role || isAdminRole(role)) {
     return null;
   }
 
