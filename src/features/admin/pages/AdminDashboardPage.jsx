@@ -402,7 +402,7 @@ const AdminDashboardPage = () => {
       {!loading && charts ? (
         <div className="space-y-6">
           <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-            <RevenueSection rows={charts.revenueGrowth || []} summary={summary} />
+            {/* <RevenueSection rows={charts.revenueGrowth || []} summary={summary} /> */}
             <AlertsPanel alerts={charts.alerts} />
           </div>
 
