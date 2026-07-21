@@ -12,6 +12,8 @@ const ConfirmDeleteModal = ({
   loading = false,
   onConfirm,
   onCancel,
+  
+  
 }) => {
   if (!open) return null;
 
