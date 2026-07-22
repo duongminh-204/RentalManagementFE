@@ -4,7 +4,7 @@ import AdminPageHeader from '../components/AdminPageHeader';
 import AdminPagination from '../components/AdminPagination';
 import { exportAdminPaymentsExcel, getAdminPayments, getAdminRevenueReport } from '../api/adminApi';
 import AdminPlatformPaymentSettings from '../components/AdminPlatformPaymentSettings';
-import { formatDate, formatDateTime, formatVnd, statusClass } from '../utils/adminHelpers';
+import { formatDate, formatVnd, statusClass } from '../utils/adminHelpers';
 
 const AdminPaymentsPage = () => {
   const [items, setItems] = useState([]);
@@ -98,7 +98,7 @@ const AdminPaymentsPage = () => {
                     <td className="px-3 py-3">{payment.subscriptionId}</td>
                     <td className="px-3 py-3">{formatVnd(payment.amount)}</td>
                     <td className="px-3 py-3">{payment.paymentMethod}</td>
-                    <td className="px-3 py-3">{formatDateTime(payment.paymentDate)}</td>
+                    <td className="px-3 py-3">{formatDate(payment.paymentDate)}</td>
                     <td className="px-3 py-3">
                       <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusClass(payment.status)}`}>{payment.status}</span>
                     </td>
